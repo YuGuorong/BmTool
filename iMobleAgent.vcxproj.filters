@@ -1,0 +1,185 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Uilib">
+      <UniqueIdentifier>{3fafb693-0baa-4f73-9700-4ad28feb7377}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Uilib\DgiplusBtn">
+      <UniqueIdentifier>{951df9b6-60f3-4eb9-b957-40fe3de02f63}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ReadMe.txt" />
+    <None Include="res\iMobleAgent.rc2">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\iMobleAgent.ico">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\skin\bk.bmp">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\introduce.bmp">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\ui_base\cornbutton.bmp">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\ui_base\CloseButton_Hover.bmp">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\ui_base\2.BMP">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\ui_base\1.BMP">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\ui_base\CloseButton_Down.bmp">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\ui_base\CloseButton_Normal.bmp">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\ui_base\Btn.bmp">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\skin\exit.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\skin\btn.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\skin\explorres.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\skin\exptprj.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\skin\login.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\skin\newprj.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\skin\openprj.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\skin\save.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\skin\setting.png">
+      <Filter>Resource Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="iMobleAgent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="iMobleAgentDlg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="stdafx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="targetver.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UiLib\ExDialog.h">
+      <Filter>Uilib</Filter>
+    </ClInclude>
+    <ClInclude Include="UiLib\Link.h">
+      <Filter>Uilib</Filter>
+    </ClInclude>
+    <ClInclude Include="UiLib\OfficeXPMenu.h">
+      <Filter>Uilib</Filter>
+    </ClInclude>
+    <ClInclude Include="UiLib\SkinBtn.h">
+      <Filter>Uilib</Filter>
+    </ClInclude>
+    <ClInclude Include="UiLib\Util.h">
+      <Filter>Uilib</Filter>
+    </ClInclude>
+    <ClInclude Include="UiLib\CGdiPlusBitmap.h">
+      <Filter>Uilib\DgiplusBtn</Filter>
+    </ClInclude>
+    <ClInclude Include="UiLib\GdipButton.h">
+      <Filter>Uilib\DgiplusBtn</Filter>
+    </ClInclude>
+    <ClInclude Include="UiLib\MemDC.h">
+      <Filter>Uilib\DgiplusBtn</Filter>
+    </ClInclude>
+    <ClInclude Include="LoginDlg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BMDlg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SettingDlg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MetaDlg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="iMobleAgent.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="iMobleAgentDlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="UiLib\ExDialog.cpp">
+      <Filter>Uilib</Filter>
+    </ClCompile>
+    <ClCompile Include="UiLib\Link.cpp">
+      <Filter>Uilib</Filter>
+    </ClCompile>
+    <ClCompile Include="UiLib\OfficeXPMenu.cpp">
+      <Filter>Uilib</Filter>
+    </ClCompile>
+    <ClCompile Include="UiLib\SkinBtn.cpp">
+      <Filter>Uilib</Filter>
+    </ClCompile>
+    <ClCompile Include="UiLib\Util.cpp">
+      <Filter>Uilib</Filter>
+    </ClCompile>
+    <ClCompile Include="UiLib\GdipButton.cpp">
+      <Filter>Uilib\DgiplusBtn</Filter>
+    </ClCompile>
+    <ClCompile Include="LoginDlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BMDlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SettingDlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MetaDlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="iMobleAgent.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>
