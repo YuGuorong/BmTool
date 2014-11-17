@@ -39,7 +39,6 @@ public:
 protected:
 	HICON m_hIcon;
 	CGdipButton	*m_cTabBtns[MAX_TAB_ITEM];
-
 	// Generated message map functions
 	virtual BOOL OnInitDialog();
 	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
@@ -53,4 +52,6 @@ public:
 	CStatic m_frame;
 	afx_msg void OnBnClickedBtnNewprj();
 	afx_msg void OnBnClickedBtnSetting();
+	afx_msg void OnSize(UINT nType, int cx, int cy);
+	afx_msg void OnDestroy();
 };

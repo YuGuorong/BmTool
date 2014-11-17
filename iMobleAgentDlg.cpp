@@ -51,6 +51,8 @@ CiMobleAgentDlg::CiMobleAgentDlg(CWnd* pParent /*=NULL*/)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 	m_pCurDlg = NULL;
+	for(int i=0 ;i<MAX_TAB_ITEM; i++)
+		m_pSubDlgs[i] = NULL;
 }
 
 void CiMobleAgentDlg::DoDataExchange(CDataExchange* pDX)
@@ -68,6 +70,8 @@ BEGIN_MESSAGE_MAP(CiMobleAgentDlg, CeExDialog)
 	ON_BN_CLICKED(IDC_BTN_LOGIN, &CiMobleAgentDlg::OnBnClickedBtnLogin)
 	ON_BN_CLICKED(IDC_BTN_NEWPRJ, &CiMobleAgentDlg::OnBnClickedBtnNewprj)
 	ON_BN_CLICKED(IDC_BTN_SETTING, &CiMobleAgentDlg::OnBnClickedBtnSetting)
+	ON_WM_SIZE()
+	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
 
@@ -117,6 +121,7 @@ BOOL CiMobleAgentDlg::OnInitDialog()
 		m_cTabBtns[i] = new CGdipButton	;
 		m_cTabBtns[i]->SubclassDlgItem(btnids[i][0], this);
 		m_cTabBtns[i]->LoadStdImage(btnids[i][1], _T("PNG"));
+		//m_cTabBtns[i]->EnableButton(FALSE);
 	}
 	
 	CREATE_SUB_WND(m_pSubDlgs[LOGIN_TAB],   CLoginDlg, &m_frame);
@@ -126,9 +131,11 @@ BOOL CiMobleAgentDlg::OnInitDialog()
 	CREATE_SUB_WND(m_pSubDlgs[RES_EXP_TAB], CLoginDlg, &m_frame);
 	CREATE_SUB_WND(m_pSubDlgs[SETTING_TAB], CSettingDlg, &m_frame);
 
-	this->SetFullScreen();
 
+
+	ShowWindow(SW_SHOWMAXIMIZED); 
 	SwitchDlg(LOGIN_TAB);
+
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
@@ -193,6 +200,10 @@ void CiMobleAgentDlg::SwitchDlg(int id)
 	if( m_pCurDlg )
 	{
 		m_pCurDlg->ShowWindow(SW_HIDE);
+		CRect r;
+		m_frame.GetWindowRect(r);
+		this->ScreenToClient(r);
+		this->InvalidateRect(r);
 	}
 	m_pCurDlg = m_pSubDlgs[id];
 	m_pCurDlg->ShowWindow(SW_SHOW);
@@ -222,4 +233,59 @@ LRESULT CiMobleAgentDlg::OnLoginState(WPARAM wParam, LPARAM lParam)
 		SwitchDlg(BM_TAB);
 	}
 	return TRUE;
+}
+
+void CiMobleAgentDlg::OnSize(UINT nType, int cx, int cy)
+{
+	CeExDialog::OnSize(nType, cx, cy);
+
+	// TODO: Add your message handler code here
+	CRect rbt, rc;
+	this->GetWindowRect(rc);
+	m_cTabBtns[0]->GetWindowRect(rbt);
+	rbt.MoveToXY(0,2);
+	rbt.OffsetRect(rc.Width()  - rbt.Width()-2, 0);
+	for(int i=MAX_TAB_ITEM-1; i>=0; i--)
+	{
+		m_cTabBtns[i] ->MoveWindow(rbt);
+		rbt.OffsetRect(0-rbt.Width()-2, 0);
+		//m_cTabBtns[i]->EnableButton(FALSE);
+	}
+	rc.top += rbt.bottom+4;
+	rc.InflateRect(-1,-1);
+	m_frame.MoveWindow(rc);
+	rc.OffsetRect(-rc.left,-rc.top);
+	m_pSubDlgs[BM_TAB]->MoveWindow(rc);
+	m_pSubDlgs[RES_EXP_TAB]->MoveWindow(rc);
+
+	CRect r;
+	int tabid[] = {LOGIN_TAB,IMPORT_TAB, EXPORT_TAB, SETTING_TAB};
+	for(int i=0; i<sizeof(tabid)/sizeof(int); i++)
+	{
+		m_pSubDlgs[tabid[i]]->GetWindowRect(r);
+		r.MoveToXY(rc.Width()/2-r.Width()/2, rc.Height()/2 - r.Height()/2 - rbt.Height()/2);
+		m_pSubDlgs[tabid[i]]->MoveWindow(r);
+	}
+	m_frame.GetWindowRect(r);
+	this->ScreenToClient(r);
+	this->InvalidateRect(r);
+}
+
+
+void CiMobleAgentDlg::OnDestroy()
+{
+	for(int i=0 ;i<MAX_TAB_ITEM; i++)
+	{
+		if( m_pSubDlgs[i] && ::IsWindow(m_pSubDlgs[i]->GetSafeHwnd() ) )
+		{
+			m_pSubDlgs[i]->DestroyWindow();
+			delete m_pSubDlgs[i];
+			m_pSubDlgs[i] = NULL;
+		}
+		delete m_cTabBtns[i];
+
+	}
+	CeExDialog::OnDestroy();
+
+	// TODO: Add your message handler code here
 }

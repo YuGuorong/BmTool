@@ -3,6 +3,7 @@
 #include "ExDialog.h"
 #include "MetaDlg.h"
 #include "afxwin.h"
+#include "afxcmn.h"
 // CBMDlg dialog
 
 class CBMDlg : public CExDialog
@@ -25,4 +26,9 @@ protected:
 public:
 	virtual BOOL OnInitDialog();
 	CStatic m_FrameMeta;
+	afx_msg void OnSize(UINT nType, int cx, int cy);
+	CTreeCtrl m_trMeta;
+	CTreeCtrl m_trDir;
+	CListCtrl m_listRes;
+	afx_msg void OnDestroy();
 };

@@ -34,6 +34,7 @@ BEGIN_MESSAGE_MAP(CExDialog, CDialogEx)
     ON_WM_DESTROY()
 	ON_WM_CTLCOLOR()
 	ON_WM_PAINT()
+	ON_WM_SIZE()
 END_MESSAGE_MAP()
 
 CExDialog::CExDialog(UINT nIDTemplate,CWnd* pParent /*=NULL*/, INT ex_style)
@@ -304,6 +305,20 @@ void CExDialog::CreatBkBmp()
 	else
 		m_pBkDC->BitBlt(0,0,r.Width(),r.Height(),&tdc,0,0,SRCAND);
 }
+
+void CExDialog::OnSize(UINT nType, int cx, int cy)
+{
+	CDialogEx::OnSize(nType, cx, cy);
+	if( m_pBkDC )
+	{
+		m_pBkDC->DeleteDC();
+		delete m_pBkDC;
+		m_pBkDC = NULL;
+		CreatBkBmp();
+	}
+	// TODO: Add your message handler code here
+}
+
 
 void CExDialog::GetTitleBarHight(void)
 {
@@ -726,5 +741,4 @@ void BaseAppExit()
 		g_pSet = NULL;
 	}
 }
-
 

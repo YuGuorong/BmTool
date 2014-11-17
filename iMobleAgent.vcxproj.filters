@@ -82,6 +82,9 @@
     <None Include="res\skin\setting.png">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="res\ui_base\按钮_on.BMP">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="iMobleAgent.h">
@@ -135,6 +138,9 @@
     <ClInclude Include="MetaDlg.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="UiLib\ControlButton.h">
+      <Filter>Uilib</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="iMobleAgent.cpp">
@@ -175,6 +181,9 @@
     </ClCompile>
     <ClCompile Include="MetaDlg.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="UiLib\ControlButton.cpp">
+      <Filter>Uilib</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

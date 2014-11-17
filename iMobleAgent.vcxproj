@@ -116,6 +116,7 @@
     <None Include="res\ui_base\CloseButton_Hover.bmp" />
     <None Include="res\ui_base\CloseButton_Normal.bmp" />
     <None Include="res\ui_base\cornbutton.bmp" />
+    <None Include="res\ui_base\按钮_on.BMP" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BMDlg.h" />
@@ -128,6 +129,7 @@
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="UiLib\CGdiPlusBitmap.h" />
+    <ClInclude Include="UiLib\ControlButton.h" />
     <ClInclude Include="UiLib\ExDialog.h" />
     <ClInclude Include="UiLib\GdipButton.h" />
     <ClInclude Include="UiLib\Link.h" />
@@ -147,6 +149,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="UiLib\ControlButton.cpp" />
     <ClCompile Include="UiLib\ExDialog.cpp" />
     <ClCompile Include="UiLib\GdipButton.cpp" />
     <ClCompile Include="UiLib\Link.cpp" />

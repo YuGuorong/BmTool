@@ -77,6 +77,13 @@ CGdipButton::CGdipButton()
 
 	m_pToolTip = NULL;
 
+	LOGFONT lf;
+	memset(&lf, 0, sizeof(LOGFONT));
+	lf.lfHeight = 12;
+	lf.lfWeight = FW_NORMAL;
+	lf.lfCharSet =GB2312_CHARSET;
+	_tcscpy_s(lf.lfFaceName , LF_FACESIZE,_T("宋体"));	//华文彩云 ,宋体,华文行楷,黑体
+	m_font.CreateFontIndirect(&lf);	
 }
 
 CGdipButton::~CGdipButton()
@@ -85,6 +92,7 @@ CGdipButton::~CGdipButton()
 	if(m_pAltImage) delete m_pAltImage;
 
 	if(m_pToolTip)	delete m_pToolTip;
+	m_font.DeleteObject();
 }
 
 

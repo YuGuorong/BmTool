@@ -54,7 +54,7 @@ public:
 	BOOL LoadStdImage(UINT id, LPCTSTR pType);
 
 	// if false, disables the press state and uses grayscale image if it exists
-	void EnableButton(BOOL bEnable = TRUE) { m_bIsDisabled = !bEnable; }
+	void EnableButton(BOOL bEnable = TRUE) { m_bIsDisabled = !bEnable; this->EnableWindow(bEnable);}
 
 	// in toggle mode each press toggles between std and alt images
 	void EnableToggle(BOOL bEnable = TRUE);
@@ -84,6 +84,7 @@ protected:
 	BOOL	m_bIsTracking;
 
 	int		m_nCurType;
+	CFont   m_font;
 
 	CGdiPlusBitmapResource* m_pAltImage;
 	CGdiPlusBitmapResource* m_pStdImage;
