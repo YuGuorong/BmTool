@@ -18,16 +18,29 @@ typedef enum
 }META_STYLE;
 
 typedef CWnd * PCWnd;
-typedef struct tag_Setting
+class CMetaDataItem
 {
+public:
 	LPCTSTR  strKey;
 	LPCTSTR  strDefVal;
 	DWORD    style;   /*在设置窗口显示 META_STYLE*/
+	int		 nCtrlID;
 	PCWnd    pWnd[3];
 	CRect    rPos;
 	CImage * pimg;
-	struct tag_Setting * pNext;
-}META_ITEM;
+	CMetaDataItem * pNext;
+public:
+	CMetaDataItem()
+	{ 
+		for(int i=0;i<3;i++) pWnd[i] = NULL;  
+		pimg = NULL; pNext=NULL;
+	};
+	~CMetaDataItem()
+	{
+		for(int i=0; i< 3; i++) { if( pWnd[i] ) { delete pWnd[i]; pWnd[i] = NULL; }} 
+		if(pimg) { pimg->Destroy();delete pimg; pimg = NULL;}		
+	}
+};
 
 #define ITEM_CAPTION_SIZE  120
 #define ITEM_HIGHT         28
@@ -41,12 +54,12 @@ public:
 	virtual ~CMetaDlg();
 public:
 	void CreateTitle(PCWnd * pWnd , LPCTSTR szKey, CRect &r);
-	void CreateItem(PCWnd * pWnd, META_ITEM * pItem, CString &strV, CRect &r,  int nID);
+	void CreateItem( CMetaDataItem * pItem, CString &strV, CRect &r);
 // Dialog Data
 	enum { IDD = IDD_META_DLG };
 
 protected:
-	META_ITEM * m_pItem;
+	CMetaDataItem * m_pItem;
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 	afx_msg void CMetaDlg::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
 
@@ -55,4 +68,5 @@ protected:
 public:
 	virtual BOOL OnInitDialog();
 	afx_msg void OnSize(UINT nType, int cx, int cy);
+	afx_msg void OnDestroy();
 };

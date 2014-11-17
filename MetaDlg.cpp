@@ -30,11 +30,11 @@ void CMetaDlg::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(CMetaDlg, CExDialog)
 	ON_WM_VSCROLL()
 	ON_WM_SIZE()
+	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
 
 // CMetaDlg message handlers
-
 
 BOOL CMetaDlg::OnInitDialog()
 {
@@ -42,7 +42,25 @@ BOOL CMetaDlg::OnInitDialog()
 	CExDialog::OnInitDialog();
 
 	// TODO:  Add extra initialization here
+	CMetaDataItem * pit = new CMetaDataItem();
+	m_pItem = pit;
+	CString str =_T("val ygr");
+	CRect r(0,0, 100,28);
+	pit->nCtrlID = 10311;
+	pit->style = META_READWRITE;
+	pit->strDefVal = _T("test");
+	pit->strKey = _T("caption ygr");
 
+	CreateItem( pit, str, r);
+
+	pit = new CMetaDataItem();
+	m_pItem->pNext = pit;
+	pit->nCtrlID = 10312;
+	pit->style = META_READWRITE;
+	pit->strDefVal = _T("23test");
+	pit->strKey = _T("caption 2");
+
+	CreateItem( pit, str, r);
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
 }
@@ -133,17 +151,17 @@ void CMetaDlg::CreateTitle(PCWnd * pWnd , LPCTSTR szKey, CRect &r)
     r.OffsetRect(ITEM_CAPTION_SIZE,0);
 }
 
-void CMetaDlg::CreateItem(PCWnd * pWnd, META_ITEM * pItem, CString &strV, CRect &r,  int nID)
+void CMetaDlg::CreateItem( CMetaDataItem * pItem, CString &strV, CRect &r  )
 {
-	CreateTitle(pWnd, pItem->strKey, r);
+	CreateTitle(pItem->pWnd, pItem->strKey, r);
 	if( pItem->style & META_COMBOBOX )
 	{
 		CComboBox * pbox = (CComboBox *)new CComboBox;
-        pWnd[1] = pbox;
+		pItem->pWnd[1] = pbox;
 		CRect rb = r;
         rb.bottom += 60;        
 
-        pbox->Create(WS_CHILD|WS_VISIBLE|WS_TABSTOP|WS_BORDER|CBS_DROPDOWNLIST, rb, this,  nID );
+		pbox->Create(WS_CHILD|WS_VISIBLE|WS_TABSTOP|WS_BORDER|CBS_DROPDOWNLIST, rb, this,  pItem->nCtrlID );
         CString str = pItem->strDefVal;
         TCHAR * pn, * ptr = str.GetBuffer(str.GetLength());
         BOOL bfind = FALSE;
@@ -169,6 +187,7 @@ void CMetaDlg::CreateItem(PCWnd * pWnd, META_ITEM * pItem, CString &strV, CRect 
 		pItem->pimg = new CImage;
 		pItem->pimg->Load(pItem->strDefVal);
 		CStatic * pbmp = new CStatic;
+		pItem->pWnd[1] = pbmp;
 		pbmp->Create(_T("my static"), WS_CHILD|WS_VISIBLE|SS_BITMAP, CRect(10,10,150,50), this);
 		pbmp->SetBitmap(pItem->pimg->operator HBITMAP());
 		r.OffsetRect(0, pItem->pimg->GetHeight()-ITEM_HIGHT);	
@@ -178,10 +197,11 @@ void CMetaDlg::CreateItem(PCWnd * pWnd, META_ITEM * pItem, CString &strV, CRect 
 		DWORD dwstyle = WS_CHILD|WS_VISIBLE|WS_TABSTOP|WS_BORDER;
         if( pItem->style & META_PASSWORD )  dwstyle |= ES_PASSWORD;
         if( pItem->style & META_READONLY )  dwstyle |= ES_READONLY;
-        pWnd[1] =(CWnd *)new CEdit;
-        ((CEdit*)pWnd[1])->Create(dwstyle , r, this,  nID );
-        pWnd[1]->ModifyStyleEx(0, WS_EX_CLIENTEDGE ); 
-        pWnd[1]->SetWindowText(strV);
+        CWnd *pWnd =(CWnd *)new CEdit;
+        ((CEdit*)pWnd)->Create(dwstyle , r, this,  pItem->nCtrlID );
+        pWnd->ModifyStyleEx(0, WS_EX_CLIENTEDGE ); 
+        pWnd->SetWindowText(strV);
+		pItem->pWnd[1] = pWnd;
 	}
 	r.OffsetRect(-ITEM_CAPTION_SIZE, ITEM_HIGHT);	 
 }
@@ -190,5 +210,20 @@ void CMetaDlg::OnSize(UINT nType, int cx, int cy)
 {
 	CExDialog::OnSize(nType, cx, cy);
 
+	// TODO: Add your message handler code here
+}
+
+
+void CMetaDlg::OnDestroy()
+{
+	CExDialog::OnDestroy();
+	CMetaDataItem *pit = m_pItem;
+	while( pit )
+	{
+		CMetaDataItem *pn = pit->pNext;
+		delete pit;
+		pit = pn;
+	}
+	m_pItem = NULL;
 	// TODO: Add your message handler code here
 }
