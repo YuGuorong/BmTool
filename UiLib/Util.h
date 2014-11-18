@@ -11,6 +11,25 @@ public:
 	static void DrawGradientFill(CDC * pdc, CRect &r, COLORREF clt, COLORREF cbt, int mode=GRADIENT_FILL_RECT_H);
 };
 
+typedef enum
+{
+    RUN_NORMAL,
+    RUN_SHOW_TIP,
+    RUN_MINISIZE,
+    RUN_EXIT_PROCESS,
+    RUN_SHOW_TIP_YES
+};
+extern int BaseAppInit();
+extern void BaseAppExit();
+class CSetting
+{
+public:
+	CString strCurPath;
+public :
+	CSetting();
+	~CSetting();
+	
+};
 
-
+extern CSetting * g_pSet;
 

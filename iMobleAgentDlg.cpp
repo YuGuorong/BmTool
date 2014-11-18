@@ -123,6 +123,14 @@ BOOL CiMobleAgentDlg::OnInitDialog()
 		m_cTabBtns[i]->LoadStdImage(btnids[i][1], _T("PNG"));
 		//m_cTabBtns[i]->EnableButton(FALSE);
 	}
+	CRect rbt;
+	m_cTabBtns[0]->GetWindowRect(rbt);
+	rbt.MoveToXY(0,2);
+	for(int i=0; i<MAX_TAB_ITEM; i++)
+	{
+		m_cTabBtns[i]->MoveWindow(rbt);
+		rbt.OffsetRect(rbt.Width()+1, 0);
+	}
 	
 	CREATE_SUB_WND(m_pSubDlgs[LOGIN_TAB],   CLoginDlg, &m_frame);
 	CREATE_SUB_WND(m_pSubDlgs[BM_TAB],      CBMDlg,    &m_frame);
@@ -242,16 +250,20 @@ void CiMobleAgentDlg::OnSize(UINT nType, int cx, int cy)
 	// TODO: Add your message handler code here
 	CRect rbt, rc;
 	this->GetWindowRect(rc);
+	this->ScreenToClient(rc);
+	//
+	
 	m_cTabBtns[0]->GetWindowRect(rbt);
 	rbt.MoveToXY(0,2);
+/*	reverse direction
 	rbt.OffsetRect(rc.Width()  - rbt.Width()-2, 0);
 	for(int i=MAX_TAB_ITEM-1; i>=0; i--)
 	{
 		m_cTabBtns[i] ->MoveWindow(rbt);
 		rbt.OffsetRect(0-rbt.Width()-2, 0);
 		//m_cTabBtns[i]->EnableButton(FALSE);
-	}
-	rc.top += rbt.bottom+4;
+	}*/
+	rc.top = rbt.bottom+2;
 	rc.InflateRect(-1,-1);
 	m_frame.MoveWindow(rc);
 	rc.OffsetRect(-rc.left,-rc.top);

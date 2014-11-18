@@ -41,6 +41,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>C:\Program Files (x86)\Visual Leak Detector\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -109,6 +110,7 @@
     <None Include="res\skin\openprj.png" />
     <None Include="res\skin\save.png" />
     <None Include="res\skin\setting.png" />
+    <None Include="res\skin\unshown.bmp" />
     <None Include="res\ui_base\1.BMP" />
     <None Include="res\ui_base\2.BMP" />
     <None Include="res\ui_base\Btn.bmp" />

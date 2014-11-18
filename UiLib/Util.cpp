@@ -1,7 +1,8 @@
 #include "StdAfx.h"
+#include "resource.h"
 #include "Util.h"
 #include <Psapi.h>
- #pragma comment (lib,"Psapi.lib")
+#pragma comment (lib,"Psapi.lib")
 
 CUtil::CUtil(void)
 {
@@ -138,3 +139,104 @@ CSize CUtil::GetBitmapSize(CBitmap &bmp)
 	CSize sz(sbtmp.bmWidth, sbtmp.bmHeight);
 	return sz;
 }
+
+
+
+void ParseCommandLine(CCommandLineInfo& rCmdInfo) 
+{ 
+    for (int i = 1; i < __argc; i++) 
+    { 
+        LPCTSTR pszParam = __targv[i]; 
+        BOOL bFlag = FALSE; 
+        BOOL bLast = ((i + 1) == __argc); 
+        if (pszParam[0] == '-' || pszParam[0] == '/') 
+        { 
+            // remove flag specifier 
+            bFlag = TRUE; 
+            ++pszParam; 
+        } 
+        rCmdInfo.ParseParam(pszParam, bFlag, bLast); 
+    } 
+}
+
+
+BOOL ShowTips()
+{
+    return TRUE;
+}
+
+
+CSetting::CSetting()
+{
+	CUtil::GetCurPath(strCurPath);
+}
+
+CSetting::~CSetting()
+{
+	
+}
+
+CSetting * g_pSet = NULL;
+int BaseAppInit()
+{
+	  // 分析标准外壳命令、DDE、打开文件操作的命令行 
+    CCommandLineInfo cmdInfo; 
+    ParseCommandLine(cmdInfo); 
+
+    switch(cmdInfo.m_nShellCommand)
+    {
+    case RUN_SHOW_TIP:
+        if( ShowTips() )
+            return FALSE;
+        break;
+    case RUN_EXIT_PROCESS:
+        return FALSE;
+    default:
+        break;
+    }
+
+    //创建互斥对象
+    TCHAR strAppName[] = TEXT("eExpressMutex");
+    HANDLE hMutex = NULL;   
+	hMutex = CreateMutex(NULL, FALSE, strAppName);
+	if (hMutex != NULL)
+    {
+		if (GetLastError() == ERROR_ALREADY_EXISTS)
+		{
+			//显示原窗口,关闭互斥对象，退出程序
+            CString strTitle;
+            strTitle.LoadString(IDSTR_VENDOR_APPNAME);
+            HWND hwnd = ::FindWindow(NULL,strTitle);
+			if( hwnd )
+			{
+				::ShowWindow(hwnd,SW_SHOW);
+				::SetForegroundWindow(hwnd);
+			}
+			CloseHandle(hMutex);
+			return (-1);
+        }
+    }
+
+	g_pSet = new CSetting;
+	return 0;
+}
+
+
+void BaseAppExit()
+{
+	if( g_pSet )
+	{
+		delete g_pSet;
+		g_pSet = NULL;
+	}
+}
+
+
+class CSys
+{
+public: 
+	CSys(){};
+	~CSys(){BaseAppExit();};
+};
+
+CSys g_sys;

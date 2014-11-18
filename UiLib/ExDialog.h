@@ -16,16 +16,7 @@
 #define CREATE_SUB_WND(v, cls, parent)  { v = new cls(parent); v->Create(cls::IDD, parent);v->ShowWindow(SW_HIDE);}  
 
 #define WM_SHOWTASK        (WM_USER + 901)
-typedef enum
-{
-    RUN_NORMAL,
-    RUN_SHOW_TIP,
-    RUN_MINISIZE,
-    RUN_EXIT_PROCESS,
-    RUN_SHOW_TIP_YES
-};
-extern int BaseAppInit();
-extern void BaseAppExit();
+
 
 
 // CExDialog dialog
@@ -168,15 +159,5 @@ public:
 
 };
 
-class CSetting
-{
-public:
-	CString strCurPath;
-public :
-	CSetting();
-	~CSetting();
-	
-};
 
-extern CSetting * g_pSet;
 #endif /*_EX_DIALOG_H*/
