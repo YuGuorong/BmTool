@@ -52,7 +52,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\Uilib;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\Uilib;$(ProjectDir)\Lib</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -124,6 +124,9 @@
     <ClInclude Include="BMDlg.h" />
     <ClInclude Include="iMobleAgent.h" />
     <ClInclude Include="iMobleAgentDlg.h" />
+    <ClInclude Include="lib\deelx.h" />
+    <ClInclude Include="lib\md5.h" />
+    <ClInclude Include="lib\sha256.h" />
     <ClInclude Include="LoginDlg.h" />
     <ClInclude Include="MetaDlg.h" />
     <ClInclude Include="Resource.h" />
@@ -131,7 +134,6 @@
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="UiLib\CGdiPlusBitmap.h" />
-    <ClInclude Include="UiLib\ControlButton.h" />
     <ClInclude Include="UiLib\ExDialog.h" />
     <ClInclude Include="UiLib\GdipButton.h" />
     <ClInclude Include="UiLib\Link.h" />
@@ -144,6 +146,8 @@
     <ClCompile Include="BMDlg.cpp" />
     <ClCompile Include="iMobleAgent.cpp" />
     <ClCompile Include="iMobleAgentDlg.cpp" />
+    <ClCompile Include="lib\md5.cpp" />
+    <ClCompile Include="lib\sha256.cpp" />
     <ClCompile Include="LoginDlg.cpp" />
     <ClCompile Include="MetaDlg.cpp" />
     <ClCompile Include="SettingDlg.cpp" />
@@ -151,7 +155,6 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="UiLib\ControlButton.cpp" />
     <ClCompile Include="UiLib\ExDialog.cpp" />
     <ClCompile Include="UiLib\GdipButton.cpp" />
     <ClCompile Include="UiLib\Link.cpp" />

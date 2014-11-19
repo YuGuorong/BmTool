@@ -1,7 +1,8 @@
 #pragma once
-
+#include <map>
 #include "ExDialog.h"
 #include "CGdiPlusBitmap.h"
+
 // CMetaDlg dialog
 #define ITEM_CAPTION_SIZE  120
 #define ITEM_HIGHT         28
@@ -21,25 +22,43 @@ typedef enum
     META_COMBOBOX   = 0x0100,
 	META_PICTURE    = 0x0200,
 	META_DATETIME   = 0x0400,
+	META_MULTLINE   = 0x0800,
 }META_STYLE;
 
 typedef CWnd * PCWnd;
+
+class CMetaExtend
+{
+public:
+	CString strKey;
+	TCHAR * pszMetaDetail;
+	
+public:
+	CMetaExtend(){ pszMetaDetail= NULL;};
+	INT NewExtendItem(CString strFile, CWnd * pParent);
+	~CMetaExtend(){ if(pszMetaDetail) FreePtr(pszMetaDetail);};
+};
+
 class CMetaDataItem
 {
 public:
 	CString  strKey;
+	CString	 strValue;
 	CString  strDefVal;
 	DWORD    style;   /*在设置窗口显示 META_STYLE*/
 	int		 nCtrlID;
 	PCWnd    pWnd[3];
 	CBitmap *pimg;
 	CMetaDataItem * pNext;
+	CMetaExtend   * pExt;
+	INT      nSubIdx;
 public:
 	CMetaDataItem()
 	{ 
+		nSubIdx =-1;
 		nCtrlID = ID_META_CTRL_START;
 		for(int i=0;i<3;i++) pWnd[i] = NULL;  
-		pimg = NULL; pNext=NULL;
+		pimg = NULL; pExt = NULL; pNext=NULL;
 	};
 	~CMetaDataItem()
 	{
@@ -60,15 +79,23 @@ public:
 	CMetaDataItem * NewMetaItem(int style, LPCTSTR szKey, LPCTSTR strDefV);
 	void CreateTitle(PCWnd * pWnd , LPCTSTR szKey, CRect &r);
 	void CreateItem( CMetaDataItem * pItem, LPCTSTR strV, CRect &r);
-	void LoadImage( CMetaDataItem * pItem, LPCTSTR strV, CRect &r);
+	void LoadMetaImage( CMetaDataItem * pItem, LPCTSTR strV, CRect r);
+	INT  LoadMetaData(LPCTSTR szMetaFile);
+	INT  ParseMetaItem(CString &strRawMeta);
+	CMetaExtend *  ParseExtMeta(CString strExt , int &nSubIndex);
+	INT  LoadExtMetaValue(CMetaDataItem * pit, CString &strKey );
 // Dialog Data
 	enum { IDD = IDD_META_DLG };
 	CFont m_ftCaption;
 	CFont m_ftEdit;
-
+	int   m_nMaxCapLen;
 protected:
+	std::map<CString, CMetaExtend *> m_MetaExtMap; 
+
 	CMetaDataItem * m_pItem;
 	CMetaDataItem * GetCtrlItem(int nid);
+	CMetaDataItem * FindSubItem(CMetaDataItem * pit);
+	CMetaDataItem * ChangeSubComboBox(CMetaDataItem * pit);
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 	afx_msg void CMetaDlg::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
 

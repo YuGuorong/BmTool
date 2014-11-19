@@ -105,6 +105,24 @@ HANDLE CUtil::FindProcessByName(LPCTSTR szFileName, BOOL bKill, INT exit_code)
 }
 
 
+void UC2ToUtf8(CString& strGBK) 
+{
+    INT len = WideCharToMultiByte(CP_UTF8, 0, (LPCTSTR)strGBK, -1, NULL, 0, NULL, NULL); 
+    char *szUtf8=new char[len + 1];
+    memset(szUtf8, 0, len + 1);
+    WideCharToMultiByte (CP_UTF8, 0, (LPCTSTR)strGBK, -1, szUtf8, len, NULL,NULL);
+	strGBK = szUtf8;
+    delete[] szUtf8;
+}
+
+void Utf8ToUC2(CString& strUtf8) {
+    int len=MultiByteToWideChar(CP_UTF8, 0, (LPCSTR)(LPCTSTR)strUtf8, -1, NULL,0);
+    WCHAR * wszGBK = new WCHAR[len+1];
+    memset(wszGBK, 0, len * 2 + 2);
+    MultiByteToWideChar(CP_UTF8, 0, (LPCSTR)(LPCTSTR)strUtf8, -1, wszGBK, len);
+    strUtf8 = wszGBK;
+    delete[] wszGBK;
+}
 
 void CUtil::DrawGradientFill(CDC * pdc, CRect &r, COLORREF clt, COLORREF cbt,int fmode)
 {
@@ -140,6 +158,51 @@ CSize CUtil::GetBitmapSize(CBitmap &bmp)
 	return sz;
 }
 
+
+void W2U(const char  * bstr, WCHAR  * wstr,  int lens,int lenw)
+{
+    ::MultiByteToWideChar(CP_UTF8,0,bstr,lens, wstr, lenw);
+}
+
+
+void U2W(LPCTSTR   wstr, char  * bstr,  int lenw,int lens)
+{
+    //USES_CONVERSION;
+    int ret = ::WideCharToMultiByte(CP_UTF8, 0, wstr, -1,bstr, lens,0,0);
+}
+
+
+void QW2U(LPCSTR  astr, CString &wstr)
+{
+    int slen = lstrlenA(astr)+1;
+    WCHAR * pwbuf = wstr.GetBuffer(slen);
+    ::MultiByteToWideChar(CP_UTF8,0,astr,slen, pwbuf, slen);
+    wstr.ReleaseBuffer();
+}
+
+void QU2W(LPCTSTR wstr, AString &astr )
+{
+    int slen = lstrlenW(wstr)+1;
+    char * psbuf = astr.GetBuffer(slen*4);
+    int ret = ::WideCharToMultiByte(CP_UTF8, 0, wstr, slen,psbuf, slen*4,0,0);
+    astr.ReleaseBuffer();
+}
+
+WCHAR* QA2W(LPCSTR astr)
+{
+	int slen = lstrlenA(astr)+1;
+	WCHAR * pwbuf = new WCHAR[slen];
+	::MultiByteToWideChar(CP_ACP,0,astr,slen, pwbuf, slen);
+	return pwbuf;
+}
+
+void QA2W(LPCSTR  astr, CString &wstr)
+{
+    int slen = lstrlenA(astr)+1;
+    WCHAR * pwbuf = wstr.GetBuffer(slen);
+    ::MultiByteToWideChar(CP_ACP,0,astr,slen, pwbuf, slen);
+    wstr.ReleaseBuffer();
+}
 
 
 void ParseCommandLine(CCommandLineInfo& rCmdInfo) 

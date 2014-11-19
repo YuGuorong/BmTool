@@ -7,7 +7,7 @@
 
 #include "Link.h"
 #include "resource.h"
-#include "controlbutton.h"
+//#include "controlbutton.h"
 #include "officexpmenu.h"        // COfficeXPMenu class declaration
 #include "SkinBtn.h"
 #include "Util.h"

@@ -19,6 +19,9 @@
     <Filter Include="Uilib\DgiplusBtn">
       <UniqueIdentifier>{951df9b6-60f3-4eb9-b957-40fe3de02f63}</UniqueIdentifier>
     </Filter>
+    <Filter Include="libs">
+      <UniqueIdentifier>{ccd55565-28b3-40b7-b18a-f7ee697d1c8f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="ReadMe.txt" />
@@ -141,8 +144,14 @@
     <ClInclude Include="MetaDlg.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="UiLib\ControlButton.h">
-      <Filter>Uilib</Filter>
+    <ClInclude Include="lib\md5.h">
+      <Filter>libs</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\sha256.h">
+      <Filter>libs</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\deelx.h">
+      <Filter>libs</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -185,8 +194,11 @@
     <ClCompile Include="MetaDlg.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="UiLib\ControlButton.cpp">
-      <Filter>Uilib</Filter>
+    <ClCompile Include="lib\md5.cpp">
+      <Filter>libs</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\sha256.cpp">
+      <Filter>libs</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
