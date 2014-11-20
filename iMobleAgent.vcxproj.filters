@@ -22,15 +22,12 @@
     <Filter Include="libs">
       <UniqueIdentifier>{ccd55565-28b3-40b7-b18a-f7ee697d1c8f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="libs\zip">
+      <UniqueIdentifier>{68041cab-1ddd-4e77-b176-c690d5360f6a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="ReadMe.txt" />
-    <None Include="res\iMobleAgent.rc2">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="res\iMobleAgent.ico">
-      <Filter>Resource Files</Filter>
-    </None>
     <None Include="res\skin\bk.bmp">
       <Filter>Resource Files</Filter>
     </None>
@@ -91,14 +88,14 @@
     <None Include="res\skin\unshown.bmp">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="res\DirPackge.rc2">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\DirPackge.ico">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="iMobleAgent.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="iMobleAgentDlg.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="stdafx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -153,14 +150,20 @@
     <ClInclude Include="lib\deelx.h">
       <Filter>libs</Filter>
     </ClInclude>
+    <ClInclude Include="lib\XZip\XZip.h">
+      <Filter>libs\zip</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\XZip\XUnzip.h">
+      <Filter>libs\zip</Filter>
+    </ClInclude>
+    <ClInclude Include="DirPackgeDlg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DirPackge.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="iMobleAgent.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="iMobleAgentDlg.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="stdafx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -200,9 +203,21 @@
     <ClCompile Include="lib\sha256.cpp">
       <Filter>libs</Filter>
     </ClCompile>
+    <ClCompile Include="lib\XZip\XUnzip.cpp">
+      <Filter>libs\zip</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\XZip\XZip.cpp">
+      <Filter>libs\zip</Filter>
+    </ClCompile>
+    <ClCompile Include="DirPackgeDlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DirPackge.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="iMobleAgent.rc">
+    <ResourceCompile Include="DirPackge.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>

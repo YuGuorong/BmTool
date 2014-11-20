@@ -14,6 +14,7 @@
     <ProjectGuid>{F255DCDA-7693-4DD6-A94F-5594D6654AAB}</ProjectGuid>
     <RootNamespace>iMobleAgent</RootNamespace>
     <Keyword>MFCProj</Keyword>
+    <ProjectName>DirPackage</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -97,8 +98,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="ReadMe.txt" />
-    <None Include="res\iMobleAgent.ico" />
-    <None Include="res\iMobleAgent.rc2" />
+    <None Include="res\DirPackge.ico" />
+    <None Include="res\DirPackge.rc2" />
     <None Include="res\introduce.bmp" />
     <None Include="res\skin\bk.bmp" />
     <None Include="res\skin\btn.png" />
@@ -122,11 +123,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BMDlg.h" />
-    <ClInclude Include="iMobleAgent.h" />
-    <ClInclude Include="iMobleAgentDlg.h" />
+    <ClInclude Include="DirPackge.h" />
+    <ClInclude Include="DirPackgeDlg.h" />
     <ClInclude Include="lib\deelx.h" />
     <ClInclude Include="lib\md5.h" />
     <ClInclude Include="lib\sha256.h" />
+    <ClInclude Include="lib\XZip\XUnzip.h" />
+    <ClInclude Include="lib\XZip\XZip.h" />
     <ClInclude Include="LoginDlg.h" />
     <ClInclude Include="MetaDlg.h" />
     <ClInclude Include="Resource.h" />
@@ -144,10 +147,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BMDlg.cpp" />
-    <ClCompile Include="iMobleAgent.cpp" />
-    <ClCompile Include="iMobleAgentDlg.cpp" />
+    <ClCompile Include="DirPackge.cpp" />
+    <ClCompile Include="DirPackgeDlg.cpp" />
     <ClCompile Include="lib\md5.cpp" />
     <ClCompile Include="lib\sha256.cpp" />
+    <ClCompile Include="lib\XZip\XUnzip.cpp" />
+    <ClCompile Include="lib\XZip\XZip.cpp" />
     <ClCompile Include="LoginDlg.cpp" />
     <ClCompile Include="MetaDlg.cpp" />
     <ClCompile Include="SettingDlg.cpp" />
@@ -163,7 +168,7 @@
     <ClCompile Include="UiLib\Util.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="iMobleAgent.rc" />
+    <ResourceCompile Include="DirPackge.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

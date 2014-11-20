@@ -2,7 +2,7 @@
 //
 
 #include "stdafx.h"
-#include "iMobleAgent.h"
+#include "DirPackge.h"
 #include "BMDlg.h"
 #include "afxdialogex.h"
 
@@ -46,6 +46,7 @@ BOOL CBMDlg::OnInitDialog()
 	CRect r;
 	m_FrameMeta.GetWindowRect(r);
 	m_FrameMeta.ScreenToClient(r);
+	r.bottom += 100;
 	m_pMetaDlg->MoveWindow(r, FALSE);
 	m_pMetaDlg->ShowWindow(SW_SHOW);
 

@@ -2,7 +2,7 @@
 //
 
 #include "stdafx.h"
-#include "iMobleAgent.h"
+#include "DirPackge.h"
 #include "MetaDlg.h"
 #include "afxdialogex.h"
 using namespace std;
@@ -51,7 +51,7 @@ INT  CMetaExtend::NewExtendItem(CString sFile, CWnd * pParent)
 		pParent->MessageBox(sFile, _T("打开文件失败!"));
 		return -1;
 	}
-	int flen = of.GetLength();
+	int flen = (int)of.GetLength();
 	char * fbuf = new char[flen+1];
 	of.Read(fbuf,flen);
 	of.Close();
@@ -68,7 +68,7 @@ CMetaExtend * CMetaDlg::ParseExtMeta(CString strExt, int &nSubIndex)
 {
 	CMetaExtend * pExt = NULL;
 	CString sFile;  
-	CRegexpT <WCHAR> regexp(_T("\\\"([^\\\"]*)\\\"\\s*(\\d+)"));
+	CRegexpT <WCHAR> regexp(_T("\\\"([^\\\"]*)\\\"\\s*(\\d+)"));//("course.h" 1) match group1, name ,group2 number 
 	MatchResult result = regexp.Match(strExt);
 	if( result.MaxGroupNumber() >= 1 )
 	{
@@ -124,6 +124,8 @@ INT CMetaDlg::ParseMetaItem(CString &strRawMeta )
 			style = META_PICTURE; 
 		else if( str.Find(_T("中文"))>= 0 ) 
 			style = META_READWRITE|META_MULTLINE; 
+		else if( str.Find(_T("时间"))>= 0 ) 
+			style = META_DATETIME; 
 		else if( str.Find(_T("\""))>=0 ) 
 		{
 			pext = ParseExtMeta(str, nSubIndex);
@@ -198,7 +200,7 @@ INT CMetaDlg::LoadMetaData(LPCTSTR szMetaFile)
 {
 	CFile of;
 	if( of.Open(szMetaFile, CFile::modeRead ) == FALSE ) return -1;
-	INT flen = of.GetLength();
+	INT flen = (int)of.GetLength();
 	char *fraw = new char[flen+1];
 	of.Read(fraw, flen);
 	fraw[flen] = 0;
@@ -219,7 +221,7 @@ BOOL CMetaDlg::OnInitDialog()
 	CExDialog::OnInitDialog();
 	LOGFONT lf={0};
 	lf.lfHeight = 16;
-	_tcscpy(lf.lfFaceName, _T("宋体"));
+	_tcscpy_s(lf.lfFaceName, _T("宋体"));
 	
 	VERIFY(m_ftCaption.CreateFontIndirect(&lf));
 	VERIFY(m_ftEdit.CreateFontIndirect(&lf));
@@ -227,7 +229,7 @@ BOOL CMetaDlg::OnInitDialog()
 	if(  LoadMetaData(_T("MetaTable.txt")) > 0 )
 	{
 		//LoadXmlMetaValues();
-		CRect r(0,0, 200,ITEM_HIGHT);
+		CRect r(0,0, 300,ITEM_HIGHT);
 		r.MoveToXY(4,4);	
 		CMetaDataItem * pit = m_pItem;
 		while( pit )
@@ -419,7 +421,7 @@ void CMetaDlg::CreateItem( CMetaDataItem * pItem, LPCTSTR strV, CRect &rs  )
 		rb.top += 1;
         rb.bottom += 60;        
 
-		pbox->Create(WS_CHILD|WS_VISIBLE|WS_TABSTOP|WS_BORDER|CBS_DROPDOWNLIST, rb, /*pItem->pWnd[2]*/this,  pItem->nCtrlID );
+		pbox->Create(WS_CHILD|WS_VISIBLE|WS_TABSTOP|WS_BORDER|CBS_DROPDOWNLIST|WS_VSCROLL, rb, /*pItem->pWnd[2]*/this,  pItem->nCtrlID );
         CString str = pItem->strDefVal;
 		int count = 0;
 		while( AfxExtractSubString(str,pItem->strDefVal,count++, _T('\\')) )
@@ -450,6 +452,7 @@ void CMetaDlg::CreateItem( CMetaDataItem * pItem, LPCTSTR strV, CRect &rs  )
 		CRect rdt(r);
 		rdt.InflateRect(-1,-1);
 		rdt.MoveToXY(1,1);
+		if(rdt.Width()>200) rdt.left = rdt.right-200;
 		pWnd->Create(WS_VISIBLE | WS_CHILD | WS_TABSTOP | DTS_SHOWNONE | DTS_SHORTDATEFORMAT, rdt, pItem->pWnd[2],  pItem->nCtrlID );   
 		pItem->pWnd[1] = pWnd;
 	}

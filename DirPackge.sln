@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.31101.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DirPackage", "iMobleAgent.vcxproj", "{F255DCDA-7693-4DD6-A94F-5594D6654AAB}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F255DCDA-7693-4DD6-A94F-5594D6654AAB}.Debug|Win32.ActiveCfg = Debug|Win32
+		{F255DCDA-7693-4DD6-A94F-5594D6654AAB}.Debug|Win32.Build.0 = Debug|Win32
+		{F255DCDA-7693-4DD6-A94F-5594D6654AAB}.Release|Win32.ActiveCfg = Release|Win32
+		{F255DCDA-7693-4DD6-A94F-5594D6654AAB}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
