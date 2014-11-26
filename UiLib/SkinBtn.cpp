@@ -202,14 +202,6 @@ void CSkinBtn::DrawButton()
 	}
 
 	UINT btst = GetState();
-	if( btst & BST_CHECKED  )
-	{
-		TRACE("CHECKED!\r\n");
-	}
-	else
-		TRACE("UNCHECKED!\r\n");
-
-
 	DrawButtonText(&memDC, rTxt, str, m_fg);
 	dc.BitBlt(rect.left, rect.top, rect.Width(), rect.Height(), &memDC, 0, 0, SRCCOPY);
 

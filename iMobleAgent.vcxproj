@@ -22,13 +22,14 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
     <UseOfMfc>Dynamic</UseOfMfc>
+    <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
-    <UseOfMfc>Dynamic</UseOfMfc>
+    <UseOfMfc>Static</UseOfMfc>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -42,10 +43,13 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>C:\Program Files (x86)\Visual Leak Detector\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)include\;C:\Program Files (x86)\Visual Leak Detector\include;$(IncludePath)</IncludePath>
+    <OutDir>$(SolutionDir)bin\</OutDir>
+    <LibraryPath>C:\Work\ydtech\DirPackge\pdf;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(SolutionDir)bin\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -53,11 +57,14 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\Uilib;$(ProjectDir)\Lib</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)inlcude;$(ProjectDir)\Uilib;$(ProjectDir)\Lib;$(ProjectDir)\include\mupdf</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>libmupdf.lib;libthirdparty.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <IgnoreSpecificDefaultLibraries>
+      </IgnoreSpecificDefaultLibraries>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>
@@ -78,6 +85,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)\Uilib;$(ProjectDir)\Lib</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -132,6 +140,12 @@
     <ClInclude Include="lib\XZip\XZip.h" />
     <ClInclude Include="LoginDlg.h" />
     <ClInclude Include="MetaDlg.h" />
+    <ClInclude Include="PackerProj.h" />
+    <ClInclude Include="PdfReaderDlg.h" />
+    <ClInclude Include="pdf\curl_stream.h" />
+    <ClInclude Include="pdf\pdfapp.h" />
+    <ClInclude Include="ReaderView.h" />
+    <ClInclude Include="ResManDlg.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="SettingDlg.h" />
     <ClInclude Include="stdafx.h" />
@@ -155,6 +169,16 @@
     <ClCompile Include="lib\XZip\XZip.cpp" />
     <ClCompile Include="LoginDlg.cpp" />
     <ClCompile Include="MetaDlg.cpp" />
+    <ClCompile Include="PackerProj.cpp" />
+    <ClCompile Include="PdfReaderDlg.cpp" />
+    <ClCompile Include="pdf\pdfapp.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="pdf\win_main.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="ReaderView.cpp" />
+    <ClCompile Include="ResManDlg.cpp" />
     <ClCompile Include="SettingDlg.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -175,7 +199,7 @@
   </ImportGroup>
   <ProjectExtensions>
     <VisualStudio>
-      <UserProperties RESOURCE_FILE="iMobleAgent.rc" />
+      <UserProperties RESOURCE_FILE="" />
     </VisualStudio>
   </ProjectExtensions>
 </Project>

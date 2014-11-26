@@ -51,6 +51,7 @@ CDirPackgeDlg::CDirPackgeDlg(CWnd* pParent /*=NULL*/)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 	m_pCurDlg = NULL;
+	m_Proj = NULL;
 	for(int i=0 ;i<MAX_TAB_ITEM; i++)
 		m_pSubDlgs[i] = NULL;
 }
@@ -73,6 +74,8 @@ BEGIN_MESSAGE_MAP(CDirPackgeDlg, CeExDialog)
 	ON_WM_SIZE()
 	ON_WM_DESTROY()
 	ON_BN_CLICKED(IDC_BTN_SAVE, &CDirPackgeDlg::OnBnClickedBtnSave)
+	ON_BN_CLICKED(IDC_BTN_EXPLORE, &CDirPackgeDlg::OnBnClickedBtnExplore)
+	ON_BN_CLICKED(IDC_BTN_EXPORT, &CDirPackgeDlg::OnBnClickedBtnExport)
 END_MESSAGE_MAP()
 
 
@@ -138,7 +141,7 @@ BOOL CDirPackgeDlg::OnInitDialog()
 	CREATE_SUB_WND(m_pSubDlgs[BM_TAB],      CBMDlg,    &m_frame);
 	CREATE_SUB_WND(m_pSubDlgs[IMPORT_TAB],  CLoginDlg, &m_frame);
 	CREATE_SUB_WND(m_pSubDlgs[EXPORT_TAB],  CLoginDlg, &m_frame);
-	CREATE_SUB_WND(m_pSubDlgs[RES_EXP_TAB], CLoginDlg, &m_frame);
+	CREATE_SUB_WND(m_pSubDlgs[RES_EXP_TAB], CResManDlg, &m_frame);
 	CREATE_SUB_WND(m_pSubDlgs[SETTING_TAB], CSettingDlg, &m_frame);
 
 
@@ -146,6 +149,8 @@ BOOL CDirPackgeDlg::OnInitDialog()
 	ShowWindow(SW_SHOWMAXIMIZED); 
 	SwitchDlg(LOGIN_TAB);
 
+	m_Proj = new CPackerProj(m_pSubDlgs[BM_TAB]);
+	((CBMDlg*)m_pSubDlgs[BM_TAB])->m_proj = (m_Proj);
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
@@ -227,14 +232,9 @@ void CDirPackgeDlg::OnBnClickedBtnLogin()
 
 void CDirPackgeDlg::OnBnClickedBtnNewprj()
 {
-	CFileDialog fdlg(FALSE);
-	if( fdlg.DoModal() == IDOK)
-	{
-		CString str = fdlg.GetFileName();
-		str = fdlg.GetPathName();
-		::CreateDirectory(str, NULL);
-	}
-	SwitchDlg(BM_TAB);
+	if (m_Proj) 
+		if( m_Proj->CreateProj(NULL) )
+			SwitchDlg(BM_TAB);
 }
 
 
@@ -306,6 +306,7 @@ void CDirPackgeDlg::OnDestroy()
 		delete m_cTabBtns[i];
 
 	}
+	if (m_Proj) FreePtr(m_Proj);
 	CeExDialog::OnDestroy();
 
 	// TODO: Add your message handler code here
@@ -315,4 +316,18 @@ void CDirPackgeDlg::OnDestroy()
 void CDirPackgeDlg::OnBnClickedBtnSave()
 {
 	// TODO: Add your control notification handler code here
+	if (m_Proj) m_Proj->Save();
+}
+
+
+void CDirPackgeDlg::OnBnClickedBtnExplore()
+{
+	SwitchDlg(RES_EXP_TAB);
+}
+
+
+void CDirPackgeDlg::OnBnClickedBtnExport()
+{
+	// TODO:  在此添加控件通知处理程序代码
+	
 }

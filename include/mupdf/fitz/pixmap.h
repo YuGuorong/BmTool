@@ -192,6 +192,15 @@ void fz_clear_pixmap(fz_context *ctx, fz_pixmap *pix);
 void fz_invert_pixmap(fz_context *ctx, fz_pixmap *pix);
 
 /*
+	fz_tint_pixmap: Tint all the pixels in an RGB or Gray pixmap.
+
+	Multiplies all the samples with the input color argument.
+
+	r,g,b: The color to tint with, in 0 to 255 range.
+*/
+void fz_tint_pixmap(fz_context *ctx, fz_pixmap *pix, int r, int g, int b);
+
+/*
 	fz_invert_pixmap: Invert all the pixels in a given rectangle of a
 	pixmap. All components of all pixels in the rectangle are inverted
 	(except alpha, which is unchanged).
@@ -299,5 +308,8 @@ void fz_unpack_tile(fz_pixmap *dst, unsigned char * restrict src, int n, int dep
 	fz_md5_pixmap: Return the md5 digest for a pixmap
 */
 void fz_md5_pixmap(fz_pixmap *pixmap, unsigned char digest[16]);
+
+fz_pixmap *fz_new_pixmap_from_8bpp_data(fz_context *ctx, int x, int y, int w, int h, unsigned char *sp, int span);
+fz_pixmap *fz_new_pixmap_from_1bpp_data(fz_context *ctx, int x, int y, int w, int h, unsigned char *sp, int span);
 
 #endif

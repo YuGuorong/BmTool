@@ -9,11 +9,12 @@ using namespace std;
 
 // CMetaDlg dialog
 
-IMPLEMENT_DYNAMIC(CMetaDlg, CExDialog)
+IMPLEMENT_DYNAMIC(CMetaDlg, CReaderView)
 
 CMetaDlg::CMetaDlg(CWnd* pParent /*=NULL*/)
-	: CExDialog(CMetaDlg::IDD, pParent)
+	: CReaderView( pParent)
 {
+	m_vType = VIEW_META_DATA;
 	m_pItem = NULL ;
 }
 
@@ -22,17 +23,21 @@ CMetaDlg::~CMetaDlg()
 	std::map<CString, CMetaExtend *>::iterator it ;
 	for(it= m_MetaExtMap.begin(); it!= m_MetaExtMap.end(); it++)
 	{
-		FreePtr(it->second);
+		if (it->second)
+		{
+			CMetaExtend * ptr = (CMetaExtend *)it->second;
+			delete ptr;
+		}
 	}
 }
 
 void CMetaDlg::DoDataExchange(CDataExchange* pDX)
 {
-	CExDialog::DoDataExchange(pDX);
+	CReaderView::DoDataExchange(pDX);
 }
 
 
-BEGIN_MESSAGE_MAP(CMetaDlg, CExDialog)
+BEGIN_MESSAGE_MAP(CMetaDlg, CReaderView)
 	ON_WM_VSCROLL()
 	ON_WM_SIZE()
 	ON_WM_DESTROY()
@@ -218,7 +223,7 @@ INT CMetaDlg::LoadMetaData(LPCTSTR szMetaFile)
 BOOL CMetaDlg::OnInitDialog()
 {
 	this->SetWndStyle(0, RGB(255,255,255), RGB(220,220,240));
-	CExDialog::OnInitDialog();
+	CReaderView::OnInitDialog();
 	LOGFONT lf={0};
 	lf.lfHeight = 16;
 	_tcscpy_s(lf.lfFaceName, _T("ËÎÌו"));
@@ -476,7 +481,7 @@ void CMetaDlg::CreateItem( CMetaDataItem * pItem, LPCTSTR strV, CRect &rs  )
 
 void CMetaDlg::OnSize(UINT nType, int cx, int cy)
 {
-	CExDialog::OnSize(nType, cx, cy);
+	CReaderView::OnSize(nType, cx, cy);
 
 	// TODO: Add your message handler code here
 }
@@ -484,7 +489,7 @@ void CMetaDlg::OnSize(UINT nType, int cx, int cy)
 
 void CMetaDlg::OnDestroy()
 {
-	CExDialog::OnDestroy();
+	CReaderView::OnDestroy();
 	CMetaDataItem *pit = m_pItem;
 	while( pit )
 	{
@@ -493,10 +498,8 @@ void CMetaDlg::OnDestroy()
 		{
 			pit->pimg->DeleteObject();
 			FreePtr( pit->pimg);
-		}
-		if( pit->pExt) FreePtr(pit->pExt);
+		}		
 		delete pit;
-
 		pit = pn;
 	}
 	m_pItem = NULL;
@@ -583,3 +586,36 @@ void CMetaDlg::OnPictureClick(UINT id)
 	}
 }
 
+
+INT CMetaDlg::GetItemValue(LPCTSTR ItemCaption, CString &strValue)
+{
+	CMetaDataItem * pit = m_pItem;
+	while(pit)
+	{
+		if (pit->strKey.Compare(ItemCaption) == 0)
+		{
+			pit->pWnd[1]->GetWindowText(strValue);
+			return 1;
+		}
+		pit = pit->pNext;
+	}
+	return 0;
+}
+
+INT  CMetaDlg::SaveMetaData(CPackerProj  * proj)
+{
+	if (g_pSet)
+	{
+		CString strTempXmlFile = g_pSet->strCurPath;
+		strTempXmlFile += _T("metadetail.xml");
+		CStringA saXmlTemp = CUtil::AscFile(strTempXmlFile);
+		if (saXmlTemp.IsEmpty())  return -1;
+		CMetaDataItem * pit = m_pItem;
+		while (pit)
+		{
+			//pit->strKey
+			pit = pit->pNext;
+		}
+	}
+	return 0;
+}

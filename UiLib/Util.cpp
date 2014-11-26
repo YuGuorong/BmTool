@@ -22,7 +22,7 @@ void CUtil::GetCurPath(CString &strPath)
     strPath = strPath.Left(pos+1);
 }
 
-void CUtil::RunProc(LPCTSTR strcmd, LPCTSTR strparam, LPCTSTR strPath)
+HANDLE CUtil::RunProc(LPCTSTR strcmd, LPCTSTR strparam, LPCTSTR strPath)
 {
 	SHELLEXECUTEINFO ShExecInfo = {0};
 	ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
@@ -32,10 +32,11 @@ void CUtil::RunProc(LPCTSTR strcmd, LPCTSTR strparam, LPCTSTR strPath)
 	ShExecInfo.lpFile = strcmd;            
 	ShExecInfo.lpParameters = strparam;    
 	ShExecInfo.lpDirectory = strPath;
-	ShExecInfo.nShow = SW_HIDE;
+	ShExecInfo.nShow = SW_SHOW;
 	ShExecInfo.hInstApp = NULL;      
 	ShellExecuteEx(&ShExecInfo);
-	WaitForSingleObject(ShExecInfo.hProcess,INFINITE);
+	//WaitForSingleObject(ShExecInfo.hProcess,INFINITE);
+	return ShExecInfo.hProcess;
 }
 
 HANDLE CUtil::FindProcessByName(LPCTSTR szFileName, BOOL bKill, INT exit_code)
@@ -156,6 +157,22 @@ CSize CUtil::GetBitmapSize(CBitmap &bmp)
 	bmp.GetBitmap(&sbtmp);
 	CSize sz(sbtmp.bmWidth, sbtmp.bmHeight);
 	return sz;
+}
+
+CStringA CUtil::AscFile(LPCTSTR sfilename)
+{
+	CStringA strAsc;
+	CFile of;
+	if (of.Open(sfilename, CFile::modeRead))
+	{
+		int len = of.GetLength();
+		CHAR * pbuf = strAsc.GetBuffer(len + 1);
+		of.Read(pbuf, len);
+		of.Close();
+		pbuf[len] = 0;
+		strAsc.ReleaseBuffer();
+		return strAsc;
+	}
 }
 
 

@@ -9,6 +9,8 @@
 #include "BMDlg.h"
 #include "afxwin.h"
 #include "SettingDlg.h"
+#include "PackerProj.h"
+#include "ResManDlg.h"
 
 #define MAX_TAB_ITEM   8
 
@@ -41,13 +43,14 @@ public:
 	CDirPackgeDlg(CWnd* pParent = NULL);	// standard constructor
 
 // Dialog Data
-	enum { IDD = IDD_DirPackge_DIALOG };
+	enum { IDD = IDD_DIRPACKGE_DIALOG };
 
 	protected:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV support
 	CExDialog * m_pSubDlgs[MAX_TAB_ITEM];
 	CExDialog * m_pCurDlg;
 	void SwitchDlg(int id);
+	CPackerProj * m_Proj;
 
 // Implementation
 protected:
@@ -70,4 +73,6 @@ public:
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnDestroy();
 	afx_msg void OnBnClickedBtnSave();
+	afx_msg void OnBnClickedBtnExplore();
+	afx_msg void OnBnClickedBtnExport();
 };

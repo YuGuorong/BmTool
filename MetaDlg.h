@@ -1,7 +1,9 @@
 #pragma once
 #include <map>
 #include "ExDialog.h"
+#include "ReaderView.h"
 #include "CGdiPlusBitmap.h"
+#include "PackerProj.h"
 
 // CMetaDlg dialog
 #define ITEM_CAPTION_SIZE  120
@@ -68,7 +70,7 @@ public:
 };
 
 
-class CMetaDlg : public CExDialog
+class CMetaDlg : public CReaderView
 {
 	DECLARE_DYNAMIC(CMetaDlg)
 
@@ -76,6 +78,8 @@ public:
 	CMetaDlg(CWnd* pParent = NULL);   // standard constructor
 	virtual ~CMetaDlg();
 public:
+	INT GetItemValue(LPCTSTR ItemCaption, CString &strValue);
+	INT SaveMetaData(CPackerProj  * proj);
 	CMetaDataItem * NewMetaItem(int style, LPCTSTR szKey, LPCTSTR strDefV);
 	void CreateTitle(PCWnd * pWnd , LPCTSTR szKey, CRect &r);
 	void CreateItem( CMetaDataItem * pItem, LPCTSTR strV, CRect &r);

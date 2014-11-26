@@ -25,6 +25,9 @@
     <Filter Include="libs\zip">
       <UniqueIdentifier>{68041cab-1ddd-4e77-b176-c690d5360f6a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="pdf">
+      <UniqueIdentifier>{d6e16894-d299-467b-9b87-2abf4b8cfa3e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="ReadMe.txt" />
@@ -162,6 +165,24 @@
     <ClInclude Include="DirPackge.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="PackerProj.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ResManDlg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ReaderView.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pdf\curl_stream.h">
+      <Filter>pdf</Filter>
+    </ClInclude>
+    <ClInclude Include="pdf\pdfapp.h">
+      <Filter>pdf</Filter>
+    </ClInclude>
+    <ClInclude Include="PdfReaderDlg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -213,6 +234,24 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="DirPackge.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PackerProj.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ResManDlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ReaderView.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="pdf\pdfapp.c">
+      <Filter>pdf</Filter>
+    </ClCompile>
+    <ClCompile Include="pdf\win_main.c">
+      <Filter>pdf</Filter>
+    </ClCompile>
+    <ClCompile Include="PdfReaderDlg.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
