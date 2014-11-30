@@ -6,44 +6,18 @@
 #include "DirPackge.h"
 #include "DirPackgeDlg.h"
 #include "afxdialogex.h"
+#include "LoginStateDlg.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
 
 
-// CAboutDlg dialog used for App About
-
-class CAboutDlg : public CeExDialog
+CPackerProj * GetPackProj()
 {
-public:
-	CAboutDlg();
-
-// Dialog Data
-	enum { IDD = IDD_ABOUTBOX };
-
-	protected:
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
-
-// Implementation
-protected:
-	DECLARE_MESSAGE_MAP()
-};
-
-CAboutDlg::CAboutDlg() : CeExDialog(CAboutDlg::IDD)
-{
+	CDirPackgeDlg * pdlg = (CDirPackgeDlg *)::AfxGetMainWnd();
+	return pdlg->m_Proj;
 }
-
-void CAboutDlg::DoDataExchange(CDataExchange* pDX)
-{
-	CeExDialog::DoDataExchange(pDX);
-	
-}
-
-BEGIN_MESSAGE_MAP(CAboutDlg, CeExDialog)
-END_MESSAGE_MAP()
-
-
 // CDirPackgeDlg dialog
 
 CDirPackgeDlg::CDirPackgeDlg(CWnd* pParent /*=NULL*/)
@@ -52,6 +26,7 @@ CDirPackgeDlg::CDirPackgeDlg(CWnd* pParent /*=NULL*/)
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 	m_pCurDlg = NULL;
 	m_Proj = NULL;
+	m_LogDlgIdx = 0;
 	for(int i=0 ;i<MAX_TAB_ITEM; i++)
 		m_pSubDlgs[i] = NULL;
 }
@@ -66,7 +41,7 @@ BEGIN_MESSAGE_MAP(CDirPackgeDlg, CeExDialog)
 	ON_WM_SYSCOMMAND()
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
-	ON_MESSAGE(WM_LOGIN_STATE,&CDirPackgeDlg::OnLoginState)		//自定义托盘事件
+	ON_MESSAGE(WM_VIEW_PROJ, &CDirPackgeDlg::OnProjStateChange)		//自定义托盘事件
 	ON_BN_CLICKED(IDC_BTN_EXIT, &CDirPackgeDlg::OnBnClickedBtnExit)
 	ON_BN_CLICKED(IDC_BTN_LOGIN, &CDirPackgeDlg::OnBnClickedBtnLogin)
 	ON_BN_CLICKED(IDC_BTN_NEWPRJ, &CDirPackgeDlg::OnBnClickedBtnNewprj)
@@ -76,6 +51,7 @@ BEGIN_MESSAGE_MAP(CDirPackgeDlg, CeExDialog)
 	ON_BN_CLICKED(IDC_BTN_SAVE, &CDirPackgeDlg::OnBnClickedBtnSave)
 	ON_BN_CLICKED(IDC_BTN_EXPLORE, &CDirPackgeDlg::OnBnClickedBtnExplore)
 	ON_BN_CLICKED(IDC_BTN_EXPORT, &CDirPackgeDlg::OnBnClickedBtnExport)
+	ON_BN_CLICKED(IDC_BTN_OPEN, &CDirPackgeDlg::OnBnClickedBtnOpen)
 END_MESSAGE_MAP()
 
 
@@ -84,6 +60,7 @@ END_MESSAGE_MAP()
 BOOL CDirPackgeDlg::OnInitDialog()
 {
 	SetWndStyle(0,RGB(45,100,217), RGB(18,76,199));
+	m_Proj = new CPackerProj(this);
 	CeExDialog::OnInitDialog();
 	m_BmState = BMST_LOGIN | BMST_OFFLINE;
 
@@ -125,7 +102,7 @@ BOOL CDirPackgeDlg::OnInitDialog()
 	{
 		m_cTabBtns[i] = new CGdipButton	;
 		m_cTabBtns[i]->SubclassDlgItem(btnids[i][0], this);
-		m_cTabBtns[i]->LoadStdImage(btnids[i][1], _T("PNG"));
+		m_cTabBtns[i]->LoadStdImage(btnids[i][1], _T("PNG"));		
 		//m_cTabBtns[i]->EnableButton(FALSE);
 	}
 	CRect rbt;
@@ -137,35 +114,33 @@ BOOL CDirPackgeDlg::OnInitDialog()
 		rbt.OffsetRect(rbt.Width()+1, 0);
 	}
 	
-	CREATE_SUB_WND(m_pSubDlgs[LOGIN_TAB],   CLoginDlg, &m_frame);
+	//CREATE_SUB_WND(m_pSubDlgs[LOGIN_TAB],   CLoginDlg, &m_frame);
 	CREATE_SUB_WND(m_pSubDlgs[BM_TAB],      CBMDlg,    &m_frame);
 	CREATE_SUB_WND(m_pSubDlgs[IMPORT_TAB],  CLoginDlg, &m_frame);
 	CREATE_SUB_WND(m_pSubDlgs[EXPORT_TAB],  CLoginDlg, &m_frame);
 	CREATE_SUB_WND(m_pSubDlgs[RES_EXP_TAB], CResManDlg, &m_frame);
 	CREATE_SUB_WND(m_pSubDlgs[SETTING_TAB], CSettingDlg, &m_frame);
 
+	CREATE_SUB_WND(m_plogDlgs[0], CLoginDlg, &m_frame);
+	CREATE_SUB_WND(m_plogDlgs[1], CLoginStateDlg, &m_frame);
 
+	m_pSubDlgs[LOGIN_TAB] = m_plogDlgs[m_LogDlgIdx];
 
 	ShowWindow(SW_SHOWMAXIMIZED); 
 	SwitchDlg(LOGIN_TAB);
 
-	m_Proj = new CPackerProj(m_pSubDlgs[BM_TAB]);
+	m_Proj->m_pMetaWnd = m_pSubDlgs[BM_TAB];
 	((CBMDlg*)m_pSubDlgs[BM_TAB])->m_proj = (m_Proj);
+	
+	m_Proj->SetProjStatus(NONE_PROJ);
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
 
 void CDirPackgeDlg::OnSysCommand(UINT nID, LPARAM lParam)
 {
-	if ((nID & 0xFFF0) == IDM_ABOUTBOX)
-	{
-		CAboutDlg dlgAbout;
-		dlgAbout.DoModal();
-	}
-	else
-	{
-		CeExDialog::OnSysCommand(nID, lParam);
-	}
+
+	CeExDialog::OnSysCommand(nID, lParam);
 }
 
 // If you add a minimize button to your dialog, you will need the code below
@@ -209,10 +184,10 @@ void CDirPackgeDlg::OnBnClickedBtnExit()
 	this->EndDialog(IDOK);
 }
 
-
-void CDirPackgeDlg::SwitchDlg(int id)
+void CDirPackgeDlg::SwichDlg(CExDialog * pnew)
 {
-	if( m_pCurDlg )
+	if (m_pCurDlg == pnew) return;
+	if (m_pCurDlg)
 	{
 		m_pCurDlg->ShowWindow(SW_HIDE);
 		CRect r;
@@ -220,33 +195,108 @@ void CDirPackgeDlg::SwitchDlg(int id)
 		this->ScreenToClient(r);
 		this->InvalidateRect(r);
 	}
-	m_pCurDlg = m_pSubDlgs[id];
+	m_pCurDlg = pnew;
 	m_pCurDlg->ShowWindow(SW_SHOW);
+}
+
+
+void CDirPackgeDlg::SwitchDlg(int id)
+{
+	SwichDlg(m_pSubDlgs[id]);	
+}
+
+void CDirPackgeDlg::PopLastWnd(CExDialog * pHideWnd)
+{
+	if (m_wndStack.GetCount())
+	{
+		int last = m_wndStack.GetCount() - 1;
+		CExDialog * pnew = m_wndStack.GetAt(last);
+		SwichDlg(pnew);
+		m_wndStack.RemoveAt(last);
+	}
+}
+
+void CDirPackgeDlg::PushCurWnd()
+{
+	bool bPushed = FALSE;
+	for (int i = 0; i < m_wndStack.GetCount(); i++)
+	{
+		if (m_pCurDlg == m_wndStack[i])
+		{
+			m_wndStack.RemoveAt(i);
+			break;
+		}
+	}
+	m_wndStack.Add(m_pCurDlg);
+
 }
 
 void CDirPackgeDlg::OnBnClickedBtnLogin()
 {
+	PushCurWnd();
 	SwitchDlg(LOGIN_TAB);
 }
 
 
 void CDirPackgeDlg::OnBnClickedBtnNewprj()
 {
-	if (m_Proj) 
-		if( m_Proj->CreateProj(NULL) )
+	m_wndStack.RemoveAll();
+//	if (m_Proj) 
+//		if( m_Proj->CreateProj(NULL) )
 			SwitchDlg(BM_TAB);
 }
 
 
 void CDirPackgeDlg::OnBnClickedBtnSetting()
 {
+	PushCurWnd();
 	SwitchDlg(SETTING_TAB);
 }
 
-LRESULT CDirPackgeDlg::OnLoginState(WPARAM wParam, LPARAM lParam)
+void CDirPackgeDlg::SetWindowStatus(int proj_state)
 {
-	if( wParam == LOGIN_ST_SUCESS )
+	BOOL ben[MAX_TAB_ITEM];
+	memset(ben, 0, sizeof(ben));
+	ben[SETTING_TAB] = TRUE;
+	ben[BTN_EXIT] = TRUE;
+	
+	if (proj_state & NONE_PROJ)
 	{
+		ben[LOGIN_TAB] = TRUE;
+	}
+	if (proj_state & LOGIN_PROJ)
+	{
+		ben[BM_TAB] = TRUE;
+		ben[IMPORT_TAB] = TRUE;
+		ben[RES_EXP_TAB] = TRUE;
+	}
+	if (proj_state & NEW_PROJ)
+	{
+		ben[BM_TAB] = TRUE;
+		ben[IMPORT_TAB] = TRUE;
+		ben[RES_EXP_TAB] = TRUE;
+		ben[BTN_SAVE] = TRUE;
+		
+	}
+
+	for (int i = 1; i < MAX_TAB_ITEM; i++)
+	{
+		m_cTabBtns[i]->EnableButton(ben[i]);
+	}
+}
+
+LRESULT CDirPackgeDlg::OnProjStateChange(WPARAM wParam, LPARAM lParam)
+{
+	SetWindowStatus(wParam);
+	if (wParam & LOGIN_PROJ)
+	{
+		m_LogDlgIdx = 1;
+		m_pSubDlgs[LOGIN_TAB] = m_plogDlgs[m_LogDlgIdx];
+		CString strinfo;
+		CString strLogTm = m_Proj->m_tmLogin.Format(_T("%Y/%m/%d %H:%M"));
+		strinfo.Format(_T(" %s 登录成功！（登录时间：%s)"), \
+			m_Proj->m_strLoginUser, strLogTm);
+		((CLoginStateDlg*)m_plogDlgs[m_LogDlgIdx])->SetLoginStatuText(strinfo);
 		SwitchDlg(BM_TAB);
 	}
 	return TRUE;
@@ -287,6 +337,10 @@ void CDirPackgeDlg::OnSize(UINT nType, int cx, int cy)
 		r.MoveToXY(rc.Width()/2-r.Width()/2, rc.Height()/2 - r.Height()/2 - rbt.Height()/2);
 		m_pSubDlgs[tabid[i]]->MoveWindow(r);
 	}
+	CExDialog * pwnd = m_plogDlgs[1 - m_LogDlgIdx];
+	pwnd->GetWindowRect(r);
+	r.MoveToXY(rc.Width() / 2 - r.Width() / 2, rc.Height() / 2 - r.Height() / 2 - rbt.Height() / 2);
+	pwnd->MoveWindow(r);
 	m_frame.GetWindowRect(r);
 	this->ScreenToClient(r);
 	this->InvalidateRect(r);
@@ -304,8 +358,11 @@ void CDirPackgeDlg::OnDestroy()
 			m_pSubDlgs[i] = NULL;
 		}
 		delete m_cTabBtns[i];
-
 	}
+
+	m_plogDlgs[1 - m_LogDlgIdx]->DestroyWindow();
+	delete m_plogDlgs[1 - m_LogDlgIdx];
+
 	if (m_Proj) FreePtr(m_Proj);
 	CeExDialog::OnDestroy();
 
@@ -322,6 +379,7 @@ void CDirPackgeDlg::OnBnClickedBtnSave()
 
 void CDirPackgeDlg::OnBnClickedBtnExplore()
 {
+	m_wndStack.RemoveAll();
 	SwitchDlg(RES_EXP_TAB);
 }
 
@@ -330,4 +388,29 @@ void CDirPackgeDlg::OnBnClickedBtnExport()
 {
 	// TODO:  在此添加控件通知处理程序代码
 	
+}
+
+void InvalidateMainRect()
+{
+	CDirPackgeDlg * pwnd = (CDirPackgeDlg*)::AfxGetMainWnd();
+	CRect r;
+	pwnd->m_pCurDlg->GetWindowRect(r);
+	pwnd->ScreenToClient(r);
+	pwnd->m_pCurDlg->ShowWindow(SW_HIDE);
+	pwnd->Invalidate();
+	pwnd->UpdateWindow();
+	pwnd->m_pCurDlg->ShowWindow(SW_SHOW);
+
+}
+
+void SwitchBackDlg(CWnd * pwndHide)
+{
+	CDirPackgeDlg * pwnd = (CDirPackgeDlg*)::AfxGetMainWnd();
+	pwnd->PopLastWnd((CExDialog*)pwndHide);
+}
+
+
+void CDirPackgeDlg::OnBnClickedBtnOpen()
+{
+	// TODO:  在此添加控件通知处理程序代码
 }

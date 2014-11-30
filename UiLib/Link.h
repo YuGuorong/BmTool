@@ -73,10 +73,12 @@ public:
     virtual ~CLink();
 
 public:
-
+	void SetWhiteFontMode();
+	void SetFontStyle(CFont * pfont, COLORREF clrTxt);
     void SetToolTipText(CString str);
     void SetLinkCursor(HCURSOR hCursor);
     void SetDefaultCursor();
+	CFont m_lkFont;
 
     //{{AFX_VIRTUAL(CLink)
 	public:

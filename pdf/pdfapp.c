@@ -27,7 +27,7 @@ enum
 
 static void pdfapp_showpage(pdfapp_t *app, int loadpage, int drawpage, int repaint, int transition, int searching);
 static void pdfapp_updatepage(pdfapp_t *app);
-
+static cb_apppdf_page_change  g_event_page_change = NULL;
 static const int zoomlist[] = { 18, 24, 36, 54, 72, 96, 120, 144, 180, 216, 288 };
 
 static int zoom_in(int oldres)
@@ -882,6 +882,11 @@ static void pdfapp_showpage(pdfapp_t *app, int loadpage, int drawpage, int repai
 		app->errored = 1;
 		pdfapp_warn(app, "Errors found on page. Page rendering may be incomplete.");
 	}
+	else
+	{
+		if (g_event_page_change)
+			g_event_page_change(app->pageno, app->pagecount);
+	}
 
 	fz_flush_warnings(app->ctx);
 }
@@ -889,6 +894,13 @@ static void pdfapp_showpage(pdfapp_t *app, int loadpage, int drawpage, int repai
 static void pdfapp_gotouri(pdfapp_t *app, char *uri)
 {
 	winopenuri(app, uri);
+}
+
+cb_apppdf_page_change pdfapp_setpage_event(cb_apppdf_page_change *pfnx)
+{
+	cb_apppdf_page_change pold = g_event_page_change;
+	g_event_page_change = pfnx;
+	return pold;
 }
 
 void pdfapp_gotopage(pdfapp_t *app, int number)
@@ -1794,4 +1806,11 @@ void pdfapp_postblit(pdfapp_t *app)
 		/* Completed. */
 		app->in_transit = 0;
 	}
+}
+
+int pdfapp_getpages(pdfapp_t *app, int * cur, int * count)
+{
+	if (count) *count = app->pagecount;
+	if (cur) *cur = app->pageno;
+	return app->pageno;
 }

@@ -114,6 +114,7 @@ INT CMetaDlg::ParseMetaItem(CString &strRawMeta )
 		CMetaExtend *pext = NULL;
 		str.Replace(_T('ги'), _T('('));
 		int istart = 0;
+		str.Remove(_T('\r'));
 		CString strCap = str.Tokenize(_T("("),istart);
 		str.Delete(0,strCap.GetLength());
 		if( str.Find(_T('\\'))>= 0) 
@@ -520,9 +521,20 @@ CMetaDataItem * CMetaDlg::GetCtrlItem(int nid)
 	return NULL;
 }
 
+
+CMetaDataItem * CMetaDlg::FindNextMetaItem(CMetaDataItem * pit)
+{
+	CMetaDataItem * psub = m_pItem;
+	if (pit == NULL) 
+		return psub;
+	else
+		return pit->pNext;
+}
+
 CMetaDataItem * CMetaDlg::FindSubItem(CMetaDataItem * pit)
 {
 	CMetaDataItem * psub = m_pItem;
+	if (pit == NULL) return psub;
 	while( psub )
 	{
 		if( psub->pExt == pit->pExt ) 
@@ -602,18 +614,38 @@ INT CMetaDlg::GetItemValue(LPCTSTR ItemCaption, CString &strValue)
 	return 0;
 }
 
-INT  CMetaDlg::SaveMetaData(CPackerProj  * proj)
+
+INT  CMetaDlg::SaveMetaData(CPackerProj  * proj, CString &sxml)
 {
 	if (g_pSet)
 	{
-		CString strTempXmlFile = g_pSet->strCurPath;
-		strTempXmlFile += _T("metadetail.xml");
-		CStringA saXmlTemp = CUtil::AscFile(strTempXmlFile);
-		if (saXmlTemp.IsEmpty())  return -1;
+		//CString strTempXmlFile = g_pSet->strCurPath;
+		//strTempXmlFile += _T("metadetail.template");
+		//sxml = CUtil::File2Unc(strTempXmlFile);
+		//if (sxml.IsEmpty())  return -1;
 		CMetaDataItem * pit = m_pItem;
 		while (pit)
 		{
 			//pit->strKey
+			CString strval;
+			if (pit->style & META_COMBOBOX)
+			{
+				CComboBox * pbox = (CComboBox*)(pit->pWnd[1]);
+				int nsel = pbox->GetCurSel();
+				if (nsel >=0 )
+				pbox->GetLBText(nsel, strval);
+			}
+			else if (pit->style & META_PICTURE)
+			{
+			}
+			else
+			{
+				pit->pWnd[1]->GetWindowText(strval);
+			}
+			CString strpos = _T("!&");
+			strpos += pit->strKey;
+			strpos.TrimRight();
+			sxml.Replace(strpos, strval);
 			pit = pit->pNext;
 		}
 	}

@@ -70,4 +70,5 @@ using namespace Gdiplus;
 #pragma comment(lib, "gdiplus.lib")
 using namespace Gdiplus;
 
+void SwitchBackDlg(CWnd * pwndHide);
 #endif

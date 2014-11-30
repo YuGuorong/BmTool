@@ -9,7 +9,11 @@ public:
 	static HANDLE CUtil::RunProc(LPCTSTR strcmd, LPCTSTR strparam, LPCTSTR strPath);
 	static CSize GetBitmapSize(CBitmap &bmp);
 	static void DrawGradientFill(CDC * pdc, CRect &r, COLORREF clt, COLORREF cbt, int mode=GRADIENT_FILL_RECT_H);
-	static CStringA AscFile(LPCTSTR sfilename);
+	static CStringA File2Asc(LPCTSTR sfilename);
+	static CString File2Unc(LPCTSTR sfilename);
+	static HICON GetFileIcon(LPCTSTR sfilename);
+	static HICON GetFileIcon(CFileDialog &fdlg);
+	static void GetGuid(GUID &guid);
 };
 
 #define  AString   CStringA
@@ -35,13 +39,22 @@ class CSetting
 {
 public:
 	CString strCurPath;
+	CString m_strUserName;
+	CString m_strPassword;
+	CString m_strServerIP;
+	INT     m_nPort;
+
 public :
 	CSetting();
 	~CSetting();
+	void Load();
+	void Save();
 	
 };
 
+CString GetReadableSize(UINT32 size);
 #define FreePtr(ptr)  {delete ptr; ptr=NULL;}
 
 extern CSetting * g_pSet;
 
+void HttpPost(LPCTSTR szServer, int nPort, LPCTSTR url, void * postdata, int dlen, CString &strResponse);

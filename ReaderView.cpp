@@ -13,7 +13,7 @@ IMPLEMENT_DYNAMIC(CReaderView, CExDialog)
 CReaderView::CReaderView(CWnd* pParent /*=NULL*/)
 	: CExDialog(CReaderView::IDD, pParent)
 {
-	m_vType = VIEW_UNKNOWN;
+	m_vType = VIEW_EMPTY;
 }
 
 CReaderView::~CReaderView()
@@ -29,21 +29,24 @@ void CReaderView::DoDataExchange(CDataExchange* pDX)
 
 BEGIN_MESSAGE_MAP(CReaderView, CExDialog)
 	ON_WM_DESTROY()
+	ON_STN_CLICKED(IDC_ST_SELECT_BOOK, &CReaderView::OnStnClickedStSelectBook)
 END_MESSAGE_MAP()
 
 
-//// CReaderView 消息处理程序
-void CReaderView::ViewFile(LPCTSTR szpdf)
-{
-
-}
 
 BOOL CReaderView::OnInitDialog()
 {
 	CExDialog::OnInitDialog();
 
 	// TODO:  在此添加额外的初始化
-
+	INT ids[] = { IDC_ST_SELECT_BOOK };
+	COLORREF clrTxt[] = {RGB(0,46,200)};
+	if (SubTextItems(ids, 1, NULL, clrTxt))
+	{
+		CLink * plk = m_atxts.GetAt(m_atxts.GetCount() - 1);
+		HCURSOR hCurHand = LoadCursor(NULL, IDC_HAND);
+		plk->SetLinkCursor(hCurHand);
+	}
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// 异常:  OCX 属性页应返回 FALSE
 }
@@ -53,92 +56,15 @@ void CReaderView::OnDestroy()
 	CExDialog::OnDestroy();
 
 }
-///////////////===================================================================
-//
-// CReaderView 对话框
 
-IMPLEMENT_DYNAMIC(CEpubReaderDlg ,CReaderView)
 
-CEpubReaderDlg::CEpubReaderDlg(CWnd* pParent /*=NULL*/)
-: CReaderView( pParent)
+void CReaderView::OnStnClickedStSelectBook()
 {
-	m_hReadProc = INVALID_HANDLE_VALUE;
-	m_hwdReader = NULL;
-	m_vType = VIEW_EPUB;
-}
-
-CEpubReaderDlg::~CEpubReaderDlg()
-{
-	if (m_hReadProc != INVALID_HANDLE_VALUE)
+	// TODO:  在此添加控件通知处理程序代码
+	CPackerProj * pProj = ::GetPackProj();
+	if (pProj)
 	{
-		TerminateProcess(m_hReadProc, 0);
-		CloseHandle(m_hReadProc);
-		m_hReadProc = INVALID_HANDLE_VALUE;
+		pProj->CreateProj(NULL);
 	}
-}
-
-void CEpubReaderDlg::DoDataExchange(CDataExchange* pDX)
-{
-	CReaderView::DoDataExchange(pDX);
-}
-
-
-BEGIN_MESSAGE_MAP(CEpubReaderDlg,CReaderView)
-	ON_WM_SIZE()
-	ON_WM_DESTROY()
-END_MESSAGE_MAP()
-
-
-//// CReaderView 消息处理程序
-void CEpubReaderDlg::ViewFile(LPCTSTR szpdf)
-{
-	if (g_pSet)
-	{
-		CString strExePath = g_pSet->strCurPath;
-		strExePath += _T("MyReader");
-		CString strExe = strExePath;
-		strExe += _T("\\MyReader.exe");
-		CString strParm;
-		strParm.Format(_T("\"%s\" --parent=%d"), szpdf, (int)(this->GetSafeHwnd()));
-		if (m_hReadProc != INVALID_HANDLE_VALUE)
-		{
-			TerminateProcess(m_hReadProc, 0);
-			CloseHandle(m_hReadProc);
-			m_hReadProc = INVALID_HANDLE_VALUE;
-		}
-		m_hReadProc = CUtil::RunProc(strExe, strParm, strExePath);
-	}
-}
-
-BOOL CEpubReaderDlg::OnInitDialog()
-{
-	CReaderView::OnInitDialog();
-
-	// TODO:  在此添加额外的初始化
-
-	return TRUE;  // return TRUE unless you set the focus to a control
-	// 异常:  OCX 属性页应返回 FALSE
-}
-
-
-void CEpubReaderDlg::OnSize(UINT nType, int cx, int cy)
-{
-	CReaderView::OnSize(nType, cx, cy);
-
-	// TODO:  在此处添加消息处理程序代码
-}
-
-
-void CEpubReaderDlg::OnDestroy()
-{
-	CReaderView::OnDestroy();
-
-	// TODO:  在此处添加消息处理程序代码
-	if (m_hReadProc != INVALID_HANDLE_VALUE)
-	{
-		TerminateProcess(m_hReadProc, 0);
-		CloseHandle(m_hReadProc);
-		m_hReadProc = INVALID_HANDLE_VALUE;
-	}
-
+	
 }

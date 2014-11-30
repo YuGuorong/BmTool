@@ -21,6 +21,9 @@
 #define RES_EXP_TAB 4
 #define SETTING_TAB 5
 
+#define BTN_SAVE    6
+#define BTN_EXIT    7
+
 typedef enum 
 {
 	BMST_LOGIN     = 0x00001,
@@ -41,16 +44,23 @@ class CDirPackgeDlg : public CeExDialog
 // Construction
 public:
 	CDirPackgeDlg(CWnd* pParent = NULL);	// standard constructor
+	CPackerProj * m_Proj;
 
 // Dialog Data
 	enum { IDD = IDD_DIRPACKGE_DIALOG };
+	CArray<CExDialog *, CExDialog *> m_wndStack;
+	CExDialog * m_pCurDlg;
+	void SwichDlg(CExDialog * pnew);
+	void PushCurWnd();
+	void PopLastWnd(CExDialog * pHideWnd);
 
-	protected:
+protected:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV support
 	CExDialog * m_pSubDlgs[MAX_TAB_ITEM];
-	CExDialog * m_pCurDlg;
+	CExDialog * m_plogDlgs[2];
+	INT  m_LogDlgIdx;
 	void SwitchDlg(int id);
-	CPackerProj * m_Proj;
+	void SetWindowStatus(int proj_state);
 
 // Implementation
 protected:
@@ -62,7 +72,7 @@ protected:
 	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
-	afx_msg LRESULT OnLoginState(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnProjStateChange(WPARAM wParam, LPARAM lParam);
 	DECLARE_MESSAGE_MAP()
 public:
 	afx_msg void OnBnClickedBtnExit();
@@ -75,4 +85,7 @@ public:
 	afx_msg void OnBnClickedBtnSave();
 	afx_msg void OnBnClickedBtnExplore();
 	afx_msg void OnBnClickedBtnExport();
+	afx_msg void OnBnClickedBtnOpen();
 };
+
+CPackerProj * GetPackProj();

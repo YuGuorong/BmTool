@@ -28,6 +28,12 @@
     <Filter Include="pdf">
       <UniqueIdentifier>{d6e16894-d299-467b-9b87-2abf4b8cfa3e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\views">
+      <UniqueIdentifier>{cbacd5bd-b382-44ef-9a4e-16f92d8b69bd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\views">
+      <UniqueIdentifier>{ad421ea0-5644-4567-bab1-e37f390076c7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="ReadMe.txt" />
@@ -141,9 +147,6 @@
     <ClInclude Include="SettingDlg.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MetaDlg.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="lib\md5.h">
       <Filter>libs</Filter>
     </ClInclude>
@@ -171,16 +174,31 @@
     <ClInclude Include="ResManDlg.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ReaderView.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="pdf\curl_stream.h">
       <Filter>pdf</Filter>
     </ClInclude>
     <ClInclude Include="pdf\pdfapp.h">
       <Filter>pdf</Filter>
     </ClInclude>
+    <ClInclude Include="MetaDlg.h">
+      <Filter>Header Files\views</Filter>
+    </ClInclude>
     <ClInclude Include="PdfReaderDlg.h">
+      <Filter>Header Files\views</Filter>
+    </ClInclude>
+    <ClInclude Include="ReaderView.h">
+      <Filter>Header Files\views</Filter>
+    </ClInclude>
+    <ClInclude Include="EpubReaderDlg.h">
+      <Filter>Header Files\views</Filter>
+    </ClInclude>
+    <ClInclude Include="UiLib\HeaderCtrlCl.h">
+      <Filter>Uilib</Filter>
+    </ClInclude>
+    <ClInclude Include="UiLib\ListCtrlCl.h">
+      <Filter>Uilib</Filter>
+    </ClInclude>
+    <ClInclude Include="LoginStateDlg.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -215,9 +233,6 @@
     <ClCompile Include="SettingDlg.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="MetaDlg.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="lib\md5.cpp">
       <Filter>libs</Filter>
     </ClCompile>
@@ -242,16 +257,34 @@
     <ClCompile Include="ResManDlg.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ReaderView.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="pdf\pdfapp.c">
       <Filter>pdf</Filter>
     </ClCompile>
     <ClCompile Include="pdf\win_main.c">
       <Filter>pdf</Filter>
     </ClCompile>
+    <ClCompile Include="MetaDlg.cpp">
+      <Filter>Source Files\views</Filter>
+    </ClCompile>
+    <ClCompile Include="ReaderView.cpp">
+      <Filter>Source Files\views</Filter>
+    </ClCompile>
     <ClCompile Include="PdfReaderDlg.cpp">
+      <Filter>Source Files\views</Filter>
+    </ClCompile>
+    <ClCompile Include="EpubReaderDlg.cpp">
+      <Filter>Source Files\views</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\DB.cpp">
+      <Filter>libs</Filter>
+    </ClCompile>
+    <ClCompile Include="UiLib\HeaderCtrlCl.cpp">
+      <Filter>Uilib</Filter>
+    </ClCompile>
+    <ClCompile Include="UiLib\ListCtrlCl.cpp">
+      <Filter>Uilib</Filter>
+    </ClCompile>
+    <ClCompile Include="LoginStateDlg.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -259,5 +292,22 @@
     <ResourceCompile Include="DirPackge.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="res\skin\add.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\skin\remove.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\skin\add_24.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\skin\remove_24.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ui_base\hdr_bk.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>

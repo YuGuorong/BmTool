@@ -47,7 +47,7 @@ void CLCheckBox::OnPaint()
 CLink::CLink()
 : m_bHighLight(FALSE)
 {
-    m_txtColor = RGB(0,0,0);
+    m_txtColor = RGB(0,0,3);
 	m_bHighLight = FALSE;
     m_bOver      = false; 
 	m_bEnTooltip = 1;
@@ -90,6 +90,7 @@ void CLink::PreSubclassWindow()
 	   //m_ToolTip.AddTool(this, _T("test"), rect, TIP_ID);    
    }
     CStatic::PreSubclassWindow();
+	SetWhiteFontMode();
 }
 
 BOOL CLink::Create(LPCTSTR lpszText, DWORD dwStyle,
@@ -109,7 +110,9 @@ BOOL CLink::Create(LPCTSTR lpszText, DWORD dwStyle,
        }
     } 
 	m_bEnTooltip = 0;
+	m_lkFont.CreatePointFont(12, _T("宋体"));
     BOOL ret = CStatic::Create(lpszText,dwStyle,rect,pParentWnd,nID);
+	
     return ret;
 }
 
@@ -234,4 +237,27 @@ void CLink::SetText(LPCTSTR  lpszString)
 void CLink::SetTxtColor(COLORREF clrTxt)
 {
 	m_txtColor = clrTxt;
+}
+
+void CLink::SetFontStyle(CFont * pfont, COLORREF clrTxt)
+{
+	this->SetFont(pfont);
+	SetTxtColor( clrTxt );
+}
+
+void CLink::SetWhiteFontMode()
+{
+	if (m_lkFont.m_hObject == NULL)
+	{
+		LOGFONT lf;
+		memset(&lf, 0, sizeof(LOGFONT));
+		lf.lfHeight = 16;
+		lf.lfWeight = FW_BOLD;//FW_NORMAL;
+		lf.lfCharSet = GB2312_CHARSET;
+		_tcscpy_s(lf.lfFaceName, LF_FACESIZE, _T("黑体"));	//华文彩云 ,宋体,华文行楷,黑体
+		m_lkFont.CreateFontIndirect(&lf);
+		SetTxtColor(RGB(255, 255, 255));
+		//this->HighLight(TRUE);
+		this->SetFont(&m_lkFont, FALSE);
+	}
 }

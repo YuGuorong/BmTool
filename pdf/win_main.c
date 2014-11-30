@@ -539,6 +539,11 @@ void winhelp(pdfapp_t*app)
 		winerror(&gapp, "cannot create help dialog");
 }
 
+#define WM_PDF_PAGE (WM_APP+179)
+int dlgAppPageChangeEvent(int newpg,  int pgcount)
+{
+	PostMessage(hwndframe, WM_PDF_PAGE, newpg, pgcount);
+}
 /*
  * Main window
  */
@@ -546,26 +551,37 @@ void winhelp(pdfapp_t*app)
 void winopen()
 {
 	WNDCLASS wc;
-	HMENU menu;
 	RECT r;
 	ATOM a;
 	
 	/* Create and register window view class */
-	memset(&wc, 0, sizeof(wc));
-	wc.style = CS_HREDRAW | CS_VREDRAW;
-	wc.lpfnWndProc = viewproc;
-	wc.cbClsExtra = 0;
-	wc.cbWndExtra = 0;
-	wc.hInstance = GetModuleHandle(NULL);
-	wc.hIcon = NULL;
-	wc.hCursor = NULL;
-	wc.hbrBackground = NULL;
-	wc.lpszMenuName = NULL;
-	wc.lpszClassName = L"ViewWindow";
-	a = RegisterClassW(&wc);
-	if (!a)
-		winerror(&gapp, "cannot register view window class");
+	if (hwndview == NULL)
+	{
+		memset(&wc, 0, sizeof(wc));
+		wc.style = CS_HREDRAW | CS_VREDRAW;
+		wc.lpfnWndProc = viewproc;
+		wc.cbClsExtra = 0;
+		wc.cbWndExtra = 0;
+		wc.hInstance = GetModuleHandle(NULL);
+		wc.hIcon = NULL;
+		wc.hCursor = NULL;
+		wc.hbrBackground = NULL;
+		wc.lpszMenuName = NULL;
+		wc.lpszClassName = L"ViewWindow";
+		a = RegisterClassW(&wc);
+		if (!a)
+			winerror(&gapp, "cannot register view window class");
 
+		hwndview = CreateWindowW(L"ViewWindow", // window class name
+			NULL,
+			WS_VISIBLE | WS_CHILD | WS_TABSTOP,
+			CW_USEDEFAULT, CW_USEDEFAULT,
+			CW_USEDEFAULT, CW_USEDEFAULT,
+			hwndframe, 0, 0, 0);
+		if (!hwndview)
+			winerror(&gapp, "cannot create view");
+		pdfapp_setpage_event(dlgAppPageChangeEvent);
+	}
 	/* Get screen size */
 	SystemParametersInfo(SPI_GETWORKAREA, 0, &r, 0);
 	gapp.scrw = r.right - r.left;
@@ -594,29 +610,12 @@ void winopen()
 	dibinf->bmiHeader.biClrImportant = 0;
 	dibinf->bmiHeader.biClrUsed = 0;
 
-	hwndview = CreateWindowW(L"ViewWindow", // window class name
-	NULL,
-	WS_VISIBLE | WS_CHILD | WS_TABSTOP,
-	CW_USEDEFAULT, CW_USEDEFAULT,
-	CW_USEDEFAULT, CW_USEDEFAULT,
-	hwndframe, 0, 0, 0);
-	if (!hwndview)
-		winerror(&gapp, "cannot create view");
-
 	hdc = NULL;
-
-	SetWindowTextW(hwndframe, L"MuPDF");
-
-	menu = GetSystemMenu(hwndframe, 0);
-	AppendMenuW(menu, MF_SEPARATOR, 0, NULL);
-	AppendMenuW(menu, MF_STRING, ID_ABOUT, L"About MuPDF...");
-	AppendMenuW(menu, MF_STRING, ID_DOCINFO, L"Document Properties...");
 
 	SetCursor(arrowcurs);
 }
 
-static void
-do_close(pdfapp_t *app)
+static void do_close(pdfapp_t *app)
 {
 	pdfapp_close(app);
 	free(dibinf);
@@ -780,10 +779,10 @@ void winblit()
 void winresize(pdfapp_t *app, int w, int h)
 {
 	ShowWindow(hwndframe, SW_SHOWDEFAULT);
-	w += GetSystemMetrics(SM_CXFRAME) * 2;
-	h += GetSystemMetrics(SM_CYFRAME) * 2;
-	h += GetSystemMetrics(SM_CYCAPTION);
-	SetWindowPos(hwndframe, 0, 0, 0, w, h, SWP_NOZORDER | SWP_NOMOVE);
+	//w += GetSystemMetrics(SM_CXFRAME) * 2;
+	//h += GetSystemMetrics(SM_CYFRAME) * 2;
+	//h += GetSystemMetrics(SM_CYCAPTION);
+	//SetWindowPos(hwndframe, 0, 0, 0, w, h, SWP_NOZORDER | SWP_NOMOVE);
 }
 
 void winrepaint(pdfapp_t *app)
@@ -936,9 +935,17 @@ void handlemouse(int x, int y, int btn, int state)
 void OnPdfFrameSize(HWND hwnd, int wParam)
 {
 	RECT rect;
+	int image_w = fz_pixmap_width(gapp.ctx, gapp.image);
+	int image_h = fz_pixmap_height(gapp.ctx, gapp.image);
+
 	GetClientRect(hwnd, &rect);
-	MoveWindow(hwndview, rect.left, rect.top,
-		rect.right-rect.left, rect.bottom-rect.top, TRUE);
+	int w = rect.right - rect.left;
+	int h = rect.bottom - rect.top;
+	int mgleft = (w > image_w) ? (w - image_w) / 2 : 0;
+	int mgtop = (h > image_h) ? (h - image_h) / 2 : 0;
+	
+	MoveWindow(hwndview, mgleft, mgtop,
+		image_w, image_h, TRUE);
 	if (wParam == SIZE_MAXIMIZED)
 		gapp.shrinkwrap = 0;
 }
@@ -954,6 +961,18 @@ int OnPdfFrameClose(HWND hwnd)
 		return 0;
 	return 1;
 }
+
+int PdfPageInfo(int * pcur, int * pcount)
+{
+	return pdfapp_getpages(&gapp, pcur, pcount);
+}
+
+void PdfGotPage(int pgnum)
+{
+	pdfapp_gotopage(&gapp, pgnum);
+}
+
+
 
 HWND GetViewHand()
 {
@@ -1111,7 +1130,7 @@ HANDLE MfcPdf(HWND hparent, const wchar_t * wfilename )
 	pdfapp_init(ctx, &gapp);
 
 	GetModuleFileNameA(NULL, argv0, sizeof argv0);
-	install_app(argv0);
+	//install_app(argv0);
 	hwndframe = hparent;;
 	winopen();
 
@@ -1128,75 +1147,4 @@ void FreePdf(HANDLE ctx)
 {
 	do_close(&gapp);
 	fz_free_context((fz_context *)ctx);
-}
-
-int WINAPI
-WinMainx(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd)
-{
-	int argc;
-	LPWSTR *argv = CommandLineToArgvW(GetCommandLineW(), &argc);
-	char argv0[256];
-	MSG msg;
-	int code;
-	fz_context *ctx;
-	int arg;
-	int bps = 0;
-
-	ctx = fz_new_context(NULL, NULL, FZ_STORE_DEFAULT);
-	if (!ctx)
-	{
-		fprintf(stderr, "cannot initialise context\n");
-		exit(1);
-	}
-	pdfapp_init(ctx, &gapp);
-
-	GetModuleFileNameA(NULL, argv0, sizeof argv0);
-	install_app(argv0);
-
-	winopen();
-
-	arg = 1;
-	while (arg < argc)
-	{
-		if (!wcscmp(argv[arg], L"-p"))
-		{
-			if (arg+1 < argc)
-				bps = _wtoi(argv[++arg]);
-			else
-				bps = 4096;
-		}
-		else
-			break;
-		arg++;
-	}
-
-	if (arg < argc)
-	{
-		wcscpy(wbuf, argv[arg]);
-	}
-	else
-	{
-		if (!winfilename(wbuf, nelem(wbuf)))
-			exit(0);
-	}
-
-	code = WideCharToMultiByte(CP_UTF8, 0, wbuf, -1, filename, sizeof filename, NULL, NULL);
-	if (code == 0)
-		winerror(&gapp, "cannot convert filename to utf-8");
-
-	if (bps)
-		pdfapp_open_progressive(&gapp, filename, 0, bps);
-	else
-		pdfapp_open(&gapp, filename, 0);
-
-	while (GetMessage(&msg, NULL, 0, 0))
-	{
-		TranslateMessage(&msg);
-		DispatchMessage(&msg);
-	}
-
-	do_close(&gapp);
-	fz_free_context(ctx);
-
-	return 0;
 }

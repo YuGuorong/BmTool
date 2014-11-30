@@ -1,19 +1,8 @@
 #pragma once
 #include "ExDialog.h"
-
+#include "ReaderView.h"
+#include "PackerProj.h"
 // CResManDlg 对话框
-
-class CManifestMan
-{
-public:
-	int AddRes(CString strRes, void * prelation);
-	int Save();
-public:
-	CManifestMan();
-	~CManifestMan();
-};
-
-
 class CResManDlg : public CExDialog
 {
 	DECLARE_DYNAMIC(CResManDlg)
@@ -27,7 +16,8 @@ public:
 
 protected:
 	CSkinBtn * m_pbtns[8];
-
+	CListCtrl  m_listRes;
+	CPackerProj  * m_proj;
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 支持
 
@@ -37,4 +27,10 @@ public:
 	afx_msg void OnDestroy();
 	virtual BOOL OnInitDialog();
 	afx_msg void OnBnClickedBtnLocal();
+	afx_msg void OnShowWindow(BOOL bShow, UINT nStatus);
+	afx_msg void OnBnClickedBtnUpload();
+	afx_msg void OnBnClickedBtnResupload();
+	afx_msg void OnBnClickedBtnSelect();
+	afx_msg void OnBnClickedBtnAdd();
+	afx_msg void OnBnClickedBtnRemove();
 };

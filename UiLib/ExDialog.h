@@ -49,14 +49,14 @@ public:
     INT m_bTransprent;
 	INT m_ExStyle;
 	int m_pop_state;
-    void OnOK(){};   //Avoid ENTER key to exit dialog
+	virtual void OnOK(){};   //Avoid ENTER key to exit dialog
 	int m_TitleHight;
 public:
     DECLARE_MESSAGE_MAP()
 public:
     afx_msg void OnDestroy();
 public:
-    int SubTextItems(const int * pIDs, const int * pstrIDs, const COLORREF * pColors, int nTotals);
+	int SubTextItems(const int * pIDs, int nTotals, const int * pstrIDs, const COLORREF * pColors);
     afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 public:
     virtual BOOL PreTranslateMessage(MSG* pMsg);

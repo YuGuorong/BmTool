@@ -77,9 +77,11 @@ class CMetaDlg : public CReaderView
 public:
 	CMetaDlg(CWnd* pParent = NULL);   // standard constructor
 	virtual ~CMetaDlg();
+
 public:
+	CMetaDataItem * FindNextMetaItem(CMetaDataItem * pit);
 	INT GetItemValue(LPCTSTR ItemCaption, CString &strValue);
-	INT SaveMetaData(CPackerProj  * proj);
+	INT SaveMetaData(CPackerProj  * proj, CString &sxml);
 	CMetaDataItem * NewMetaItem(int style, LPCTSTR szKey, LPCTSTR strDefV);
 	void CreateTitle(PCWnd * pWnd , LPCTSTR szKey, CRect &r);
 	void CreateItem( CMetaDataItem * pItem, LPCTSTR strV, CRect &r);

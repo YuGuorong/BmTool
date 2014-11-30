@@ -37,7 +37,7 @@ CDirPackgeDlgApp theApp;
 
 BOOL CDirPackgeDlgApp::InitInstance()
 {
-
+	SetRegistryKey(_T("Local AppWizard-Generated Applications\\DirPackger"));
 	if( BaseAppInit() < 0 ) return FALSE;
 	// InitCommonControlsEx() is required on Windows XP if an application
 	// manifest specifies use of ComCtl32.dll version 6 or later to enable
@@ -65,8 +65,8 @@ BOOL CDirPackgeDlgApp::InitInstance()
 	// Change the registry key under which our settings are stored
 	// TODO: You should modify this string to be something appropriate
 	// such as the name of your company or organization
-	SetRegistryKey(_T("Local AppWizard-Generated Applications"));
-	
+
+	g_pSet->Load();
 	CDirPackgeDlg dlg;
 	m_pMainWnd = &dlg;
 	INT_PTR nResponse = dlg.DoModal();

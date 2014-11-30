@@ -2,7 +2,6 @@
 #include "ExDialog.h"
 
 // CLoginDlg dialog
-#define WM_LOGIN_STATE    (WM_USER + 312)
 
 #define LOGIN_ST_SUCESS   1
 #define LOGIN_ST_FAIL     2
@@ -30,4 +29,5 @@ public:
 	afx_msg void OnBnClickedButton1();
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	virtual BOOL OnInitDialog();
+	afx_msg void OnBnClickedBtnLogin();
 };

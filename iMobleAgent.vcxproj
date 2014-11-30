@@ -133,12 +133,14 @@
     <ClInclude Include="BMDlg.h" />
     <ClInclude Include="DirPackge.h" />
     <ClInclude Include="DirPackgeDlg.h" />
+    <ClInclude Include="EpubReaderDlg.h" />
     <ClInclude Include="lib\deelx.h" />
     <ClInclude Include="lib\md5.h" />
     <ClInclude Include="lib\sha256.h" />
     <ClInclude Include="lib\XZip\XUnzip.h" />
     <ClInclude Include="lib\XZip\XZip.h" />
     <ClInclude Include="LoginDlg.h" />
+    <ClInclude Include="LoginStateDlg.h" />
     <ClInclude Include="MetaDlg.h" />
     <ClInclude Include="PackerProj.h" />
     <ClInclude Include="PdfReaderDlg.h" />
@@ -153,7 +155,9 @@
     <ClInclude Include="UiLib\CGdiPlusBitmap.h" />
     <ClInclude Include="UiLib\ExDialog.h" />
     <ClInclude Include="UiLib\GdipButton.h" />
+    <ClInclude Include="UiLib\HeaderCtrlCl.h" />
     <ClInclude Include="UiLib\Link.h" />
+    <ClInclude Include="UiLib\ListCtrlCl.h" />
     <ClInclude Include="UiLib\MemDC.h" />
     <ClInclude Include="UiLib\OfficeXPMenu.h" />
     <ClInclude Include="UiLib\SkinBtn.h" />
@@ -163,11 +167,14 @@
     <ClCompile Include="BMDlg.cpp" />
     <ClCompile Include="DirPackge.cpp" />
     <ClCompile Include="DirPackgeDlg.cpp" />
+    <ClCompile Include="EpubReaderDlg.cpp" />
+    <ClCompile Include="lib\DB.cpp" />
     <ClCompile Include="lib\md5.cpp" />
     <ClCompile Include="lib\sha256.cpp" />
     <ClCompile Include="lib\XZip\XUnzip.cpp" />
     <ClCompile Include="lib\XZip\XZip.cpp" />
     <ClCompile Include="LoginDlg.cpp" />
+    <ClCompile Include="LoginStateDlg.cpp" />
     <ClCompile Include="MetaDlg.cpp" />
     <ClCompile Include="PackerProj.cpp" />
     <ClCompile Include="PdfReaderDlg.cpp" />
@@ -186,13 +193,22 @@
     </ClCompile>
     <ClCompile Include="UiLib\ExDialog.cpp" />
     <ClCompile Include="UiLib\GdipButton.cpp" />
+    <ClCompile Include="UiLib\HeaderCtrlCl.cpp" />
     <ClCompile Include="UiLib\Link.cpp" />
+    <ClCompile Include="UiLib\ListCtrlCl.cpp" />
     <ClCompile Include="UiLib\OfficeXPMenu.cpp" />
     <ClCompile Include="UiLib\SkinBtn.cpp" />
     <ClCompile Include="UiLib\Util.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="DirPackge.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="res\skin\add.png" />
+    <Image Include="res\skin\add_24.png" />
+    <Image Include="res\skin\remove.png" />
+    <Image Include="res\skin\remove_24.png" />
+    <Image Include="res\ui_base\hdr_bk.bmp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

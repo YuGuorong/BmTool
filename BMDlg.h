@@ -4,10 +4,11 @@
 #include "MetaDlg.h"
 #include "ReaderView.h"
 #include "PackerProj.h"
+#include "ListCtrlCl.h"
 #include "afxwin.h"
 #include "afxcmn.h"
 // CBMDlg dialog
-
+#define MAX_COLOR_BTNS  6
 
 class CBMDlg : public CExDialog
 {
@@ -20,15 +21,20 @@ public:
 	view_type ChangeView(view_type vtype); //view_type
 	view_type m_cur_view;
 	CPackerProj  * m_proj;
-	CReaderView * GetCurView();
+	CReaderView * GetProjView();
+	void ResOnPageChange();
+	
 // Dialog Data
 	enum { IDD = IDD_BMDLG };
 protected:
 	CReaderView * m_pViews[VIEW_MAX];
-	
+	CGdipButton	*m_cBtns[MAX_COLOR_BTNS];
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
-
+	void MoveCtrlRect(int id, int right, int top, CRect &r);
+	void SaveDirs(CString &sxml);
+	void SaveDirToXml(HTREEITEM  hit, CString &sxml);
+	void InsertRes(CResMan* pRes);
 	DECLARE_MESSAGE_MAP()
 public:
 	virtual BOOL OnInitDialog();
@@ -37,6 +43,16 @@ public:
 	CTreeCtrl m_trMeta;
 	CTreeCtrl m_trDir;
 	CListCtrl m_listRes;
+	
 	afx_msg void OnDestroy();
 	afx_msg LRESULT OnViewProjMsg(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnPdfPageEvent(WPARAM wParam, LPARAM lParam);
+	afx_msg void OnBnClickedBtnAddDir();
+	afx_msg void OnBnClickedBtnRemoveDir();
+	afx_msg void OnNMClickTreeMeta(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnNMClickTreeDir(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnNMDblclkTreeDir(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnBnClickedBtnAddRes();
+	afx_msg void OnBnClickedBtnRemoveRes();
+	afx_msg void OnTvnSelchangedTreeDir(NMHDR *pNMHDR, LRESULT *pResult);
 };

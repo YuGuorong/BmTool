@@ -141,6 +141,7 @@ void pdfapp_open(pdfapp_t *app, char *filename, int reload);
 void pdfapp_open_progressive(pdfapp_t *app, char *filename, int reload, int bps);
 void pdfapp_close(pdfapp_t *app);
 int pdfapp_preclose(pdfapp_t *app);
+int pdfapp_getpages(pdfapp_t *app, int * cur, int * count);
 
 char *pdfapp_version(pdfapp_t *app);
 char *pdfapp_usage(pdfapp_t *app);
@@ -160,4 +161,6 @@ void pdfapp_inverthit(pdfapp_t *app);
 
 void pdfapp_postblit(pdfapp_t *app);
 
+typedef void(*cb_apppdf_page_change)(int newpage, int pagecount);
+cb_apppdf_page_change pdfapp_setpage_event(cb_apppdf_page_change *pfnx);
 #endif

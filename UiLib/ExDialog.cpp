@@ -40,7 +40,6 @@ END_MESSAGE_MAP()
 CExDialog::CExDialog(UINT nIDTemplate,CWnd* pParent /*=NULL*/, INT ex_style)
     : CDialogEx(nIDTemplate, pParent)
 {
-    m_pa_txts = NULL;
     m_pBkDC  = NULL;
 	m_pTitDC = NULL;
     m_bTransprent = 0;
@@ -63,15 +62,6 @@ void CExDialog::SetFullScreen()
 void CExDialog::OnDestroy()
 {
     CDialogEx::OnDestroy();
-    if( m_pa_txts )
-    {
-    	for(int i=0;i<m_nTxtCount;i++)
-        {
-            delete m_pa_txts[i];
-        }
-        delete m_pa_txts;
-        m_pa_txts = NULL;
-    }
     if(m_pBkDC)
     {
         m_pBkDC->DeleteDC();
@@ -100,25 +90,34 @@ void CExDialog::OnDestroy()
     // TODO: Add your message handler code here
 }
 
-int CExDialog::SubTextItems(const int * pIDs, const int * pstrIDs, const COLORREF * pColors, int nTotals)
+int CExDialog::SubTextItems(const int * pIDs, int nTotals, const int * pstrIDs, const COLORREF * pColors)
 {
 
 	m_nTxtCount = nTotals;
-	m_pa_txts = new LP_LINK[m_nTxtCount];
-
+	//m_pa_txts = new LP_LINK[m_nTxtCount];
+	int subs = 0;
     CString strCaption;
 	for(int i=0;i<m_nTxtCount;i++)
 	{
-		m_pa_txts[i] = new CLink;
-		m_pa_txts[i]->SubclassDlgItem(pIDs[i],this);
-		m_pa_txts[i]->SetTxtColor(pColors[i]);
-        if( pstrIDs[i] )
-        {
-            strCaption.LoadString(pstrIDs[i]);
-            m_pa_txts[i]->SetWindowText(strCaption);
-        }
+		CLink * plink = new CLink;
+		if (plink->SubclassDlgItem(pIDs[i], this))
+		{
+			if (pColors)
+				plink->SetTxtColor(pColors[i]);
+			if (pstrIDs && pstrIDs[i])
+			{
+				strCaption.LoadString(pstrIDs[i]);
+				plink->SetWindowText(strCaption);
+			}
+			m_atxts.Add(plink);
+			subs++;
+		}
+		else
+		{
+			delete plink;
+		}
 	}
-    return 0;
+    return subs;
 }
 
 
