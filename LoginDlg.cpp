@@ -91,7 +91,8 @@ INT GetJsonString(CString &sjson, LPCTSTR skey, CString &sval)
 }
 
 #include "PackerProj.h"
-#define DEBUG_LOGIN 
+//#define DEBUG_LOGIN 
+//192.168.1.61  fixopen.xicp.net
 void CLoginDlg::OnBnClickedBtnLogin()
 {//{"state": 200, "sessionId": "12ea2d36e9b638e88887b0081deabeaec11d7bad", "id" : "33542438663913472"}
 	char post_data[64] = ("{\"password\":\"admin\"}");
@@ -108,7 +109,7 @@ void CLoginDlg::OnBnClickedBtnLogin()
 	nLogState = 200;
 #else
 	HttpPost(g_pSet->m_strServerIP, g_pSet->m_nPort, strUrl, pdata, strdata.GetLength(), strResp);
-	int nLogState = 0;
+	nLogState = 0;
 	GetJsonInt(strResp, _T("\"state\""), nLogState);
 #endif	
 	if (nLogState == 200)
@@ -117,10 +118,10 @@ void CLoginDlg::OnBnClickedBtnLogin()
 		proj->m_logState = 1;
 #ifdef DEBUG_LOGIN
 		proj->m_strSession = _T("12ea2d36e9b638e88887b0081deabeaec11d7bad");
-		proj->m_strId = _T("33542438663913472");
+		proj->m_strLogId = _T("33542438663913472");
 #else
 		GetJsonString(strResp, _T("\"sessionId\""), proj->m_strSession);
-		GetJsonString(strResp, _T("\"id\""), proj->m_strId);
+		GetJsonString(strResp, _T("\"id\""), proj->m_strLogId);
 #endif
 		proj->m_strLoginUser = strUser;
 		proj->m_tmLogin = tmlogin;

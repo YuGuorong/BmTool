@@ -12,6 +12,48 @@
 #define new DEBUG_NEW
 #endif
 
+class CAboutDlg : public CExDialog
+{
+public:
+	CAboutDlg();
+
+	// Dialog Data
+	//{{AFX_DATA(CAboutDlg)
+	enum { IDD = IDD_ABOUTBOX };
+	//}}AFX_DATA
+
+	// ClassWizard generated virtual function overrides
+	//{{AFX_VIRTUAL(CAboutDlg)
+protected:
+	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
+	//}}AFX_VIRTUAL
+
+	// Implementation
+protected:
+	//{{AFX_MSG(CAboutDlg)
+	//}}AFX_MSG
+	DECLARE_MESSAGE_MAP()
+};
+
+CAboutDlg::CAboutDlg() : CExDialog(CAboutDlg::IDD)
+{
+	//{{AFX_DATA_INIT(CAboutDlg)
+	//}}AFX_DATA_INIT
+}
+
+void CAboutDlg::DoDataExchange(CDataExchange* pDX)
+{
+	CExDialog::DoDataExchange(pDX);
+	//{{AFX_DATA_MAP(CAboutDlg)
+	//}}AFX_DATA_MAP
+}
+
+BEGIN_MESSAGE_MAP(CAboutDlg, CExDialog)
+	//{{AFX_MSG_MAP(CAboutDlg)
+	// No message handlers
+	//}}AFX_MSG_MAP
+END_MESSAGE_MAP()
+
 
 CPackerProj * GetPackProj()
 {
@@ -139,7 +181,11 @@ BOOL CDirPackgeDlg::OnInitDialog()
 
 void CDirPackgeDlg::OnSysCommand(UINT nID, LPARAM lParam)
 {
-
+	if ((nID & 0xFFF0) == IDM_ABOUTBOX)
+	{
+		CAboutDlg dlgAbout;
+		dlgAbout.DoModal();
+	}
 	CeExDialog::OnSysCommand(nID, lParam);
 }
 
@@ -184,7 +230,7 @@ void CDirPackgeDlg::OnBnClickedBtnExit()
 	this->EndDialog(IDOK);
 }
 
-void CDirPackgeDlg::SwichDlg(CExDialog * pnew)
+void CDirPackgeDlg::SwitchDlg(CExDialog * pnew)
 {
 	if (m_pCurDlg == pnew) return;
 	if (m_pCurDlg)
@@ -202,7 +248,7 @@ void CDirPackgeDlg::SwichDlg(CExDialog * pnew)
 
 void CDirPackgeDlg::SwitchDlg(int id)
 {
-	SwichDlg(m_pSubDlgs[id]);	
+	SwitchDlg(m_pSubDlgs[id]);	
 }
 
 void CDirPackgeDlg::PopLastWnd(CExDialog * pHideWnd)
@@ -211,7 +257,7 @@ void CDirPackgeDlg::PopLastWnd(CExDialog * pHideWnd)
 	{
 		int last = m_wndStack.GetCount() - 1;
 		CExDialog * pnew = m_wndStack.GetAt(last);
-		SwichDlg(pnew);
+		SwitchDlg(pnew);
 		m_wndStack.RemoveAt(last);
 	}
 }
@@ -229,28 +275,6 @@ void CDirPackgeDlg::PushCurWnd()
 	}
 	m_wndStack.Add(m_pCurDlg);
 
-}
-
-void CDirPackgeDlg::OnBnClickedBtnLogin()
-{
-	PushCurWnd();
-	SwitchDlg(LOGIN_TAB);
-}
-
-
-void CDirPackgeDlg::OnBnClickedBtnNewprj()
-{
-	m_wndStack.RemoveAll();
-//	if (m_Proj) 
-//		if( m_Proj->CreateProj(NULL) )
-			SwitchDlg(BM_TAB);
-}
-
-
-void CDirPackgeDlg::OnBnClickedBtnSetting()
-{
-	PushCurWnd();
-	SwitchDlg(SETTING_TAB);
 }
 
 void CDirPackgeDlg::SetWindowStatus(int proj_state)
@@ -293,7 +317,7 @@ LRESULT CDirPackgeDlg::OnProjStateChange(WPARAM wParam, LPARAM lParam)
 		m_LogDlgIdx = 1;
 		m_pSubDlgs[LOGIN_TAB] = m_plogDlgs[m_LogDlgIdx];
 		CString strinfo;
-		CString strLogTm = m_Proj->m_tmLogin.Format(_T("%Y/%m/%d %H:%M"));
+		CString strLogTm = m_Proj->m_tmLogin.Format(TIME_FMT);
 		strinfo.Format(_T(" %s 登录成功！（登录时间：%s)"), \
 			m_Proj->m_strLoginUser, strLogTm);
 		((CLoginStateDlg*)m_plogDlgs[m_LogDlgIdx])->SetLoginStatuText(strinfo);
@@ -369,27 +393,6 @@ void CDirPackgeDlg::OnDestroy()
 	// TODO: Add your message handler code here
 }
 
-
-void CDirPackgeDlg::OnBnClickedBtnSave()
-{
-	// TODO: Add your control notification handler code here
-	if (m_Proj) m_Proj->Save();
-}
-
-
-void CDirPackgeDlg::OnBnClickedBtnExplore()
-{
-	m_wndStack.RemoveAll();
-	SwitchDlg(RES_EXP_TAB);
-}
-
-
-void CDirPackgeDlg::OnBnClickedBtnExport()
-{
-	// TODO:  在此添加控件通知处理程序代码
-	
-}
-
 void InvalidateMainRect()
 {
 	CDirPackgeDlg * pwnd = (CDirPackgeDlg*)::AfxGetMainWnd();
@@ -410,7 +413,67 @@ void SwitchBackDlg(CWnd * pwndHide)
 }
 
 
+void SwitchBackMainDlg()
+{
+	CDirPackgeDlg * pwnd = (CDirPackgeDlg*)::AfxGetMainWnd();
+	pwnd->m_wndStack.RemoveAll();
+	pwnd->SwitchDlg(BM_TAB);
+}
+
+
+
+void CDirPackgeDlg::OnBnClickedBtnLogin()
+{
+	PushCurWnd();
+	SwitchDlg(LOGIN_TAB);
+}
+
+
+void CDirPackgeDlg::OnBnClickedBtnNewprj()
+{
+	if (m_Proj)
+	{
+		if (!m_Proj->m_szProj.IsEmpty())
+		{
+			m_Proj->DestoryProj();
+		}
+		if (m_Proj->CreateProj(NULL));
+	}
+
+}
+
+
+void CDirPackgeDlg::OnBnClickedBtnSetting()
+{
+	PushCurWnd();
+	SwitchDlg(SETTING_TAB);
+}
+
+
 void CDirPackgeDlg::OnBnClickedBtnOpen()
 {
 	// TODO:  在此添加控件通知处理程序代码
+	if (!m_Proj->Open(NULL))
+	{
+	}
+}
+
+
+void CDirPackgeDlg::OnBnClickedBtnSave()
+{
+	// TODO: Add your control notification handler code here
+	if (m_Proj) m_Proj->Save();
+}
+
+
+void CDirPackgeDlg::OnBnClickedBtnExplore()
+{
+	SwitchDlg(RES_EXP_TAB);
+}
+
+
+void CDirPackgeDlg::OnBnClickedBtnExport()
+{
+	// TODO:  在此添加控件通知处理程序代码
+
 }

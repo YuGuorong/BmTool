@@ -28,7 +28,7 @@ void InitDebugFun()
 
 void MyTracex(const char * fmt, ...) 
 {
-    if( g_benDebug)
+    if( 1)//g_benDebug)
     {
         char buf[4096], *p = buf;
         va_list args;

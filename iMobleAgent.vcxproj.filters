@@ -103,6 +103,9 @@
     <None Include="res\DirPackge.ico">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="res\mime1.bin">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -309,5 +312,9 @@
     <Image Include="res\ui_base\hdr_bk.bmp">
       <Filter>Resource Files</Filter>
     </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <Xml Include="..\..\..\Temp\test\ProgressListControl_src\vsTestSrc\res\web.xml" />
+    <Xml Include="res\web.xml" />
   </ItemGroup>
 </Project>

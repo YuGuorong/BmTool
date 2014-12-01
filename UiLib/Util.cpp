@@ -226,13 +226,18 @@ HICON CUtil::GetFileIcon(CFileDialog &fdlg)
 	return hIcon;
 }
 
-
-void  CUtil::GetGuid(GUID &guid)
+CString CUtil::GenGuidString()
 {
-	if (S_OK == ::CoCreateGuid(&guid))
+	CString sguid;
+	GUID guid;
+	HRESULT hResult = CoCreateGuid(&guid);
+	if (S_OK == hResult)
 	{
-
+		CComBSTR bstrGuid(guid);
+		sguid = bstrGuid;
 	}
+	sguid.Remove(_T('-'));
+	return sguid;
 }
 
 
@@ -279,6 +284,27 @@ void QA2W(LPCSTR  astr, CString &wstr)
     WCHAR * pwbuf = wstr.GetBuffer(slen);
     ::MultiByteToWideChar(CP_ACP,0,astr,slen, pwbuf, slen);
     wstr.ReleaseBuffer();
+}
+
+CString ConvertXmlString(CString &str)
+{
+	CString strval = str;
+	strval.Replace(_T("&"), _T("&amp;"));
+	strval.Replace(_T("<"), _T("&lt;"));
+	strval.Replace(_T(">"), _T("&gt;"));
+	strval.Replace(_T("\'"), _T("&apos;"));
+	strval.Replace(_T("\""), _T("&quot;"));
+	return strval;
+}
+
+void ReplaceXmlItem(LPCTSTR szKey, CString &strval, CString &szXml)
+{
+	strval.Replace(_T("&"), _T("&amp;"));
+	strval.Replace(_T("<"), _T("&lt;"));
+	strval.Replace(_T(">"), _T("&gt;"));
+	strval.Replace(_T("\'"), _T("&apos;"));
+	strval.Replace(_T("\""), _T("&quot;"));
+	szXml.Replace(szKey, strval);
 }
 
 int atox(const char *str)
@@ -442,18 +468,7 @@ void BaseAppExit()
 	}
 }
 
-CString GUIDGen()
-{
-	CString sguid;
-	GUID guid;
-	HRESULT hResult = CoCreateGuid(&guid);
-	if (S_OK == hResult)
-	{
-		CComBSTR bstrGuid(guid);
-		sguid = bstrGuid;
-	}
-	return sguid;
-}
+
 
 class CSys
 {
@@ -622,6 +637,112 @@ void HttpPost(LPCTSTR szServer, int nPort, LPCTSTR url, void * postdata, int dle
 	bResult = HttpAddRequestHeaders(hRequest, headerEncoding, -1, HTTP_ADDREQ_FLAG_ADD | HTTP_ADDREQ_FLAG_REPLACE);
 	bResult = HttpAddRequestHeaders(hRequest, headerHost, -1, HTTP_ADDREQ_FLAG_ADD | HTTP_ADDREQ_FLAG_REPLACE);
 	bResult = HttpAddRequestHeaders(hRequest, headerContentType, -1, HTTP_ADDREQ_FLAG_ADD | HTTP_ADDREQ_FLAG_REPLACE);
+	bResult = HttpAddRequestHeaders(hRequest, headerContentLength, -1, HTTP_ADDREQ_FLAG_ADD | HTTP_ADDREQ_FLAG_REPLACE);
+
+	/*=====================================================================
+	// 简单的发送数据的方法，可用来发送少量数据，或提交GET请求
+	//===================================================================*/
+	//bResult = HttpSendRequest(hRequest, NULL, 0, post_data, _tcsclen(post_data));
+
+	/*=====================================================================
+	// 发送大量数据包的方法
+	//===================================================================*/
+	INTERNET_BUFFERS BufferIn = { 0 };
+
+	BufferIn.dwStructSize = sizeof(INTERNET_BUFFERS);
+	BufferIn.dwBufferTotal = dlen;// strlen(post_data);
+
+	bResult = HttpSendRequestEx(hRequest, &BufferIn, NULL, 0, 0);
+
+	DWORD written = 0;
+	bResult = InternetWriteFile(hRequest, (LPVOID)(char *)postdata, dlen, &written);
+
+	bResult = HttpEndRequest(hRequest, NULL, 0, 0);
+	/*=====================================================================
+	// 发送大量数据包结束
+	//===================================================================*/
+
+	LPSTR     lpszData = NULL; // buffer for the data
+	DWORD     dwSize = 0;           // size of the data available
+	DWORD     dwDownloaded = 0; // size of the downloaded data
+
+	// 请求header 的大小，注意这里的bResult 为FALSE
+	bResult = HttpQueryInfo(hRequest, HTTP_QUERY_RAW_HEADERS_CRLF, NULL, &dwSize, NULL);
+
+	// 为接收header 分配内存空间
+	CHAR* lpHeadersA = new CHAR[dwSize];
+
+	// 接收http response 中的header
+	bResult = HttpQueryInfo(hRequest, HTTP_QUERY_RAW_HEADERS_CRLF, (LPVOID)lpHeadersA, &dwSize, NULL);
+
+	strResponse.Empty();
+	CStringA str;
+	// 循环读取数据 
+	do
+	{
+		// 检查在http response 还有多少字节可以读取
+		if (InternetQueryDataAvailable(hRequest, &dwSize, 0, 0))
+		{
+			lpszData = new char[dwSize + 1];
+			// 读取数据
+			if (!InternetReadFile(hRequest, (LPVOID)lpszData, dwSize, &dwDownloaded))
+			{
+				delete[] lpszData;
+				break;
+			}
+			else
+			{
+				if (dwDownloaded)
+				{
+					lpszData[dwDownloaded] = 0;
+					str += lpszData;
+					delete[] lpszData;
+				}
+			}
+		}
+		else
+		{
+			break;
+		}
+	} while (dwDownloaded != 0);
+
+	QA2W(str, strResponse);
+	// 关闭句柄
+	InternetCloseHandle(hRequest);
+	InternetCloseHandle(hSession);
+	InternetCloseHandle(hInternet);
+}
+
+//// 外发的header
+//TCHAR headerLanguage[] = _T("Accept-Language: zh-cn\r\n");
+//TCHAR headerEncoding[] = _T("Accept-Encoding: gzip, deflate\r\n");
+//TCHAR headerContentType[] = _T("Content-Type: application/zip\r\n\r\n");//text/xml
+//
+
+void HttpPostEx(LPCTSTR szServer, int nPort, LPCTSTR url, LPCTSTR szCookies[], int ncookies,\
+			void * postdata, int dlen, CString &strResponse)
+{
+	BOOL bResult = FALSE;
+
+	// 初始化WinInet 环境
+	HINTERNET hInternet = InternetOpen(_T("CEHTTP"), INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, NULL);
+	// 打开http session
+	HINTERNET hSession = InternetConnect(hInternet, szServer, nPort, NULL, NULL, INTERNET_SERVICE_HTTP, 0, 0);
+	// 打开http post 请求的句柄
+	LPCTSTR szAccept[] = { _T("*/*"), NULL };
+	HINTERNET hRequest = HttpOpenRequest(hSession, _T("POST"), url, NULL, NULL, szAccept, INTERNET_FLAG_NO_CACHE_WRITE, 0);
+
+
+	CString headerHost, headerContentLength;
+	headerHost.Format(_T("Host: %s:%d\r\n"), szServer, nPort);
+	headerContentLength.Format(_T("Content-Length: %d\r\n\r\n"), dlen);// strlen(post_data));
+
+	// 添加header 信息
+	for (int i = 0; i < ncookies; i++)
+	{
+		bResult = HttpAddRequestHeaders(hRequest, szCookies[i], -1, HTTP_ADDREQ_FLAG_ADD | HTTP_ADDREQ_FLAG_REPLACE);
+	}
+	bResult = HttpAddRequestHeaders(hRequest, headerHost, -1, HTTP_ADDREQ_FLAG_ADD | HTTP_ADDREQ_FLAG_REPLACE);
 	bResult = HttpAddRequestHeaders(hRequest, headerContentLength, -1, HTTP_ADDREQ_FLAG_ADD | HTTP_ADDREQ_FLAG_REPLACE);
 
 	/*=====================================================================

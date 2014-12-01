@@ -224,35 +224,55 @@ CReaderView * CBMDlg::GetProjView()
 	return NULL; //m_pViews[0]
 }
 
+void EndDirToXml(CString &sxml, int sublevel)
+{
+	CString str;
+	for (int i = 0; i < sublevel; i++)
+		str += _T("\t");
+	sxml += str;
+	sxml += _T("\t</direntry>\r\n");
+}
+
+void CBMDlg::SaveDirToXml(HTREEITEM hit, CString &sxml, int sublevel)
+{
+	CString sdir = m_trDir.GetItemText(hit);
+	UINT32 npg = m_trDir.GetItemData(hit);
+	CString str;
+	for (int i = 0; i < sublevel; i++)
+		str += _T("\t");
+	sxml += str;
+	str.Format(_T("\t<direntry name=\"%s\" pageNo=\"%d\">\r\n"), ConvertXmlString(sdir), npg);
+	sxml += str;
+}
+
 void CBMDlg::SaveDirs(CString &sxml)
 {
 	HTREEITEM hroot = m_trDir.GetRootItem();
-	HTREEITEM hpt = m_trDir.GetNextItem(hroot, TVGN_CHILD);
+	HTREEITEM hpt = hroot;// m_trDir.GetNextItem(hroot, TVGN_CHILD);
+	int sub = 0;
 	while (hpt)
 	{
-		SaveDirToXml(hpt, sxml);
+		SaveDirToXml(hpt, sxml, sub);
 		HTREEITEM hnext = m_trDir.GetNextItem(hpt, TVGN_CHILD);
-		if ( hnext == NULL )
+		if (hnext == NULL)
+		{
 			hnext = m_trDir.GetNextItem(hpt, TVGN_NEXT);
+			EndDirToXml(sxml, sub);
+		}
+		else
+			sub++;
 		while (hnext == NULL)
 		{
+			EndDirToXml(sxml, --sub);
 			hpt = m_trDir.GetNextItem(hpt, TVGN_PARENT);
 			hnext = m_trDir.GetNextItem(hpt, TVGN_NEXT);
-			if (hnext == NULL && hpt == hroot)
+			if (hnext == NULL && (hpt == hroot || hpt == NULL) )
 				return;
 		}
 		hpt = hnext;
 	}
 }
 
-void CBMDlg::SaveDirToXml(HTREEITEM hit, CString &sxml)
-{
-	CString sdir = m_trDir.GetItemText(hit);
-	UINT32 npg = m_trDir.GetItemData(hit);
-	CString str;
-	str.Format(_T("\t<directory name=\"%s\" pageNo=\"%d\"/>\r\n"), sdir, npg);
-	sxml += str;
-}
 
 LRESULT CBMDlg::OnViewProjMsg(WPARAM wParam, LPARAM lParam)
 {
@@ -268,7 +288,7 @@ LRESULT CBMDlg::OnViewProjMsg(WPARAM wParam, LPARAM lParam)
 		GetMetaWnd()->SaveMetaData(m_proj, *pxml);
 		CString  sdir;
 		SaveDirs(sdir);
-		pxml->Replace(_T("!&Ŀ¼"),sdir);
+		pxml->Replace(_T("!&directory"),sdir);
 	}
 	default:
 		break;
@@ -292,7 +312,7 @@ void CBMDlg::InsertRes(CResMan* pRes)
 		LVIS_SELECTED | LVIF_IMAGE, pRes->m_icon_id, 0);
 	CString strsize = GetReadableSize((UINT32)pRes->m_fsize);
 	m_listRes.SetItemText(row, 1, strsize);
-	CString stime = pRes->m_tmCreate.Format(_T("%Y/%m/%d %H:%M"));
+	CString stime = pRes->m_tmCreate.Format(TIME_FMT);
 	m_listRes.SetItemText(row, 2, stime);
 	m_listRes.SetItemText(row, 3, pRes->m_sformat);
 }
@@ -342,10 +362,16 @@ void CBMDlg::OnBnClickedBtnAddDir()
 	{
 		str = m_trDir.GetItemText(hpt);
 		int rx = str.ReverseFind(_T('_'));
+		if (rx == -1)
+			rx = str.GetLength();
 		CString sv = str.Right(str.GetLength() - rx - 1);
 		int idx = _wtoi(sv) + 1;
 		str = str.Left(rx + 1);
-		str.Format(_T("%s%d"), str, idx);
+		if (str.IsEmpty())
+			str = _T("Ŀ¼x");
+		CString strx;
+		strx.Format(_T("%s%d"), str, idx);
+		str = strx;
 	}
 
 	hpt = m_trDir.InsertItem( str, hroot);

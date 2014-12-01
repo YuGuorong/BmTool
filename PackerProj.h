@@ -14,12 +14,12 @@ typedef enum
 }view_type;
 
 typedef enum{
-	NONE_PROJ  = 0x0001,
-	LOGIN_PROJ = 0x0002,
-	NEW_PROJ   = 0x0004,
-	OPEN_PROJ  = 0x0008,
-	SAVE_PROJ  = 0x0010,
-	CLOSE_PROJ = 0x0020,
+	NONE_PROJ     =  0x0001,
+	LOGIN_PROJ    =  0x0002,
+	NEW_PROJ      =  0x0004,
+	OPEN_PROJ     =  0x0008,
+	SAVE_PROJ     =  0x0010,
+	CLOSE_PROJ    =  0x0020,
 };
 
 
@@ -44,11 +44,6 @@ public:
 };
 
 typedef int  RES_RELATION;
-typedef struct tagResId
-{
-	time_t curtime;
-	DWORD  tick;
-}RES_ID;
 
 class CResMan
 {
@@ -59,7 +54,7 @@ public:
 	BOOL SaveRes(CString &strXml);
 public:
 	int    m_icon_id;
-	RES_ID m_id;
+	CString  m_strResId;
 	int    m_type;
 	int    m_subtype;
 	RES_RELATION m_relation;
@@ -76,10 +71,12 @@ public:
 class CPackerProj
 {
 public:
+	CString m_strUuid; //Project uuid
 	CString m_szProj;
 	CString m_szProjPath;
 	CString m_szTarget;
 	CString m_szTargetFileName;
+	CString m_szCoverPath;
 	CString m_szType;
 
 
@@ -90,30 +87,39 @@ public:
 	CString m_strTmCreateSrc;
 	CString m_strTmModifySrc;
 
-	UINT32  m_state;
-	view_type m_type;
+	UINT32  m_ProjState; //project working state, empty ? new ? open? saving?
+	view_type m_type;//project focus view type, epub?pdf?meta?empty_dialog
 
-	CImageList m_imglist;
-	CResMan * m_pRes;
-	CWnd * m_MainWnd;
-	CWnd * m_pMetaWnd;
-	CString m_strSession;
-	CString m_strLoginUser;
-	CTime   m_tmLogin;
-	CString m_strId;//uuid
+	CImageList m_imglist;//image list of resource icon
+	CResMan * m_pRes;  //Resources
+	CWnd * m_pMetaWnd; //Meta input window
+
+	CString m_strSession; //Login session
+	CString m_strLoginUser;//Login user name
+	CTime   m_tmLogin;  //Login time
+	CString m_strLogId;//Login uuid
 	int     m_logState;
-	int     m_ProjState;
-	int     m_nCurPage;
+
+	int     m_nCurPage;  //reader cur page, for resource reference relations
 	int     m_nBookPageCount;
+
+protected:
+	LPCTSTR m_szMimeType; //contend type
+	HGLOBAL m_hG;
 
 public:
 	CPackerProj(CWnd * pParent);
 	~CPackerProj();
 	INT CreateProj(LPCTSTR szTarget);
+	INT DestoryProj();
 	int Save();
 	int Open(LPCTSTR szProj);
 	BOOL ZipRes(LPCTSTR szZipFile);
+	BOOL UnzipProj();
+	BOOL Res2Xml(CString &strResXml);
 	void SetProjStatus(int proj_st);
+	BOOL GetFileType(LPCTSTR szExt, CString &type);
+	BOOL UpLoadProj();	
 };
 
 

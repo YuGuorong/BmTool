@@ -71,4 +71,8 @@ using namespace Gdiplus;
 using namespace Gdiplus;
 
 void SwitchBackDlg(CWnd * pwndHide);
+void SwitchBackMainDlg();
+#define TIME_FMT  _T("%Y-%m-%d %H:%M")
+#define DATE_FMT  _T("yyyy-MM-dd HH:mm")
+#define PROJ_EXT  _T("zip")
 #endif

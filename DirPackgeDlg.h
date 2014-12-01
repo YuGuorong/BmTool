@@ -50,7 +50,8 @@ public:
 	enum { IDD = IDD_DIRPACKGE_DIALOG };
 	CArray<CExDialog *, CExDialog *> m_wndStack;
 	CExDialog * m_pCurDlg;
-	void SwichDlg(CExDialog * pnew);
+	void SwitchDlg(int id);
+	void SwitchDlg(CExDialog * pnew);
 	void PushCurWnd();
 	void PopLastWnd(CExDialog * pHideWnd);
 
@@ -59,7 +60,6 @@ protected:
 	CExDialog * m_pSubDlgs[MAX_TAB_ITEM];
 	CExDialog * m_plogDlgs[2];
 	INT  m_LogDlgIdx;
-	void SwitchDlg(int id);
 	void SetWindowStatus(int proj_state);
 
 // Implementation

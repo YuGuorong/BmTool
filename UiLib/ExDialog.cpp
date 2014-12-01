@@ -186,21 +186,18 @@ BOOL CExDialog::PreTranslateMessage(MSG* pMsg)
     return CDialogEx::PreTranslateMessage(pMsg);
 }
 
-
 HBRUSH CExDialog::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 {
 	HBRUSH hbr = CDialogEx::OnCtlColor(pDC, pWnd, nCtlColor);
 
-
-	if((nCtlColor == CTLCOLOR_EDIT) )
+	DWORD sty = pWnd->GetStyle();
+	if( (sty & (ES_WANTRETURN | ES_MULTILINE)) != (ES_WANTRETURN| ES_MULTILINE))
 	{
-		pDC->SetBkMode(TRANSPARENT); //设置背景透明，这样，输出字符的时候就
-		//是所谓的空心字，而不是有白的底色
-		//pDC->SetTextColor(RGB(255,0,0)); //改变字体的颜色
-	
-		//return HBRUSH(GetStockObject(HOLLOW_BRUSH));
+		if ((nCtlColor == CTLCOLOR_EDIT)) //edit 透明？？？ ES_MULTILINE 透明刷新有问题
+		{
+			pDC->SetBkMode(TRANSPARENT); //设置背景透明，这样，输出字符的时候就
+		}
 	}
-	// TODO:  Change any attributes of the DC here
 
 	// TODO:  Return a different brush if the default is not desired
 	return hbr;

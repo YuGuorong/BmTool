@@ -50,7 +50,7 @@ END_MESSAGE_MAP()
 INT  CMetaExtend::NewExtendItem(CString sFile, CWnd * pParent)
 {
 	CFile of ;
-	if( !of.Open(sFile, CFile::modeRead) )
+	if (!of.Open(sFile, CFile::modeRead | CFile::shareDenyNone))
 	{
 		sFile.Format(_T("找不到元数据文件: %s ") , sFile);
 		pParent->MessageBox(sFile, _T("打开文件失败!"));
@@ -205,7 +205,7 @@ INT  CMetaDlg::LoadExtMetaValue(CMetaDataItem * pit, CString &szKeyIn )
 INT CMetaDlg::LoadMetaData(LPCTSTR szMetaFile)
 {
 	CFile of;
-	if( of.Open(szMetaFile, CFile::modeRead ) == FALSE ) return -1;
+	if (of.Open(szMetaFile, CFile::modeRead | CFile::shareDenyNone) == FALSE) return -1;
 	INT flen = (int)of.GetLength();
 	char *fraw = new char[flen+1];
 	of.Read(fraw, flen);
@@ -460,6 +460,7 @@ void CMetaDlg::CreateItem( CMetaDataItem * pItem, LPCTSTR strV, CRect &rs  )
 		rdt.MoveToXY(1,1);
 		if(rdt.Width()>200) rdt.left = rdt.right-200;
 		pWnd->Create(WS_VISIBLE | WS_CHILD | WS_TABSTOP | DTS_SHOWNONE | DTS_SHORTDATEFORMAT, rdt, pItem->pWnd[2],  pItem->nCtrlID );   
+		pWnd->SetFormat(DATE_FMT);
 		pItem->pWnd[1] = pWnd;
 	}
 	else
@@ -467,7 +468,7 @@ void CMetaDlg::CreateItem( CMetaDataItem * pItem, LPCTSTR strV, CRect &rs  )
 		DWORD dwstyle = WS_CHILD|WS_VISIBLE|WS_TABSTOP|WS_BORDER;
         if( pItem->style & META_PASSWORD )  dwstyle |= ES_PASSWORD;
         if( pItem->style & META_READONLY )  dwstyle |= ES_READONLY;
-		if( pItem->style & META_MULTLINE )  dwstyle |= ES_WANTRETURN|ES_MULTILINE|WS_VSCROLL;
+		if (pItem->style & META_MULTLINE)  dwstyle |= ES_WANTRETURN| WS_VSCROLL | ES_MULTILINE ;
         CWnd *pWnd =(CWnd *)new CEdit;
         ((CEdit*)pWnd)->CreateEx(/*WS_EX_CLIENTEDGE|*/WS_EX_LEFT|ES_AUTOHSCROLL, _T("EDIT"),NULL, dwstyle , r, this,  pItem->nCtrlID );       
         pWnd->SetWindowText(strV);
@@ -593,11 +594,16 @@ void CMetaDlg::OnPictureClick(UINT id)
 				CRect r;
 				pit->pWnd[2]->GetWindowRect(r);
 				LoadMetaImage(pit, dlg.GetPathName(), r);
+				pit->strValue = dlg.GetFileName();
+				if (pit->strKey.Compare(_T("实体封面")) == 0)
+				{
+					::GetPackProj()->m_szCoverPath = dlg.GetPathName();		
+					pit->strValue = _T("__cover.jpg");
+				}
 			}
 		}
 	}
 }
-
 
 INT CMetaDlg::GetItemValue(LPCTSTR ItemCaption, CString &strValue)
 {
@@ -614,15 +620,26 @@ INT CMetaDlg::GetItemValue(LPCTSTR ItemCaption, CString &strValue)
 	return 0;
 }
 
+INT CMetaDlg::SetItemValue(LPCTSTR ItemCaption, LPCTSTR strValue)
+{
+	CMetaDataItem * pit = m_pItem;
+	while (pit)
+	{
+		if (pit->strKey.Compare(ItemCaption) == 0)
+		{
+			pit->pWnd[1]->SetWindowText(strValue);
+			return 1;
+		}
+		pit = pit->pNext;
+	}
+	return 0;
+}
+
 
 INT  CMetaDlg::SaveMetaData(CPackerProj  * proj, CString &sxml)
 {
 	if (g_pSet)
 	{
-		//CString strTempXmlFile = g_pSet->strCurPath;
-		//strTempXmlFile += _T("metadetail.template");
-		//sxml = CUtil::File2Unc(strTempXmlFile);
-		//if (sxml.IsEmpty())  return -1;
 		CMetaDataItem * pit = m_pItem;
 		while (pit)
 		{
@@ -637,6 +654,7 @@ INT  CMetaDlg::SaveMetaData(CPackerProj  * proj, CString &sxml)
 			}
 			else if (pit->style & META_PICTURE)
 			{
+				strval = pit->strValue;
 			}
 			else
 			{
@@ -645,7 +663,7 @@ INT  CMetaDlg::SaveMetaData(CPackerProj  * proj, CString &sxml)
 			CString strpos = _T("!&");
 			strpos += pit->strKey;
 			strpos.TrimRight();
-			sxml.Replace(strpos, strval);
+			sxml.Replace(strpos, ConvertXmlString(strval));
 			pit = pit->pNext;
 		}
 	}

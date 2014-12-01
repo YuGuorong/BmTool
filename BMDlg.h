@@ -33,7 +33,7 @@ protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 	void MoveCtrlRect(int id, int right, int top, CRect &r);
 	void SaveDirs(CString &sxml);
-	void SaveDirToXml(HTREEITEM  hit, CString &sxml);
+	void SaveDirToXml(HTREEITEM  hit, CString &sxml, int sublevel);
 	void InsertRes(CResMan* pRes);
 	DECLARE_MESSAGE_MAP()
 public:

@@ -13,7 +13,7 @@ public:
 	static CString File2Unc(LPCTSTR sfilename);
 	static HICON GetFileIcon(LPCTSTR sfilename);
 	static HICON GetFileIcon(CFileDialog &fdlg);
-	static void GetGuid(GUID &guid);
+	static CString GenGuidString();
 };
 
 #define  AString   CStringA
@@ -58,3 +58,7 @@ CString GetReadableSize(UINT32 size);
 extern CSetting * g_pSet;
 
 void HttpPost(LPCTSTR szServer, int nPort, LPCTSTR url, void * postdata, int dlen, CString &strResponse);
+void HttpPostEx(LPCTSTR szServer, int nPort, LPCTSTR url, LPCTSTR szCookies[], int ncookies, \
+	void * postdata, int dlen, CString &strResponse);
+void ReplaceXmlItem(LPCTSTR szKey, CString &strval, CString &szXml);
+CString ConvertXmlString(CString &strval);
