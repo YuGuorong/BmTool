@@ -3,6 +3,11 @@
 #include "ReaderView.h"
 #include "PackerProj.h"
 // CResManDlg 对话框
+enum
+{
+	TYPE_LOCAL_RES,
+	TYPE_BOOKS_RES
+};
 class CResManDlg : public CExDialog
 {
 	DECLARE_DYNAMIC(CResManDlg)
@@ -13,14 +18,18 @@ public:
 
 // 对话框数据
 	enum { IDD = IDD_RESMAN_DLG };
+	int m_CurResType;
 
 protected:
 	CSkinBtn * m_pbtns[8];
 	CListCtrl  m_listRes;
+	CListCtrl m_listBooks;
 	CPackerProj  * m_proj;
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 支持
-
+	void LoadBooks();
+	void LoadBookResList();
+	BOOL UploadBook(LPCTSTR book);
 	DECLARE_MESSAGE_MAP()
 public:
 	afx_msg void OnSize(UINT nType, int cx, int cy);

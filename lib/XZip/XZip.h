@@ -309,6 +309,7 @@ unsigned int FormatZipMessageZ(ZRESULT code, char *buf,unsigned int len);
 bool IsZipHandleZ(HZIP hz);
 BOOL AddFolderContent(HZIP hZip, TCHAR* AbsolutePath, TCHAR* DirToAdd);
 
+//ZRESULT GetZipSize(HZIP hz, long * lSize);
 #define CreateZip CreateZipZ
 
 #ifdef XUNZIP_H

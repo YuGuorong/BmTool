@@ -103,7 +103,6 @@ typedef struct tag_dlg_item_info
 }DLG_ITEM_INFO;
 
 typedef void (*CloseWndHook)(void);
-extern CString g_strPath;
 
 class CeExDialog : public CExDialog
 {

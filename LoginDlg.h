@@ -20,7 +20,7 @@ public:
 
 // Dialog Data
 	enum { IDD = IDD_LOGINDLG };
-
+	CSkinBtn * m_pbtns;
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 
@@ -30,4 +30,5 @@ public:
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	virtual BOOL OnInitDialog();
 	afx_msg void OnBnClickedBtnLogin();
+	afx_msg void OnDestroy();
 };

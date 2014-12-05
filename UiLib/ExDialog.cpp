@@ -47,7 +47,7 @@ CExDialog::CExDialog(UINT nIDTemplate,CWnd* pParent /*=NULL*/, INT ex_style)
 	m_ExStyle = ex_style;
 	m_TitleHight = 30;
 	m_WndDiameter = WND_RAND_SIZE;
-	m_crtl = RGB(45,100,217), m_crbr = RGB(18,76,199);
+	m_crtl = RGB(212,212,233), m_crbr = RGB(78,78,199);
 }
 
 CExDialog::~CExDialog() 

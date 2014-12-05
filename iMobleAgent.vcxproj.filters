@@ -103,9 +103,6 @@
     <None Include="res\DirPackge.ico">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="res\mime1.bin">
-      <Filter>Resource Files</Filter>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -204,6 +201,9 @@
     <ClInclude Include="LoginStateDlg.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\libs.h">
+      <Filter>libs</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -290,6 +290,12 @@
     <ClCompile Include="LoginStateDlg.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="lib\sqlite3\sqlite3.c">
+      <Filter>libs</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\Encode.cpp">
+      <Filter>libs</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="DirPackge.rc">
@@ -312,9 +318,11 @@
     <Image Include="res\ui_base\hdr_bk.bmp">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="res\ui_base\SliverBtn.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
-    <Xml Include="..\..\..\Temp\test\ProgressListControl_src\vsTestSrc\res\web.xml" />
     <Xml Include="res\web.xml" />
   </ItemGroup>
 </Project>

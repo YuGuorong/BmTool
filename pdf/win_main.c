@@ -540,7 +540,7 @@ void winhelp(pdfapp_t*app)
 }
 
 #define WM_PDF_PAGE (WM_APP+179)
-int dlgAppPageChangeEvent(int newpg,  int pgcount)
+void dlgAppPageChangeEvent(int newpg,  int pgcount)
 {
 	PostMessage(hwndframe, WM_PDF_PAGE, newpg, pgcount);
 }
@@ -939,15 +939,17 @@ void OnPdfFrameSize(HWND hwnd, int wParam)
 	int image_h = fz_pixmap_height(gapp.ctx, gapp.image);
 
 	GetClientRect(hwnd, &rect);
-	int w = rect.right - rect.left;
-	int h = rect.bottom - rect.top;
-	int mgleft = (w > image_w) ? (w - image_w) / 2 : 0;
-	int mgtop = (h > image_h) ? (h - image_h) / 2 : 0;
-	
-	MoveWindow(hwndview, mgleft, mgtop,
-		image_w, image_h, TRUE);
-	if (wParam == SIZE_MAXIMIZED)
-		gapp.shrinkwrap = 0;
+	{
+		int w = rect.right - rect.left;
+		int h = rect.bottom - rect.top;
+		int mgleft = (w > image_w) ? (w - image_w) / 2 : 0;
+		int mgtop = (h > image_h) ? (h - image_h) / 2 : 0;
+
+		MoveWindow(hwndview, mgleft, mgtop,
+			image_w, image_h, TRUE);
+		if (wParam == SIZE_MAXIMIZED)
+			gapp.shrinkwrap = 0;
+	}
 }
 
 void OnPdfFrameSizing(HWND hwnd)

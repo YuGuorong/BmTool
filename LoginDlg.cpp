@@ -31,6 +31,7 @@ BEGIN_MESSAGE_MAP(CLoginDlg, CExDialog)
 	ON_BN_CLICKED(IDC_BUTTON1, &CLoginDlg::OnBnClickedButton1)
 	ON_WM_SIZE()
 	ON_BN_CLICKED(IDC_BTN_LOGIN, &CLoginDlg::OnBnClickedBtnLogin)
+	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
 
@@ -55,7 +56,10 @@ BOOL CLoginDlg::OnInitDialog()
 	CExDialog::OnInitDialog();
 	GetDlgItem(IDC_EDIT_USER)->SetWindowText(g_pSet->m_strUserName);
 	
-
+	m_pbtns = new CSkinBtn();
+	m_pbtns->SubclassDlgItem(IDC_BTN_LOGIN, this);
+	m_pbtns->SetImage(IDB_BITMAP_SLIVE_BTN, 102, 26);
+	GetDlgItem(IDC_EDIT_PWD)->SetWindowText(_T("admin"));
 	// TODO:  Add extra initialization here
 
 	return TRUE;  // return TRUE unless you set the focus to a control
@@ -91,10 +95,13 @@ INT GetJsonString(CString &sjson, LPCTSTR skey, CString &sval)
 }
 
 #include "PackerProj.h"
-//#define DEBUG_LOGIN 
+#define DEBUG_LOGIN 
 //192.168.1.61  fixopen.xicp.net
 void CLoginDlg::OnBnClickedBtnLogin()
 {//{"state": 200, "sessionId": "12ea2d36e9b638e88887b0081deabeaec11d7bad", "id" : "33542438663913472"}
+	EndWaitCursor();
+	void TestSocket();
+//	TestSocket();
 	char post_data[64] = ("{\"password\":\"admin\"}");
 	CString str, strUrl, strdata, strResp, strUser;
 	GetDlgItem(IDC_EDIT_USER)->GetWindowText(strUser);
@@ -105,6 +112,7 @@ void CLoginDlg::OnBnClickedBtnLogin()
 	CHAR * pdata = W2A(strdata);	
 	int nLogState = 0;
 	CTime tmlogin = CTime::GetCurrentTime();
+	
 #ifdef DEBUG_LOGIN
 	nLogState = 200;
 #else
@@ -125,6 +133,23 @@ void CLoginDlg::OnBnClickedBtnLogin()
 #endif
 		proj->m_strLoginUser = strUser;
 		proj->m_tmLogin = tmlogin;
-		proj->SetProjStatus(LOGIN_PROJ);
+		BOOL GetLockState();
+		if (!GetLockState())
+			proj->SetProjStatus(LOGIN_PROJ);
+		void LockSystem(BOOL block);
+		LockSystem(FALSE);
 	}
+	else
+	{
+		MessageBox(_T("登录失败"), _T("登录"));
+	}
+	EndWaitCursor();
+}
+
+
+void CLoginDlg::OnDestroy()
+{
+	CExDialog::OnDestroy();
+	delete m_pbtns;
+	// TODO:  在此处添加消息处理程序代码
 }

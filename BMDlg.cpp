@@ -131,8 +131,15 @@ BOOL CBMDlg::OnInitDialog()
 
 	int nSmallCx = ::GetSystemMetrics(SM_CXSMICON);
 	int nSmallCy = ::GetSystemMetrics(SM_CYSMICON);
-	if (m_proj->m_imglist.m_hImageList == NULL)
+	if (m_proj->m_imglist.m_hImageList == NULL) //Create,renew this 
+	{
 		m_proj->m_imglist.Create(nSmallCx, nSmallCy, ILC_MASK | ILC_COLOR32, 0, 1);
+		
+		HICON hIcon = CUtil::GetFileIcon(_T(".zip"));
+		m_proj->m_imglist.Add(hIcon);
+	}
+
+	m_proj->m_pProjDir = &m_trDir;
 	m_listRes.SetImageList(&m_proj->m_imglist, LVSIL_SMALL);
 	m_listRes.SetExtendedStyle(LVS_EX_FULLROWSELECT | LVS_EX_JUSTIFYCOLUMNS | LVS_EX_SINGLEROW | LVS_EX_SNAPTOGRID );
 	m_proj->m_type = VIEW_EMPTY;
@@ -214,7 +221,7 @@ CReaderView * CBMDlg::GetProjView()
 {
 	if (VIEW_UNKNOWN == m_proj->m_type)
 	{
-
+		return m_pViews[VIEW_EMPTY];
 	}
 	for (int i = VIEW_EPUB; i < (int)VIEW_MAX; i++)
 	{
@@ -257,16 +264,17 @@ void CBMDlg::SaveDirs(CString &sxml)
 		if (hnext == NULL)
 		{
 			hnext = m_trDir.GetNextItem(hpt, TVGN_NEXT);
-			EndDirToXml(sxml, sub);
+				EndDirToXml(sxml, sub);
 		}
 		else
 			sub++;
-		while (hnext == NULL)
+		while (hnext == NULL) //no sblin and child ,track back
 		{
+			if (hpt == hroot) break; //root no parent
 			EndDirToXml(sxml, --sub);
 			hpt = m_trDir.GetNextItem(hpt, TVGN_PARENT);
 			hnext = m_trDir.GetNextItem(hpt, TVGN_NEXT);
-			if (hnext == NULL && (hpt == hroot || hpt == NULL) )
+			if (hnext == NULL && hpt == NULL )
 				return;
 		}
 		hpt = hnext;
@@ -276,15 +284,44 @@ void CBMDlg::SaveDirs(CString &sxml)
 
 LRESULT CBMDlg::OnViewProjMsg(WPARAM wParam, LPARAM lParam)
 {
+	CString * pxml = (CString *)lParam;
 	switch (wParam)
 	{
+	case OPEN_PROJ:
+		{
+			CString str = m_proj->m_szTargetPath;
+			int np = str.ReverseFind(_T('\\'));
+			if (np >= 0) str.Delete(0, np + 1);
+			GetProjView()->ViewFile(m_proj->m_szTargetPath);
+			ChangeView(m_proj->m_type);
+		}
+		break;
 	case NEW_PROJ:
-		GetProjView()->ViewFile(m_proj->m_szTarget);
+		{ 
+			CString str = m_proj->m_szTargetPath;
+			int np = str.ReverseFind(_T('\\'));
+			if (np >= 0) str.Delete(0, np + 1);
+			GetProjView()->ViewFile(m_proj->m_szTargetPath);
+			ChangeView(m_proj->m_type);
+			GetMetaWnd()->SetItemValue(_T("图书名称"), str);
+			GetMetaWnd()->SetItemValue(_T("电子书籍类别"), _T("Pdf"));
+
+			str.Format(_T("%d"), m_proj->m_nTargetFLen);
+			GetMetaWnd()->SetItemValue(_T("电子书籍文件大小"), str);
+			GetMetaWnd()->SetItemValue(_T("学科门类 "), _T("工学"));
+			GetMetaWnd()->SetItemValue(_T("专业类 "), _T("计算机科学与技术"));
+			GetMetaWnd()->SetItemValue(_T("专业名称 "), _T("计算机软件与理论"));
+			GetMetaWnd()->SetItemValue(_T("教材分类 "), _T("公共基础课"));
+		}
+		//GetMetaWnd()->SetItemValue(_T("页数"), _T("Pdf"));
+		break;
+
+	case CLOSE_PROJ:
 		ChangeView(m_proj->m_type);
 		break;
+	
 	case SAVE_PROJ:
 	{
-		CString * pxml = (CString *)lParam;
 		GetMetaWnd()->SaveMetaData(m_proj, *pxml);
 		CString  sdir;
 		SaveDirs(sdir);
@@ -436,19 +473,16 @@ void CBMDlg::OnNMDblclkTreeDir(NMHDR *pNMHDR, LRESULT *pResult)
 
 void CBMDlg::OnBnClickedBtnAddRes()
 {
-	CResMan * pRes = new CResMan(m_proj);
 
-	if (pRes->NewRes(1) == FALSE)
-	{
-		delete pRes;
-		return;
+	CFileDialog fdlg(TRUE, 0, _T("*.*"), OFN_HIDEREADONLY,
+		_T("所有文件|*.*||"), ::AfxGetMainWnd());
+	if (fdlg.DoModal() != IDOK) return ;
+
+	CResMan * pRes = CResMan::NewRes(fdlg);
+	if (pRes)
+	{		
+		InsertRes(pRes);
 	}
-
-	HICON hIcon = CUtil::GetFileIcon(pRes->m_sPath);
-	m_proj->m_imglist.Add(hIcon);
-	int imgid = m_proj->m_imglist.GetImageCount() - 1;
-	pRes->m_icon_id = imgid;
-	InsertRes(pRes);
 }
 
 

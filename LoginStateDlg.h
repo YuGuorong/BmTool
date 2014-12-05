@@ -12,7 +12,7 @@ public:
 	virtual ~CLoginStateDlg();
 	void SetLoginStatuText(LPCTSTR szStatus);
 	CLink * m_txtStatus;
-
+	CSkinBtn * m_pbtns[2];
 // 对话框数据
 	enum { IDD = IDD_LOGIN_STATUS_DLG };
 
@@ -26,4 +26,6 @@ public:
 	afx_msg void OnDestroy();
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	virtual void OnOK();
+	afx_msg void OnBnClickedBtnLogout();
+	afx_msg void OnBnClickedBtnOk();
 };

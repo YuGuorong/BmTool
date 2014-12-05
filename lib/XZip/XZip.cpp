@@ -89,7 +89,6 @@
 //       own source and binary releases.
 //
 ///////////////////////////////////////////////////////////////////////////////
-#include "stdafx.h"
 
 #define _USE_32BIT_TIME_T	//+++1.2
 
@@ -3061,33 +3060,33 @@ ZRESULT ZipAdd(HZIP hz, const TCHAR *dstzn, void *src, unsigned int len, DWORD f
 	}
 	TZip *zip = han->zip;
 
-
-	if (flags == ZIP_FILENAME)
-	{
-		char szDest[MAX_PATH*2];
-		memset(szDest, 0, sizeof(szDest));
+	char szDest[MAX_PATH*2];
+	memset(szDest, 0, sizeof(szDest));
 
 #ifdef _UNICODE
-		// need to convert Unicode dest to ANSI
-		int nActualChars = WideCharToMultiByte(CP_ACP,	// code page
-								0,						// performance and mapping flags
-								(LPCWSTR) dstzn,		// wide-character string
-								-1,						// number of chars in string
-								szDest,					// buffer for new string
-								MAX_PATH*2-2,			// size of buffer
-								NULL,					// default for unmappable chars
-								NULL);					// set when default char used
-		if (nActualChars == 0)
-			return ZR_ARGS; 
+	// need to convert Unicode dest to ANSI
+	int nActualChars = WideCharToMultiByte(CP_ACP,	// code page
+							0,						// performance and mapping flags
+							(LPCWSTR) dstzn,		// wide-character string
+							-1,						// number of chars in string
+							szDest,					// buffer for new string
+							MAX_PATH*2-2,			// size of buffer
+							NULL,					// default for unmappable chars
+							NULL);					// set when default char used
+	if (nActualChars == 0)
+		return ZR_ARGS; 
 #else
-		strcpy(szDest, dstzn);
+	strcpy(szDest, dstzn);
 #endif
+	if (flags == ZIP_FILENAME)
+	{
+
 
 		lasterrorZ = zip->Add(szDest, src, len, flags);
 	}
 	else
 	{
-		lasterrorZ = zip->Add((char *)dstzn, src, len, flags);
+		lasterrorZ = zip->Add((char *)szDest, src, len, flags);
 	}
 
 	return lasterrorZ;
@@ -3209,4 +3208,3 @@ BOOL AddFolderContent(HZIP hZip, TCHAR* AbsolutePath, TCHAR* DirToAdd)
 	return true;
 	
 }
-

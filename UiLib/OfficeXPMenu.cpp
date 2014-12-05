@@ -18,7 +18,7 @@ static char THIS_FILE[] = __FILE__;
 #error This code does not work on Versions of MFC prior to 4.0
 #endif
 
-#pragma warning (disable:4311; disable:4312)
+#pragma warning (disable:4311; disable:4312; disable:4996)
 
 static CPINFO CPInfo;
 // how the menu's are drawn in win9x/NT/2000

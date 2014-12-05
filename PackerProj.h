@@ -1,8 +1,16 @@
 #pragma once
+
 #include <time.h>
+#include "tables.h"
+#include <map>
+using std::map;
+
 #define WM_PDF_PAGE     (WM_APP  + 179)
 #define WM_VIEW_PROJ    (WM_USER + 313)
 class CPackerProj;
+
+using namespace std;
+
 typedef enum
 {
 	VIEW_UNKNOWN = -1,
@@ -20,6 +28,7 @@ typedef enum{
 	OPEN_PROJ     =  0x0008,
 	SAVE_PROJ     =  0x0010,
 	CLOSE_PROJ    =  0x0020,
+	LOCKED        =  0x1000
 };
 
 
@@ -50,13 +59,12 @@ class CResMan
 public:
 	CResMan(CPackerProj * proj);
 	~CResMan();
-	BOOL NewRes(RES_RELATION rel);
+	static CResMan * NewRes(const char ** sxml);
+	static CResMan * NewRes(CFileDialog &fdlg);
 	BOOL SaveRes(CString &strXml);
 public:
 	int    m_icon_id;
 	CString  m_strResId;
-	int    m_type;
-	int    m_subtype;
 	RES_RELATION m_relation;
 	CString m_sfileName;
 	CString m_sPath;
@@ -68,27 +76,30 @@ public:
 	CPackerProj * m_proj;
 };
 
+
 class CPackerProj
 {
 public:
+	BOOL    m_bLock; //Login lock state.
+
 	CString m_strUuid; //Project uuid
-	CString m_szProj;
-	CString m_szProjPath;
-	CString m_szTarget;
-	CString m_szTargetFileName;
-	CString m_szCoverPath;
-	CString m_szType;
+	CString m_szProj;  //Project name
+	CString m_szProjPath; //Prjoect path
+	CString m_szZipPath;//Project Zip file path 
+	CString m_szTargetPath; //Project main book path
+	CString m_szTargetFileName; //Project main book name
+	UINT32  m_nTargetFLen; //Project main book file length
+	CString m_szCoverPath; //Project cover picture path
+	CString m_szType;      //Project main book type, PDF?EPub?... 
 
-
-	CString m_szPathMeta;
-	CString m_szPathRes;
-	CString m_strTmCreateProj;
-	CString m_strTmModifyProj;
-	CString m_strTmCreateSrc;
-	CString m_strTmModifySrc;
+	CString m_szPathRes;  //Prjoect res folder path
+	CString m_strTmCreateProj; //string of time for project create
+	CString m_strTmModifyProj; //string of time for last project modificaton 
+	CString m_strTmCreateSrc;  //string of time for main book create
+	CString m_strTmModifySrc; //string of time for main book create
 
 	UINT32  m_ProjState; //project working state, empty ? new ? open? saving?
-	view_type m_type;//project focus view type, epub?pdf?meta?empty_dialog
+	view_type m_type;    //project focus view type, epub?pdf?meta?empty_dialog
 
 	CImageList m_imglist;//image list of resource icon
 	CResMan * m_pRes;  //Resources
@@ -101,11 +112,22 @@ public:
 	int     m_logState;
 
 	int     m_nCurPage;  //reader cur page, for resource reference relations
-	int     m_nBookPageCount;
+	int     m_nBookPageCount; //Main book page count
 
+	//xml parser used purpose--->
+	void * m_ptrUserData;  //parser
+	CStringA m_sXmlData;  //for combine element data
+
+	CTreeCtrl * m_pProjDir;
+	HTREEITEM  m_hDirCur;  //reorgenize directory tree
+	map<CStringA, CStringA> m_mapMetaValue;  //all xml value here
+	//<-----------------------------
+	void * m_ptrDbCol[MAX_BOOK_DB_COL];
+	SQL_DB_BOOK  m_db_items;
+	CString strError;
 protected:
 	LPCTSTR m_szMimeType; //contend type
-	HGLOBAL m_hG;
+	HGLOBAL m_hG;  //globale resource of MIME type map.
 
 public:
 	CPackerProj(CWnd * pParent);
@@ -116,10 +138,14 @@ public:
 	int Open(LPCTSTR szProj);
 	BOOL ZipRes(LPCTSTR szZipFile);
 	BOOL UnzipProj();
+	BOOL ParseXml();
 	BOOL Res2Xml(CString &strResXml);
 	void SetProjStatus(int proj_st);
-	BOOL GetFileType(LPCTSTR szExt, CString &type);
+	BOOL GetFileMemiType(LPCTSTR szExt, CString &type);
 	BOOL UpLoadProj();	
+	BOOL SaveProjToDb();
+	BOOL SetBookState(LPCTSTR sbookid, LPCTSTR sState);
+	BOOL ClearResTable();
 };
 
 

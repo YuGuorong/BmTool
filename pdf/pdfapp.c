@@ -896,7 +896,7 @@ static void pdfapp_gotouri(pdfapp_t *app, char *uri)
 	winopenuri(app, uri);
 }
 
-cb_apppdf_page_change pdfapp_setpage_event(cb_apppdf_page_change *pfnx)
+cb_apppdf_page_change pdfapp_setpage_event(cb_apppdf_page_change pfnx)
 {
 	cb_apppdf_page_change pold = g_event_page_change;
 	g_event_page_change = pfnx;

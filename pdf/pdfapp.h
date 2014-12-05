@@ -162,5 +162,5 @@ void pdfapp_inverthit(pdfapp_t *app);
 void pdfapp_postblit(pdfapp_t *app);
 
 typedef void(*cb_apppdf_page_change)(int newpage, int pagecount);
-cb_apppdf_page_change pdfapp_setpage_event(cb_apppdf_page_change *pfnx);
+cb_apppdf_page_change pdfapp_setpage_event(cb_apppdf_page_change pfnx);
 #endif

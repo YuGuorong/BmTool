@@ -45,7 +45,7 @@ class CDirPackgeDlg : public CeExDialog
 public:
 	CDirPackgeDlg(CWnd* pParent = NULL);	// standard constructor
 	CPackerProj * m_Proj;
-
+	
 // Dialog Data
 	enum { IDD = IDD_DIRPACKGE_DIALOG };
 	CArray<CExDialog *, CExDialog *> m_wndStack;
@@ -54,13 +54,14 @@ public:
 	void SwitchDlg(CExDialog * pnew);
 	void PushCurWnd();
 	void PopLastWnd(CExDialog * pHideWnd);
+	void SetWindowStatus(int proj_state);
+	void LockMainWnd(BOOL block);
 
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV support
 	CExDialog * m_pSubDlgs[MAX_TAB_ITEM];
 	CExDialog * m_plogDlgs[2];
 	INT  m_LogDlgIdx;
-	void SetWindowStatus(int proj_state);
 
 // Implementation
 protected:
@@ -87,5 +88,3 @@ public:
 	afx_msg void OnBnClickedBtnExport();
 	afx_msg void OnBnClickedBtnOpen();
 };
-
-CPackerProj * GetPackProj();

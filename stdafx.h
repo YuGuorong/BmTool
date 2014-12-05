@@ -39,7 +39,7 @@
 
 
 #include "deelx.h"
-
+void MyTracex(const char * fmt, ...);
 #ifdef _UNICODE
 #if defined _M_IX86
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='x86' publicKeyToken='6595b64144ccf1df' language='*'\"")
@@ -75,4 +75,7 @@ void SwitchBackMainDlg();
 #define TIME_FMT  _T("%Y-%m-%d %H:%M")
 #define DATE_FMT  _T("yyyy-MM-dd HH:mm")
 #define PROJ_EXT  _T("zip")
+#define CFG_META_FILE   _T("__meta.xml")
+#define CFG_COVER_FILE  _T("__cover.jpg")
+#define CFG_RES_FOLDER  _T("res")
 #endif

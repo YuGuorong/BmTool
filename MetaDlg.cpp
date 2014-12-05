@@ -627,7 +627,19 @@ INT CMetaDlg::SetItemValue(LPCTSTR ItemCaption, LPCTSTR strValue)
 	{
 		if (pit->strKey.Compare(ItemCaption) == 0)
 		{
-			pit->pWnd[1]->SetWindowText(strValue);
+			if (pit->style & META_COMBOBOX)
+			{
+				CComboBox * pbox = (CComboBox * )pit->pWnd[1];
+				int sel = pbox->FindString(0, strValue);
+				pbox->SetCurSel(sel);
+				do{
+					pit = ChangeSubComboBox(pit);
+				} while (pit);
+			}
+			else
+			{
+				pit->pWnd[1]->SetWindowText(strValue);
+			}
 			return 1;
 		}
 		pit = pit->pNext;

@@ -33,6 +33,9 @@ CDirPackgeDlgApp::CDirPackgeDlgApp()
 // The one and only CDirPackgeDlgApp object
 
 CDirPackgeDlgApp theApp;
+int ConnectDb(LPCTSTR db_name);
+int DisconnetDB(void);
+void ShowAboutDlg();
 // CDirPackgeDlgApp initialization
 
 BOOL CDirPackgeDlgApp::InitInstance()
@@ -65,8 +68,13 @@ BOOL CDirPackgeDlgApp::InitInstance()
 	// Change the registry key under which our settings are stored
 	// TODO: You should modify this string to be something appropriate
 	// such as the name of your company or organization
+	CString str = g_pSet->strCurPath;
+	str += _T("ebook.db");
+
+	ConnectDb(str);
 
 	g_pSet->Load();
+	 
 	CDirPackgeDlg dlg;
 	m_pMainWnd = &dlg;
 	INT_PTR nResponse = dlg.DoModal();
@@ -80,7 +88,7 @@ BOOL CDirPackgeDlgApp::InitInstance()
 		// TODO: Place code here to handle when the dialog is
 		//  dismissed with Cancel
 	}
-
+	DisconnetDB();
 	// Delete the shell manager created above.
 	if (pShellManager != NULL)
 	{

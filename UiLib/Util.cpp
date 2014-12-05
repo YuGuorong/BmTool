@@ -22,6 +22,21 @@ void CUtil::GetCurPath(CString &strPath)
     strPath = strPath.Left(pos+1);
 }
 
+CString CUtil::GetFilePath(CString &strFile)
+{
+	int pos = strFile.ReverseFind('\\');
+	if (pos == -1) return strFile;
+	return strFile.Left(pos);
+}
+
+CString CUtil::GetFileName(CString &strFilePath)
+{
+	int pos = strFilePath.ReverseFind('\\');
+	if (pos == -1) return strFilePath;
+	CString str = strFilePath;
+	return strFilePath.Right(strFilePath.GetLength() - pos - 1);
+}
+
 HANDLE CUtil::RunProc(LPCTSTR strcmd, LPCTSTR strparam, LPCTSTR strPath)
 {
 	SHELLEXECUTEINFO ShExecInfo = {0};
@@ -237,24 +252,41 @@ CString CUtil::GenGuidString()
 		sguid = bstrGuid;
 	}
 	sguid.Remove(_T('-'));
+	sguid.Remove(_T('{'));
+	sguid.Remove(_T('}'));
 	return sguid;
 }
 
+BOOL CUtil::GetFileSize(LPCTSTR  sfile, DWORD &flen)
+{
+	WIN32_FIND_DATA fileInfo;
+	HANDLE hFind;
+	DWORD fileSize;
+	hFind = FindFirstFile(sfile, &fileInfo);
+	if (hFind != INVALID_HANDLE_VALUE)
+	{
+		fileSize = fileInfo.nFileSizeLow;
+		FindClose(hFind);
+		flen = fileSize;
+		return TRUE;
+	}
+	return FALSE;
+}
 
-void W2U(const char  * bstr, WCHAR  * wstr,  int lens,int lenw)
+
+void Utf2Unc(const char  * bstr, WCHAR  * wstr, int lens, int lenw)
 {
     ::MultiByteToWideChar(CP_UTF8,0,bstr,lens, wstr, lenw);
 }
 
 
-void U2W(LPCTSTR   wstr, char  * bstr,  int lenw,int lens)
+void Unc2Utf(LPCTSTR   wstr, char  * bstr, int lenw, int lens)
 {
-    //USES_CONVERSION;
     int ret = ::WideCharToMultiByte(CP_UTF8, 0, wstr, -1,bstr, lens,0,0);
 }
 
 
-void QW2U(LPCSTR  astr, CString &wstr)
+void QUtf2Unc(LPCSTR  astr, CString &wstr)
 {
     int slen = lstrlenA(astr)+1;
     WCHAR * pwbuf = wstr.GetBuffer(slen);
@@ -262,7 +294,7 @@ void QW2U(LPCSTR  astr, CString &wstr)
     wstr.ReleaseBuffer();
 }
 
-void QU2W(LPCTSTR wstr, AString &astr )
+void QUnc2Utf(LPCWSTR wstr, AString &astr)
 {
     int slen = lstrlenW(wstr)+1;
     char * psbuf = astr.GetBuffer(slen*4);
@@ -364,23 +396,6 @@ CString GetReadableSize(UINT32 size)
 	return stri;
 }
 
-void ParseCommandLine(CCommandLineInfo& rCmdInfo) 
-{ 
-    for (int i = 1; i < __argc; i++) 
-    { 
-        LPCTSTR pszParam = __targv[i]; 
-        BOOL bFlag = FALSE; 
-        BOOL bLast = ((i + 1) == __argc); 
-        if (pszParam[0] == '-' || pszParam[0] == '/') 
-        { 
-            // remove flag specifier 
-            bFlag = TRUE; 
-            ++pszParam; 
-        } 
-        rCmdInfo.ParseParam(pszParam, bFlag, bLast); 
-    } 
-}
-
 
 BOOL ShowTips()
 {
@@ -400,10 +415,16 @@ CSetting::~CSetting()
 void CSetting::Load()
 {
 	CWinApp* pApp = AfxGetApp();
-	m_strUserName = pApp->GetProfileString(_T("AppSettings"), _T("UserName"), _T("admin"));
-	m_strPassword = pApp->GetProfileString(_T("AppSettings"), _T("Password"), _T(""));
-	m_strServerIP = pApp->GetProfileString(_T("AppSettings"), _T("ServerIp"), _T("fixopen.xicp.net"));
 	m_nPort = pApp->GetProfileInt(_T("AppSettings"), _T("Port"), 8080);
+	m_strPassword = pApp->GetProfileString(_T("AppSettings"), _T("Password"), _T(""));
+	m_strUserName = pApp->GetProfileString(_T("AppSettings"), _T("UserName"), _T("admin"));
+	m_strServerIP = pApp->GetProfileString(_T("AppSettings"), _T("ServerIp"), _T("fixopen.xicp.net"));
+
+	m_bEnProxy = pApp->GetProfileInt(_T("AppSettings"), _T("ProxyEnable"), 0);
+	m_nProxyPort = pApp->GetProfileInt(_T("AppSettings"), _T("ProxyPort"), 80);
+	m_strProxyIP = pApp->GetProfileString(_T("AppSettings"), _T("ProxyIp"), _T(""));
+	m_strProxyPwd = pApp->GetProfileString(_T("AppSettings"), _T("ProxyPwd"), _T(""));
+	m_strProxyUser = pApp->GetProfileString(_T("AppSettings"), _T("ProxyUser"), _T(""));
 }
 
 void CSetting::Save()
@@ -411,28 +432,50 @@ void CSetting::Save()
 	CWinApp* pApp = AfxGetApp();
 	pApp->WriteProfileString(_T("AppSettings"), _T("ServerIp"), m_strServerIP);
 	pApp->WriteProfileInt(_T("AppSettings"), _T("Port"), m_nPort);
+
+	pApp->WriteProfileInt(_T("AppSettings"), _T("ProxyEnable"), m_bEnProxy);
+	pApp->WriteProfileInt(_T("AppSettings"), _T("ProxyPort"), m_nProxyPort);
+	pApp->WriteProfileString(_T("AppSettings"), _T("ProxyIp"), m_strProxyIP);
+	pApp->WriteProfileString(_T("AppSettings"), _T("ProxyPwd"), m_strProxyPwd);
+	pApp->WriteProfileString(_T("AppSettings"), _T("ProxyUser"), m_strProxyUser);
 }
 
 CSetting * g_pSet = NULL;
+
+#include "libs.h"
+void ParseCommandLine(CCommandLineInfo& rCmdInfo)
+{
+	for (int i = 1; i < __argc; i++)
+	{
+		CString  pszParam = __targv[i];
+		if (pszParam.CompareNoCase(_T("-dec")) == 0)
+		{
+			if ((i < __argc - 1) && __targv[i + 1]!= NULL )
+			{
+				CString strin = __targv[i + 1];
+				if (!strin.IsEmpty())
+				{
+					CString strout = strin;
+					int np = strout.ReverseFind(_T('\\'));
+					strout.Insert(np + 1, _T("._dec_"));
+					decode_file(strin, strout);
+				}
+			}
+			exit(0);
+		}
+	}
+}
+
+
 int BaseAppInit()
 {
 	  // 分析标准外壳命令、DDE、打开文件操作的命令行 
     CCommandLineInfo cmdInfo; 
     ParseCommandLine(cmdInfo); 
 
-    switch(cmdInfo.m_nShellCommand)
-    {
-    case RUN_SHOW_TIP:
-        if( ShowTips() )
-            return FALSE;
-        break;
-    case RUN_EXIT_PROCESS:
-        return FALSE;
-    default:
-        break;
-    }
 
     //创建互斥对象
+#if 0
     TCHAR strAppName[] = TEXT("eExpressMutex");
     HANDLE hMutex = NULL;   
 	hMutex = CreateMutex(NULL, FALSE, strAppName);
@@ -453,7 +496,7 @@ int BaseAppInit()
 			return (-1);
         }
     }
-
+#endif
 	g_pSet = new CSetting;
 	return 0;
 }
@@ -621,12 +664,12 @@ void HttpPost(LPCTSTR szServer, int nPort, LPCTSTR url, void * postdata, int dle
 	HINTERNET hSession = InternetConnect(hInternet, szServer, nPort, NULL, NULL, INTERNET_SERVICE_HTTP, 0, 0);
 	// 打开http post 请求的句柄
 	LPCTSTR szAccept[] = { _T("*/*"), NULL };
-	HINTERNET hRequest = HttpOpenRequest(hSession, _T("POST"), url, NULL, NULL, szAccept, INTERNET_FLAG_NO_CACHE_WRITE, 0);
+	HINTERNET hRequest = HttpOpenRequest(hSession, _T("POST"), url, NULL, NULL, szAccept, INTERNET_FLAG_NO_CACHE_WRITE | INTERNET_FLAG_NO_COOKIES, 0);
 
 	// 外发的header
 	TCHAR headerLanguage[] = _T("Accept-Language: zh-cn\r\n");
 	TCHAR headerEncoding[] = _T("Accept-Encoding: gzip, deflate\r\n");
-	TCHAR headerContentType[] = _T("Content-Type: application/json\r\n\r\n");//text/xml
+	TCHAR headerContentType[] = _T("Content-Type: application/json\r\n");//text/xml
 	CString headerHost , headerContentLength;
 
 	headerHost.Format(_T("Host: %s:%d\r\n"), szServer, nPort);
@@ -719,102 +762,255 @@ void HttpPost(LPCTSTR szServer, int nPort, LPCTSTR url, void * postdata, int dle
 //TCHAR headerContentType[] = _T("Content-Type: application/zip\r\n\r\n");//text/xml
 //
 
-void HttpPostEx(LPCTSTR szServer, int nPort, LPCTSTR url, LPCTSTR szCookies[], int ncookies,\
-			void * postdata, int dlen, CString &strResponse)
+BOOL HttpPostEx(LPCTSTR szServer, int nPort, LPCTSTR url, LPCTSTR szCookies[], int nheaders, \
+	int ncookies, void * postdata, int dlen, CString &strResponse)
 {
 	BOOL bResult = FALSE;
 
 	// 初始化WinInet 环境
-	HINTERNET hInternet = InternetOpen(_T("CEHTTP"), INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, NULL);
+	HINTERNET hInternet = InternetOpen(_T("UPHTTP"), INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, NULL);
 	// 打开http session
 	HINTERNET hSession = InternetConnect(hInternet, szServer, nPort, NULL, NULL, INTERNET_SERVICE_HTTP, 0, 0);
 	// 打开http post 请求的句柄
 	LPCTSTR szAccept[] = { _T("*/*"), NULL };
-	HINTERNET hRequest = HttpOpenRequest(hSession, _T("POST"), url, NULL, NULL, szAccept, INTERNET_FLAG_NO_CACHE_WRITE, 0);
+	HINTERNET hRequest = HttpOpenRequest(hSession, _T("POST"), url, NULL, NULL, szAccept, INTERNET_FLAG_NO_CACHE_WRITE | INTERNET_FLAG_NO_COOKIES, 0);
 
+	try{
+		CString headerHost, headerContentLength;
+		headerHost.Format(_T("Host: %s:%d\r\n"), szServer, nPort);
+		headerContentLength.Format(_T("Content-Length: %d\r\n\r\n"), dlen);// strlen(post_data));
 
-	CString headerHost, headerContentLength;
-	headerHost.Format(_T("Host: %s:%d\r\n"), szServer, nPort);
-	headerContentLength.Format(_T("Content-Length: %d\r\n\r\n"), dlen);// strlen(post_data));
-
-	// 添加header 信息
-	for (int i = 0; i < ncookies; i++)
-	{
-		bResult = HttpAddRequestHeaders(hRequest, szCookies[i], -1, HTTP_ADDREQ_FLAG_ADD | HTTP_ADDREQ_FLAG_REPLACE);
-	}
-	bResult = HttpAddRequestHeaders(hRequest, headerHost, -1, HTTP_ADDREQ_FLAG_ADD | HTTP_ADDREQ_FLAG_REPLACE);
-	bResult = HttpAddRequestHeaders(hRequest, headerContentLength, -1, HTTP_ADDREQ_FLAG_ADD | HTTP_ADDREQ_FLAG_REPLACE);
-
-	/*=====================================================================
-	// 简单的发送数据的方法，可用来发送少量数据，或提交GET请求
-	//===================================================================*/
-	//bResult = HttpSendRequest(hRequest, NULL, 0, post_data, _tcsclen(post_data));
-
-	/*=====================================================================
-	// 发送大量数据包的方法
-	//===================================================================*/
-	INTERNET_BUFFERS BufferIn = { 0 };
-
-	BufferIn.dwStructSize = sizeof(INTERNET_BUFFERS);
-	BufferIn.dwBufferTotal = dlen;// strlen(post_data);
-
-	bResult = HttpSendRequestEx(hRequest, &BufferIn, NULL, 0, 0);
-
-	DWORD written = 0;
-	bResult = InternetWriteFile(hRequest, (LPVOID)(char *)postdata, dlen, &written);
-
-	bResult = HttpEndRequest(hRequest, NULL, 0, 0);
-	/*=====================================================================
-	// 发送大量数据包结束
-	//===================================================================*/
-
-	LPSTR     lpszData = NULL; // buffer for the data
-	DWORD     dwSize = 0;           // size of the data available
-	DWORD     dwDownloaded = 0; // size of the downloaded data
-
-	// 请求header 的大小，注意这里的bResult 为FALSE
-	bResult = HttpQueryInfo(hRequest, HTTP_QUERY_RAW_HEADERS_CRLF, NULL, &dwSize, NULL);
-
-	// 为接收header 分配内存空间
-	CHAR* lpHeadersA = new CHAR[dwSize];
-
-	// 接收http response 中的header
-	bResult = HttpQueryInfo(hRequest, HTTP_QUERY_RAW_HEADERS_CRLF, (LPVOID)lpHeadersA, &dwSize, NULL);
-
-	strResponse.Empty();
-	CStringA str;
-	// 循环读取数据 
-	do
-	{
-		// 检查在http response 还有多少字节可以读取
-		if (InternetQueryDataAvailable(hRequest, &dwSize, 0, 0))
+		// 添加header 信息
+		for (int i = 0; i < nheaders; i++)
 		{
-			lpszData = new char[dwSize + 1];
-			// 读取数据
-			if (!InternetReadFile(hRequest, (LPVOID)lpszData, dwSize, &dwDownloaded))
+			bResult = HttpAddRequestHeaders(hRequest, szCookies[i], -1, HTTP_ADDREQ_FLAG_ADD | HTTP_ADDREQ_FLAG_REPLACE);
+			if ( bResult == FALSE)	throw "HEADER error";
+		}
+		bResult = HttpAddRequestHeaders(hRequest, headerHost, -1, HTTP_ADDREQ_FLAG_ADD | HTTP_ADDREQ_FLAG_REPLACE);
+		if (bResult == FALSE)	throw "HEADER error";
+		bResult = HttpAddRequestHeaders(hRequest, headerContentLength, -1, HTTP_ADDREQ_FLAG_ADD | HTTP_ADDREQ_FLAG_REPLACE);
+		if (bResult == FALSE)	throw "HEADER error";
+
+
+
+		/*=====================================================================
+		// 简单的发送数据的方法，可用来发送少量数据，或提交GET请求
+		//===================================================================*/
+		//bResult = HttpSendRequest(hRequest, NULL, 0, post_data, _tcsclen(post_data));
+
+		/*=====================================================================
+		// 发送大量数据包的方法
+		//===================================================================*/
+		INTERNET_BUFFERS BufferIn = { 0 };
+
+		BufferIn.dwStructSize = sizeof(INTERNET_BUFFERS);
+		BufferIn.dwBufferTotal = dlen;// strlen(post_data);
+
+		bResult = HttpSendRequestEx(hRequest, &BufferIn, NULL, 0, 0);
+		if (bResult == FALSE)	throw "HEADER error";
+
+		DWORD written = 0;
+		bResult = InternetWriteFile(hRequest, (LPVOID)(char *)postdata, dlen, &written);
+		if (bResult == FALSE)	throw "HEADER error";
+
+		bResult = HttpEndRequest(hRequest, NULL, 0, 0);
+		if (bResult == FALSE)	throw "HEADER error";
+		/*=====================================================================
+		// 发送大量数据包结束
+		//===================================================================*/
+
+		LPSTR     lpszData = NULL; // buffer for the data
+		DWORD     dwSize = 0;           // size of the data available
+		DWORD     dwDownloaded = 0; // size of the downloaded data
+
+		// 请求header 的大小，注意这里的bResult 为FALSE
+		bResult = HttpQueryInfo(hRequest, HTTP_QUERY_RAW_HEADERS_CRLF, NULL, &dwSize, NULL);
+		if (bResult == FALSE)	throw "HEADER error";
+
+		// 为接收header 分配内存空间
+		CHAR* lpHeadersA = new CHAR[dwSize];
+
+		// 接收http response 中的header
+		bResult = HttpQueryInfo(hRequest, HTTP_QUERY_RAW_HEADERS_CRLF, (LPVOID)lpHeadersA, &dwSize, NULL);
+		if (bResult == FALSE)	throw "HEADER error";
+
+		strResponse.Empty();
+		CStringA str;
+		// 循环读取数据 
+		do
+		{
+			// 检查在http response 还有多少字节可以读取
+			if (InternetQueryDataAvailable(hRequest, &dwSize, 0, 0))
 			{
-				delete[] lpszData;
-				break;
+				lpszData = new char[dwSize + 1];
+				// 读取数据
+				if (!InternetReadFile(hRequest, (LPVOID)lpszData, dwSize, &dwDownloaded))
+				{
+					delete[] lpszData;
+					break;
+				}
+				else
+				{
+					if (dwDownloaded)
+					{
+						lpszData[dwDownloaded] = 0;
+						str += lpszData;
+						delete[] lpszData;
+					}
+				}
 			}
 			else
 			{
-				if (dwDownloaded)
-				{
-					lpszData[dwDownloaded] = 0;
-					str += lpszData;
-					delete[] lpszData;
-				}
+				break;
 			}
-		}
-		else
-		{
-			break;
-		}
-	} while (dwDownloaded != 0);
+		} while (dwDownloaded != 0);
 
-	QA2W(str, strResponse);
+		QA2W(str, strResponse);
+		bResult = TRUE;
+	}
+	catch (...)
+	{
+		bResult = FALSE;
+	}
 	// 关闭句柄
 	InternetCloseHandle(hRequest);
 	InternetCloseHandle(hSession);
 	InternetCloseHandle(hInternet);
+	return bResult;
+}
+
+#include "iostream" 
+using namespace std;
+#pragma comment(lib,"ws2_32.lib")    
+long l_file_len;
+//获取文件内容    
+bool file_con(char **buffer, LPCSTR file)
+{
+	FILE *fp = fopen(file, "rb");
+	if (fp == NULL)
+	{
+		printf("文件上传失败，请检查文件路径.....\n");
+		return false;
+	}
+	fseek(fp, 0, SEEK_END);
+	l_file_len = ftell(fp);
+	rewind(fp);
+
+	*buffer = new char[l_file_len + 1];
+	memset(*buffer, 0, l_file_len + 1);
+	fseek(fp, 0, SEEK_SET);
+	fread(*buffer, sizeof(char), l_file_len, fp);
+	fclose(fp);
+	return true;
+}
+
+std::string upload(LPCSTR lpszServer, LPCSTR lpszAddr, LPCSTR fileUrl)
+{
+	char *file = NULL;
+	if (!file_con(&file, fileUrl))
+	{
+		return "0";
+	}
+	SOCKET sock = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (sock == INVALID_SOCKET)
+		return "0";
+	SOCKADDR_IN server;
+	server.sin_family = AF_INET;
+	server.sin_port = htons(8080);
+	struct hostent *host_addr = gethostbyname(lpszServer);
+	if (host_addr == NULL)
+		return "host_addr == NULL";
+	server.sin_addr.s_addr = *((int *)*host_addr->h_addr_list);
+	if (::connect(sock, (SOCKADDR *)&server, sizeof(SOCKADDR_IN)) == SOCKET_ERROR)
+	{
+		::closesocket(sock);
+		return "0";
+	}
+	printf("ip address = %s, port = %d\n", inet_ntoa(server.sin_addr), ntohs(server.sin_port));
+
+	std::string header("");
+	std::string content("");
+	//----------------------post头开始--------------------------------    
+	header += "post ";
+	header += lpszAddr;
+	header += " HTTP/1.1\r\n";
+	header += "Host: ";
+	header += lpszServer;
+	header += "\r\n";
+	header += "User-Agent: Mozilla/4.0\r\n";
+	header += "Connection: Keep-Alive\r\n";
+	header += "Accept: */*\r\n";
+	header += "Pragma: no-cache\r\n";
+	header += "Content-Type: multipart/form-data; charset=\"gb2312\"; boundary=----------------------------64b23e4066ed\r\n";
+
+	content += "------------------------------64b23e4066ed\r\n";
+	content += "Content-Disposition: form-data; name=\"file\"; filename=\"大论文和实验材料.rar\"\r\n";
+	content += "Content-Type: aapplication/octet-stream\r\n\r\n";
+
+	//post尾时间戳    
+	std::string strContent("\r\n------------------------------64b23e4066ed\r\n");
+	char temp[64] = { 0 };
+	//注意下面这个参数Content-Length，这个参数值是：http请求头长度+请求尾长度+文件总长度    
+	sprintf(temp, "Content-Length: %d\r\n\r\n", content.length() + l_file_len + strContent.length());
+	header += temp;
+	std::string str_http_request;
+	str_http_request.append(header).append(content);
+	//----------------------post头结束-----------------------------------    
+	//发送post头    
+	send(sock, str_http_request.c_str(), str_http_request.length(), 0);
+
+	char fBuff[4096];
+	int nPacketBufferSize = 4096; // 每个数据包存放文件的buffer大小    
+	int nStart;//记录post初始位置    
+	int nSize;//记录剩余文件大小    
+	// 就分块传送    
+	for (int i = 0; i < l_file_len; i += nPacketBufferSize)
+	{
+		nStart = i;
+		if (i + nPacketBufferSize + 1> l_file_len)
+		{
+			nSize = l_file_len - i;
+		}
+		else
+		{
+			nSize = nPacketBufferSize;
+		}
+
+		memcpy(fBuff, file + nStart, nSize);
+		::send(sock, fBuff, nSize, 0);
+		Sleep(0.2);
+	}
+
+	::send(sock, strContent.c_str(), strContent.length(), 0);
+
+	char szBuffer[1024] = { 0 };
+	while (true)
+	{
+
+		int nRet = ::recv(sock, szBuffer, sizeof(szBuffer), 0);
+		if (nRet == 0 || nRet == WSAECONNRESET)
+		{
+			printf("Connection Closed.\n");
+			break;
+		}
+		else if (nRet == SOCKET_ERROR)
+		{
+			printf("socket error\n");
+			break;
+		}
+		else
+		{
+			printf("recv() returned %d bytes\n", nRet);
+			printf("received: %s\n", szBuffer);
+			break;
+		}
+	}
+	::closesocket(sock);
+	delete[] file;
+	return szBuffer;
+}
+
+void TestSocket()
+{
+	upload("10.96.25.67", "/api/users/admin/sessions", "C:\\temp.zip");
 }

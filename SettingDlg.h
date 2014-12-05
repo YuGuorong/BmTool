@@ -14,7 +14,10 @@ public:
 
 // Dialog Data
 	enum { IDD = IDD_SETTING_DLG };
+	int m_nProxyPort;
+	int m_nPort;
 
+	CSkinBtn * m_pbtns[2];
 
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
@@ -27,4 +30,6 @@ public:
 	afx_msg void OnBnClickedChkProxy();
 	afx_msg void OnPaint();
 	afx_msg void OnBnClickedBtnOk2();
+	afx_msg void OnShowWindow(BOOL bShow, UINT nStatus);
+	afx_msg void OnDestroy();
 };

@@ -181,7 +181,7 @@ void CSkinBtn::DrawButton()
 	case DISABLE:
         if(m_imgList.GetSafeHandle())
         {
-			int idx = m_imgList.GetImageCount() > 3? 3 : m_imgList.GetImageCount()-1 ;
+			int idx = m_imgList.GetImageCount() > 3? 3 : m_imgList.GetImageCount() ;
             m_imgList.Draw(&memDC,idx, rect.TopLeft(), ILD_TRANSPARENT);
         }
 
