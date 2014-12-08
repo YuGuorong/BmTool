@@ -343,13 +343,13 @@ void CDirPackgeDlg::SetWindowStatus(int proj_state)
 	{
 		ben[LOGIN_TAB] = TRUE;
 	}
-	if (proj_state & LOGIN_PROJ)
+	if (proj_state & (LOGIN_PROJ|CLOSE_PROJ))
 	{
 		ben[BM_TAB] = TRUE;
 		ben[IMPORT_TAB] = TRUE;
 		ben[RES_EXP_TAB] = TRUE;
 	}
-	if (proj_state & NEW_PROJ)
+	if (proj_state & (NEW_PROJ|OPEN_PROJ))
 	{
 		ben[BM_TAB] = TRUE;
 		ben[IMPORT_TAB] = TRUE;
@@ -529,7 +529,17 @@ void CDirPackgeDlg::OnBnClickedBtnOpen()
 void CDirPackgeDlg::OnBnClickedBtnSave()
 {
 	// TODO: Add your control notification handler code here
-	if (m_Proj) m_Proj->Save();
+	if (m_Proj)
+	{
+		int ret = m_Proj->Save();
+		switch (ret)
+		{
+		case PR_ERR_CONTENT:
+			SwitchDlg(BM_TAB);
+			((CBMDlg*)m_pSubDlgs[BM_TAB])->ChangeView(VIEW_META_DATA);
+			break;
+		}
+	}
 }
 
 

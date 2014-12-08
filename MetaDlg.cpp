@@ -10,12 +10,12 @@ using namespace std;
 // CMetaDlg dialog
 
 IMPLEMENT_DYNAMIC(CMetaDlg, CReaderView)
-
+#define META_CAPTION_FOUNT_SIZE 16
 CMetaDlg::CMetaDlg(CWnd* pParent /*=NULL*/)
 	: CReaderView( pParent)
 {
 	m_vType = VIEW_META_DATA;
-	m_pItem = NULL ;
+	m_proj = NULL;
 }
 
 CMetaDlg::~CMetaDlg()
@@ -106,6 +106,7 @@ INT CMetaDlg::ParseMetaItem(CString &strRawMeta )
 	CString str;
 	int count = 0;
 	m_nMaxCapLen = 0;
+	m_nMaxHight = 0;
 	while( AfxExtractSubString(str, strRawMeta, count++, _T('\n')) )
 	{
 		int nSubIndex = -1;
@@ -126,10 +127,16 @@ INT CMetaDlg::ParseMetaItem(CString &strRawMeta )
 			str = str.Mid(1, ifd);	
 			style =  META_COMBOBOX;
 		}
-		else if( str.Find(_T("图片"))>= 0 ) 
-			style = META_PICTURE; 
-		else if( str.Find(_T("中文"))>= 0 ) 
-			style = META_READWRITE|META_MULTLINE; 
+		else if (str.Find(_T("图片")) >= 0)
+		{
+			style = META_PICTURE;
+			m_nMaxHight += 60;//
+		}
+		else if (str.Find(_T("中文")) >= 0)
+		{
+			style = META_READWRITE | META_MULTLINE;
+			m_nMaxHight += 60;//
+		}
 		else if( str.Find(_T("时间"))>= 0 ) 
 			style = META_DATETIME; 
 		else if( str.Find(_T("\""))>=0 ) 
@@ -143,6 +150,7 @@ INT CMetaDlg::ParseMetaItem(CString &strRawMeta )
 			style =  META_COMBOBOX;
 		}
 		CMetaDataItem * pit =NewMetaItem(style, strCap,  str);	
+		m_nMaxHight += ITEM_HIGHT;
 		if( m_nMaxCapLen < strCap.GetLength() ) m_nMaxCapLen = strCap.GetLength();
 		if( pext )
 		{
@@ -202,6 +210,57 @@ INT  CMetaDlg::LoadExtMetaValue(CMetaDataItem * pit, CString &szKeyIn )
 	return 0;
 }
 
+INT CMetaDlg::LoadCoverImage()
+{
+	CString strpath = m_proj->m_szProjPath + _T("\\")CFG_RES_FOLDER _T("\\")  CFG_COVER_FILE;
+
+	/*CRect r;
+	CMetaDataItem * pit = m_proj->m_pMeta;
+	while (pit)
+	{
+		if (pit->style & META_PICTURE)
+		{
+			pit->pWnd[2]->GetWindowRect(r);
+			LoadMetaImage(pit, strpath, r);
+			return 1;
+		}
+		pit = pit->pNext;
+	}*/
+	return 0;
+}
+INT  CMetaDlg::SetMetaValues()
+{
+	map<CStringA, CString>::iterator it;
+	for (it = m_proj->m_mapMetaValue.begin(); it != m_proj->m_mapMetaValue.end(); it++)
+	{
+		map<CStringA, CString>::iterator itcap;
+		MyTracex("  ==> %s\r\n", it->first);
+		itcap = m_proj->m_mapKeyCaps.find(it->first);
+		if (itcap != m_proj->m_mapKeyCaps.end())
+		{
+			CString strcap = itcap->second;
+			strcap.Trim();
+			SetItemValue(strcap, it->second, FALSE);
+		}
+	}
+	CMetaDataItem * pit = m_proj->m_pMeta;
+	while (pit)
+	{
+		if (pit->style & META_COMBOBOX)
+		{
+			CComboBox * pbox = (CComboBox *)pit->pWnd[1];
+			int sel = pbox->FindString(0, pit->strValue);
+			pbox->SetCurSel(sel);
+			CMetaDataItem * psub = pit;
+			do{
+				psub = ChangeSubComboBox(psub);
+			} while (psub);
+		}
+		pit = pit->pNext;
+	}
+	return TRUE;
+}
+
 INT CMetaDlg::LoadMetaData(LPCTSTR szMetaFile)
 {
 	CFile of;
@@ -225,26 +284,32 @@ BOOL CMetaDlg::OnInitDialog()
 {
 	this->SetWndStyle(0, RGB(255,255,255), RGB(220,220,240));
 	CReaderView::OnInitDialog();
+	m_proj = ::GetPackProj();
 	LOGFONT lf={0};
-	lf.lfHeight = 16;
+	lf.lfHeight = META_CAPTION_FOUNT_SIZE;
 	_tcscpy_s(lf.lfFaceName, _T("宋体"));
 	
 	VERIFY(m_ftCaption.CreateFontIndirect(&lf));
 	VERIFY(m_ftEdit.CreateFontIndirect(&lf));
+	CString strCurDir;
+	::GetCurrentDirectory(MAX_PATH, strCurDir.GetBuffer(MAX_PATH));
+	strCurDir.ReleaseBuffer();
+	::SetCurrentDirectory(g_pSet->strCurPath);
+	CString strMetaDescFile = g_pSet->strCurPath + _T("MetaTable.txt");
 
-	if(  LoadMetaData(_T("MetaTable.txt")) > 0 )
+	if(  LoadMetaData(strMetaDescFile) > 0 )
 	{
 		//LoadXmlMetaValues();
 		CRect r(0,0, 300,ITEM_HIGHT);
 		r.MoveToXY(4,4);	
-		CMetaDataItem * pit = m_pItem;
+		CMetaDataItem * pit = m_proj->m_pMeta;
 		while( pit )
 		{
 			CreateItem( pit, _T(""), r);
 			pit = pit->pNext;
 		}
 	}
-
+	::SetCurrentDirectory(strCurDir);
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
 }
@@ -329,7 +394,7 @@ label:
 
 CMetaDataItem * CMetaDlg::NewMetaItem(int style, LPCTSTR szKey, LPCTSTR strDefV)
 {
-	CMetaDataItem * plast = m_pItem;
+	CMetaDataItem * plast = m_proj->m_pMeta;
 	CMetaDataItem * pit = new CMetaDataItem();	
 	if( plast != NULL )
 	{
@@ -340,11 +405,11 @@ CMetaDataItem * CMetaDlg::NewMetaItem(int style, LPCTSTR szKey, LPCTSTR strDefV)
 	pit->strDefVal = strDefV;
 	pit->strKey = szKey;
 
-	if( m_pItem == NULL ) 
-		m_pItem= pit;
+	if (m_proj->m_pMeta == NULL)
+		m_proj->m_pMeta = pit;
 	else
 	{
-		CMetaDataItem * pits = m_pItem;
+		CMetaDataItem * pits = m_proj->m_pMeta;
 		while( pits->pNext ) pits = pits->pNext;
 		pits->pNext = pit;
 	}
@@ -389,7 +454,7 @@ void CMetaDlg::LoadMetaImage( CMetaDataItem * pItem, LPCTSTR strV, CRect r)
 void CMetaDlg::CreateTitle(PCWnd * pWnd , LPCTSTR szKey, CRect &rs)
 {
 	CRect r(rs);
-	r.right = r.left + m_nMaxCapLen * 16;
+	r.right = r.left + (1 + m_nMaxCapLen) * META_CAPTION_FOUNT_SIZE;
 	pWnd[0] =(CWnd *)new CLink;
 	CString str = szKey;
 	str = str.TrimRight();
@@ -409,7 +474,7 @@ void CMetaDlg::CreateItem( CMetaDataItem * pItem, LPCTSTR strV, CRect &rs  )
 	if(pItem->style & (META_PICTURE|META_MULTLINE) ) r.bottom+=60;
 	if( r.bottom >= rc.bottom - 2)  
 	{
-		r.MoveToXY(r.left + m_nMaxCapLen * 16 + r.Width() + 8, 4);
+		r.MoveToXY(r.left + (m_nMaxCapLen + 1) * META_CAPTION_FOUNT_SIZE + r.Width() + 1, 4);
 		rs.MoveToXY(r.TopLeft());
 	}
 	CreateTitle(pItem->pWnd, pItem->strKey, r);	
@@ -468,7 +533,8 @@ void CMetaDlg::CreateItem( CMetaDataItem * pItem, LPCTSTR strV, CRect &rs  )
 		DWORD dwstyle = WS_CHILD|WS_VISIBLE|WS_TABSTOP|WS_BORDER;
         if( pItem->style & META_PASSWORD )  dwstyle |= ES_PASSWORD;
         if( pItem->style & META_READONLY )  dwstyle |= ES_READONLY;
-		if (pItem->style & META_MULTLINE)  dwstyle |= ES_WANTRETURN| WS_VSCROLL | ES_MULTILINE ;
+		if (pItem->style & META_MULTLINE)	dwstyle |= ES_WANTRETURN | WS_VSCROLL | ES_MULTILINE;
+		/*else dwstyle |= SS_RIGHT;*/
         CWnd *pWnd =(CWnd *)new CEdit;
         ((CEdit*)pWnd)->CreateEx(/*WS_EX_CLIENTEDGE|*/WS_EX_LEFT|ES_AUTOHSCROLL, _T("EDIT"),NULL, dwstyle , r, this,  pItem->nCtrlID );       
         pWnd->SetWindowText(strV);
@@ -477,22 +543,34 @@ void CMetaDlg::CreateItem( CMetaDataItem * pItem, LPCTSTR strV, CRect &rs  )
 	}
 	
 	rs.OffsetRect(0, r.Height()-1);	 
+}
 
+void CMetaDlg::MoveItem(CMetaDataItem * pItem, CRect &rs)
+{
 
 }
 
 void CMetaDlg::OnSize(UINT nType, int cx, int cy)
 {
 	CReaderView::OnSize(nType, cx, cy);
-
-	// TODO: Add your message handler code here
+	if (m_proj)
+	{
+		CMetaDataItem *pit = m_proj->m_pMeta;
+		CRect r(0, 0, 300, ITEM_HIGHT);
+		r.MoveToXY(4, 4);
+		while (pit)
+		{
+			MoveItem(pit, r);
+			pit = pit->pNext;
+		}
+	}
 }
 
 
 void CMetaDlg::OnDestroy()
 {
 	CReaderView::OnDestroy();
-	CMetaDataItem *pit = m_pItem;
+	CMetaDataItem *pit = m_proj->m_pMeta;
 	while( pit )
 	{
 		CMetaDataItem *pn = pit->pNext;
@@ -504,13 +582,13 @@ void CMetaDlg::OnDestroy()
 		delete pit;
 		pit = pn;
 	}
-	m_pItem = NULL;
+	m_proj->m_pMeta = NULL;
 	// TODO: Add your message handler code here
 }
 
 CMetaDataItem * CMetaDlg::GetCtrlItem(int nid)
 {
-	CMetaDataItem * pit = m_pItem;
+	CMetaDataItem * pit = m_proj->m_pMeta;
 	while( pit )
 	{
 		if( pit->nCtrlID == nid) 
@@ -525,7 +603,7 @@ CMetaDataItem * CMetaDlg::GetCtrlItem(int nid)
 
 CMetaDataItem * CMetaDlg::FindNextMetaItem(CMetaDataItem * pit)
 {
-	CMetaDataItem * psub = m_pItem;
+	CMetaDataItem * psub = m_proj->m_pMeta;
 	if (pit == NULL) 
 		return psub;
 	else
@@ -534,7 +612,7 @@ CMetaDataItem * CMetaDlg::FindNextMetaItem(CMetaDataItem * pit)
 
 CMetaDataItem * CMetaDlg::FindSubItem(CMetaDataItem * pit)
 {
-	CMetaDataItem * psub = m_pItem;
+	CMetaDataItem * psub = m_proj->m_pMeta;
 	if (pit == NULL) return psub;
 	while( psub )
 	{
@@ -607,7 +685,7 @@ void CMetaDlg::OnPictureClick(UINT id)
 
 INT CMetaDlg::GetItemValue(LPCTSTR ItemCaption, CString &strValue)
 {
-	CMetaDataItem * pit = m_pItem;
+	CMetaDataItem * pit = m_proj->m_pMeta;
 	while(pit)
 	{
 		if (pit->strKey.Compare(ItemCaption) == 0)
@@ -620,21 +698,34 @@ INT CMetaDlg::GetItemValue(LPCTSTR ItemCaption, CString &strValue)
 	return 0;
 }
 
-INT CMetaDlg::SetItemValue(LPCTSTR ItemCaption, LPCTSTR strValue)
+INT CMetaDlg::SetItemValue(LPCTSTR ItemCaption, LPCTSTR strValue, BOOL bSetSubCombox)
 {
-	CMetaDataItem * pit = m_pItem;
+	CMetaDataItem * pit = m_proj->m_pMeta;
 	while (pit)
 	{
-		if (pit->strKey.Compare(ItemCaption) == 0)
+		CString str = pit->strKey;
+		str.Trim();
+		if (str.Compare(ItemCaption) == 0)
 		{
 			if (pit->style & META_COMBOBOX)
 			{
 				CComboBox * pbox = (CComboBox * )pit->pWnd[1];
 				int sel = pbox->FindString(0, strValue);
 				pbox->SetCurSel(sel);
-				do{
-					pit = ChangeSubComboBox(pit);
-				} while (pit);
+				pit->strValue = strValue;
+				if (bSetSubCombox)
+				{
+					do{
+						pit = ChangeSubComboBox(pit);
+					} while (pit);
+				}
+			}
+			else if (pit->style & META_PICTURE)
+			{
+				CString strpath = m_proj->m_szProjPath + _T("\\")CFG_RES_FOLDER _T("\\") + strValue;
+				CRect r;
+				pit->pWnd[2]->GetWindowRect(r);
+				LoadMetaImage(pit, strpath, r);
 			}
 			else
 			{
@@ -647,37 +738,3 @@ INT CMetaDlg::SetItemValue(LPCTSTR ItemCaption, LPCTSTR strValue)
 	return 0;
 }
 
-
-INT  CMetaDlg::SaveMetaData(CPackerProj  * proj, CString &sxml)
-{
-	if (g_pSet)
-	{
-		CMetaDataItem * pit = m_pItem;
-		while (pit)
-		{
-			//pit->strKey
-			CString strval;
-			if (pit->style & META_COMBOBOX)
-			{
-				CComboBox * pbox = (CComboBox*)(pit->pWnd[1]);
-				int nsel = pbox->GetCurSel();
-				if (nsel >=0 )
-				pbox->GetLBText(nsel, strval);
-			}
-			else if (pit->style & META_PICTURE)
-			{
-				strval = pit->strValue;
-			}
-			else
-			{
-				pit->pWnd[1]->GetWindowText(strval);
-			}
-			CString strpos = _T("!&");
-			strpos += pit->strKey;
-			strpos.TrimRight();
-			sxml.Replace(strpos, ConvertXmlString(strval));
-			pit = pit->pNext;
-		}
-	}
-	return 0;
-}

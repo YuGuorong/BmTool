@@ -146,6 +146,45 @@ CResMan * CResMan::NewRes(CFileDialog &fdlg)
 	return pRes;
 }
 
+INT CResMan::Remove(CResMan * pres)
+{
+	if (pres == NULL) return 0;
+	CPackerProj * proj = ::GetPackProj();
+	if (pres == proj->m_pRes)
+		proj->m_pRes = pres->pNext;
+	else
+	{
+		CResMan* pit = proj->m_pRes;
+		while (pit)
+		{
+			if (pit->pNext == pres)
+			{
+				pit->pNext = pres->pNext;
+				break;
+			}
+			pit = pit->pNext;
+		}
+	}
+	delete pres;
+	return 1;
+}
+
+INT CResMan::Remove(LPCTSTR szResId)
+{
+	CPackerProj * proj = ::GetPackProj();
+	CResMan* pres = proj->m_pRes;
+	while ( pres )
+	{
+		if (pres->m_strResId.Compare(szResId) == 0)
+		{
+			Remove(pres);
+			return 1;
+		}
+		pres = pres->pNext;
+	}
+	return 0;
+}
+
 BOOL CResMan::SaveRes(CString &strXml)
 {
 	CString strTemplate;
@@ -163,6 +202,7 @@ CPackerProj::CPackerProj(CWnd * pParent)
 	m_bLock = 1;
 	m_pMetaWnd = NULL;
 	m_pRes = NULL;
+	m_pMeta = NULL;
 	m_type = VIEW_UNKNOWN;
 	HRSRC hr = ::FindResource(NULL, MAKEINTRESOURCE(IDR_MIME_TYPE), _T("MIME"));
 	if (hr)
@@ -195,6 +235,8 @@ CPackerProj::CPackerProj(CWnd * pParent)
 	m_db_items.BookState = (char *)m_ptrDbCol[8];
 	m_db_items.author    = (char *)m_ptrDbCol[9];
 	m_db_items.description = (char *)m_ptrDbCol[10];
+	
+	LoadMetaCol();
 }
 
 
@@ -212,6 +254,57 @@ CPackerProj::~CPackerProj()
 	{
 		if (tblBookColSize[i]) delete m_ptrDbCol[i];
 	}
+}
+
+BOOL CPackerProj::LoadMetaCol()
+{	
+	CString strf = g_pSet->strCurPath + _T("metadetail.template");
+	CString fbuf = CUtil::File2Unc(strf);
+	TCHAR * ptr = fbuf.GetBuffer();
+	CString strCap;
+	AString strVar;
+	while (*ptr)
+	{
+		if (ptr[0] == '!' && ptr[1] == '&')
+		{
+			TCHAR toc = (*(ptr - 1) == _T('\"')) ? _T('\"') : _T('<');
+			TCHAR * pe = _tcschr(ptr + 2, toc);
+			if (pe == NULL) break;
+			pe[0] = 0; 
+			strCap = ptr+2;
+			TRACE(_T("%s:"), strCap);
+			while ( *--ptr )
+			{
+				if (ptr[0] == '=' || ptr[0] == '>')
+				{
+					while (*--ptr == ' ');
+					ptr[1] = 0;
+					while (ptr[0] != ' ' && ptr[0] != '<') ptr--;
+					ptr++;
+					QUnc2Utf(ptr, strVar);
+					strVar.Trim();
+					strCap.Trim();
+					MyTracex("%s\r\n", strVar);
+					ptr = pe;
+					m_mapKeyCaps.insert(make_pair(strVar, strCap));
+					break;
+				}
+			}
+		}
+		ptr++;
+	}
+	fbuf.ReleaseBuffer();
+	return TRUE;
+}
+
+BOOL CPackerProj::SetBookState(LPCTSTR sbookid, LPCTSTR sState)
+{
+	CString str; str.Format(_T("UPDATE books SET BookState = \'%s\' WHERE BookId=\'%s\' "), sState, sbookid);
+	AString sql;
+	QUnc2Utf(str, sql);
+	char *pErrMsg;
+	execSQL(sql);
+	return TRUE;
 }
 
 BOOL CPackerProj::ClearResTable()
@@ -248,10 +341,11 @@ INT CPackerProj::DestoryProj()
 
 INT CPackerProj::CreateProj(LPCTSTR szTarget)
 {
-	if (szTarget == NULL)
+	//if (szTarget == NULL)
 	{
 		CFileDialog fdlg(TRUE, 0, _T("*.pdf;*.epub"), OFN_HIDEREADONLY,
 			_T("PFD文件|*.pdf|EPUB文件|*.epub|所有文件|*.*||"), m_pMetaWnd);
+		fdlg.m_ofn.lpstrInitialDir = g_pSet->m_strAppUserPath;
 		if (fdlg.DoModal() == IDOK)
 		{
 			if (fdlg.GetFileExt().CompareNoCase(_T("PDF")) == 0)
@@ -297,6 +391,9 @@ INT CPackerProj::CreateProj(LPCTSTR szTarget)
 	return 0;
 }
 
+
+//>>>>==============save functions=================================saving=========================>
+
 BOOL CPackerProj::SaveProjToDb()
 {
 	char sql[64 * 1024];
@@ -321,148 +418,70 @@ BOOL CPackerProj::SaveProjToDb()
 	return TRUE;
 }
 
-BOOL CPackerProj::SetBookState(LPCTSTR sbookid, LPCTSTR sState)
+BOOL CPackerProj::PrecheckContent()
 {
-	CString str; str.Format(_T("UPDATE books SET BookState = \'%s\' WHERE BookId=\'%s\' "), sState, sbookid);
-	AString sql;
-	QUnc2Utf(str, sql);
-	char *pErrMsg;
-	execSQL(sql);
+	CMetaDataItem * pit = m_pMeta;
+	CString str;
+	while (pit)
+	{
+		if (pit->style & META_READWRITE)
+		{
+			pit->pWnd[1]->GetWindowText(str);
+			CString strt = str.Trim();
+			if (strt.IsEmpty())
+			{
+				pit->pWnd[1]->SetFocus();
+				return FALSE;
+			}
+		}
+		else if (pit->style & META_COMBOBOX)
+		{
+			CComboBox * pbox = (CComboBox*)(pit->pWnd[1]);
+			int nsel = pbox->GetCurSel();
+			if ( nsel == -1 )
+			{
+				pit->pWnd[1]->SetFocus();
+				return FALSE;
+			}
+		}
+		else if (pit->style & META_PICTURE)
+		{
+		}
+		pit = pit->pNext;
+	}
 	return TRUE;
 }
 
-int CPackerProj::Save()
+void CPackerProj::SaveMeta(CString &sxml)
 {
-	//if (m_szProj.IsEmpty())
+	CMetaDataItem * pit = m_pMeta;
+	while (pit)
 	{
-		CFileDialog fdlg(FALSE, 0, _T("*.")PROJ_EXT, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
-			_T("编目工程文件|*.") PROJ_EXT _T("|所有文件|*.*||"), m_pMetaWnd);
-		if (fdlg.DoModal() == IDOK)
+		//pit->strKey
+		CString strval;
+		if (pit->style & META_COMBOBOX)
 		{
-			::AfxGetMainWnd()->BeginWaitCursor();
-			m_szProj = fdlg.GetFileName();
-			CString strpath = fdlg.GetPathName();
-
-			m_szProjPath = CUtil::GetFilePath(strpath);//fdlg.GetFolderPath();
-			CString str = m_szProjPath;
-			m_szPathRes = str + _T("\\") CFG_RES_FOLDER;
-			::CreateDirectory(m_szPathRes, NULL);
-			m_strTmCreateProj = CTime::GetCurrentTime().Format(TIME_FMT);
-			m_strTmModifyProj = m_strTmCreateProj;
-			CString sXml;
-			CString strTempXmlFile = g_pSet->strCurPath;
-			strTempXmlFile += _T("metadetail.template");
-			sXml = CUtil::File2Unc(strTempXmlFile);
-			if (sXml.IsEmpty())  { ::AfxGetMainWnd()->EndWaitCursor(); return -1; }
-			sXml.Replace(_T("!&Target"), ConvertXmlString(m_szTargetFileName));
-			sXml.Replace(_T("!&id"), ConvertXmlString(m_strUuid));// this->m_strLoginUser);
-			sXml.Replace(_T("!&ProjCreateTime"), m_strTmCreateProj);
-			sXml.Replace(_T("!&ProjModifyTime"), m_strTmModifyProj);
-			sXml.Replace(_T("!&srcCreateTime"), m_strTmCreateSrc);
-			sXml.Replace(_T("!&SrcModifyTime"), m_strTmModifySrc);
-			sXml.Replace(_T("!&digestMethod"), _T("MD5"));
-			sXml.Replace(_T("!&digest"), _T(""));
-			sXml.Replace(_T("!&version"), _T("1"));
-
-			m_pMetaWnd->SendMessage(WM_VIEW_PROJ, SAVE_PROJ, (WPARAM)(&sXml));//save meta
-			CString sAttachment;
-			this->Res2Xml(sAttachment);
-			sXml.Replace(_T("!&attachments"), sAttachment); //resource in xml;
-
-			CFile of;
-			CString spath = m_szPathRes + _T("\\__meta.xml");
-
-			if (of.Open(spath, CFile::modeReadWrite | CFile::modeCreate))
-			{		
-				CStringA astr;
-				QUnc2Utf(sXml, astr);
-				int bg = astr.Find('<');
-				if ( bg > 0 )
-					astr.Delete(0, bg);
-				of.Write(astr, astr.GetLength());
-				of.Close();
-
-				CString spath = m_szProjPath + _T("\\");
-				spath += m_szProj + _T(".")PROJ_EXT;//_T(".zip");
-				if (ZipRes(spath) == FALSE)
-				{
-					::AfxGetMainWnd()->EndWaitCursor();
-					return -1;
-				}
-				m_szZipPath = spath;
-			}
-			SaveProjToDb();
-			::AfxGetMainWnd()->EndWaitCursor();
+			CComboBox * pbox = (CComboBox*)(pit->pWnd[1]);
+			int nsel = pbox->GetCurSel();
+			if (nsel >= 0)
+				pbox->GetLBText(nsel, strval);
 		}
+		else if (pit->style & META_PICTURE)
+		{
+			strval = pit->strValue;
+		}
+		else
+		{
+			pit->pWnd[1]->GetWindowText(strval);
+		}
+		CString strpos = _T("!&");
+		strpos += pit->strKey;
+		strpos.TrimRight();
+		sxml.Replace(strpos, ConvertXmlString(strval));
+		pit = pit->pNext;
 	}
-	return 0;
 }
-
-
-int CPackerProj::Open(LPCTSTR szProj)
-{
-	strError.Empty();
-	if ( !this->m_szTargetPath.IsEmpty())
-	{
-		if (::AfxGetMainWnd()->MessageBox(_T("旧工程是否要保存？"), _T("保存"), MB_YESNO) == IDYES)
-		{
-			Save();
-		}
-	}
-	if (szProj == NULL)
-	{
-		CFileDialog fdlg(TRUE, 0, _T("*.") PROJ_EXT, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
-			_T("编目工程文件|*.") PROJ_EXT _T("|所有文件|*.*||"), m_pMetaWnd);
-		if (fdlg.DoModal() == IDOK)
-		{
-			if (!m_szTargetPath.IsEmpty())
-				DestoryProj();
-			m_szProj = fdlg.GetFileName();
-			CString strpath = fdlg.GetPathName();
-			m_szProjPath = CUtil::GetFilePath(strpath); //fdlg.GetFolderPath();
-			ClearResTable();
-			if (m_pProjDir) m_pProjDir->DeleteAllItems();
-			UnzipProj();
-			map<CStringA, CStringA >::iterator l_it;
-			l_it = m_mapMetaValue.find(CStringA("ebook_type"));
-			if (l_it != m_mapMetaValue.end())
-			{
-				if (l_it->second.CompareNoCase("PDF") == 0)
-					m_type = VIEW_PDF;
-				else if (l_it->second.CompareNoCase("EPUB") == 0)
-					m_type = VIEW_EPUB;
-				else
-				{
-					strError = _T("不识别的类型");
-					DestoryProj();
-					return 0;
-				}
-			}
-			CFile of;
-			if (of.Open(m_szTargetFileName, CFile::modeRead|CFile::shareDenyNone))
-			{
-				m_nTargetFLen = of.GetLength();
-				CFileStatus ofs;
-				if (of.GetStatus(ofs))
-				{
-					m_strTmCreateSrc = ofs.m_ctime.Format(TIME_FMT);
-					m_strTmModifySrc = ofs.m_mtime.Format(TIME_FMT);
-				}
-				of.Close();
-				SetProjStatus(OPEN_PROJ);
-			}
-			else
-			{
-				strError = _T("书已损坏，不可识别");
-				DestoryProj();
-			}
-		}
-	}
-	return 0;
-}
-
-#include "lib\XZip\XZip.h"
-#include "lib\XZip\XUnZip.h"
+//----save resources-----
 BOOL CPackerProj::Res2Xml(CString &strResXml)
 {
 	CString strResTemp = _T("<attachment id=\"!&id\" src=\"!&src\" srctype=\"!&srctype\" relation=\"!&relation\" digestMethod=\"!&digestMethod\" digest=\"!&digest\" />\r\n");
@@ -484,15 +503,66 @@ BOOL CPackerProj::Res2Xml(CString &strResXml)
 	return TRUE;
 }
 
+//>----save direcotries----->
+static void EndDirToXml(CString &sxml, int sublevel)
+{
+	CString str;
+	for (int i = 0; i < sublevel; i++)
+		str += _T("\t");
+	sxml += str;
+	sxml += _T("\t</direntry>\r\n");
+}
+
+void CPackerProj::SaveDirToXml(HTREEITEM hit, CString &sxml, int sublevel)
+{
+	CString sdir = m_pProjDir->GetItemText(hit);
+	UINT32 npg = m_pProjDir->GetItemData(hit);
+	CString str;
+	for (int i = 0; i < sublevel; i++)
+		str += _T("\t");
+	sxml += str;
+	str.Format(_T("\t<direntry name=\"%s\" pageNo=\"%d\">\r\n"), ConvertXmlString(sdir), npg);
+	sxml += str;
+}
+
+void CPackerProj::SaveDirs(CString &sxml)
+{
+	HTREEITEM hroot = m_pProjDir->GetRootItem();
+	HTREEITEM hpt = hroot;// m_pProjDir->GetNextItem(hroot, TVGN_CHILD);
+	int sub = 0;
+	while (hpt)
+	{
+		SaveDirToXml(hpt, sxml, sub);
+		HTREEITEM hnext = m_pProjDir->GetNextItem(hpt, TVGN_CHILD);
+		if (hnext == NULL)
+		{
+			hnext = m_pProjDir->GetNextItem(hpt, TVGN_NEXT);
+			EndDirToXml(sxml, sub);
+		}
+		else
+			sub++;
+		while (hnext == NULL) //no sblin and child ,track back
+		{
+			if (hpt == hroot) break; //root no parent
+			EndDirToXml(sxml, --sub);
+			hpt = m_pProjDir->GetNextItem(hpt, TVGN_PARENT);
+			hnext = m_pProjDir->GetNextItem(hpt, TVGN_NEXT);
+			if (hnext == NULL && hpt == NULL)
+				return;
+		}
+		hpt = hnext;
+	}
+}
+//<----save direcotries-----<
+
 BOOL CPackerProj::ZipRes(LPCTSTR szZipFile)
 {
-	
 	if (m_szTargetPath)
 	{
 		CString strZip = szZipFile;
 		TCHAR * pzip = strZip.GetBuffer(strZip.GetLength());
 		HZIP hz = CreateZip(pzip, 0, ZIP_FILENAME);
-		if ( hz == 0) return FALSE;
+		if (hz == 0) return FALSE;
 		BOOL ret = TRUE;
 
 		void * ptr = NULL;
@@ -512,6 +582,15 @@ BOOL CPackerProj::ZipRes(LPCTSTR szZipFile)
 
 			spath = m_szCoverPath;// m_szPathRes + _T("\\__cover.jpg");
 			ZipAdd(hz, _T("__cover.jpg"), spath.GetBuffer(spath.GetLength()), 0, ZIP_FILENAME);
+			spath.ReleaseBuffer();
+
+			spath = m_szPathRes + _T("\\")CFG_PREVIEW_FILE;
+			CString sexe = g_pSet->strCurPath + _T("\\")CFG_SWF_EXE;
+			CString sparm = _T("-p 1-20 ");
+			sparm += m_szTargetPath; 
+			sparm += _T(" -o ") + spath;
+			::CUtil::RunProc(sexe, sparm, m_szPathRes);
+			ZipAdd(hz, CFG_PREVIEW_FILE, spath.GetBuffer(spath.GetLength()), 0, ZIP_FILENAME);
 			spath.ReleaseBuffer();
 
 			CResMan * pRes = m_pRes;
@@ -536,9 +615,150 @@ BOOL CPackerProj::ZipRes(LPCTSTR szZipFile)
 	return TRUE;
 }
 
+int CPackerProj::Save()
+{
+	if (m_type != VIEW_EMPTY )
+	{
+		if (PrecheckContent() == FALSE)
+		{
+			return PR_ERR_CONTENT;
+		}
+		CFileDialog fdlg(FALSE, 0, _T("*.")PROJ_EXT, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
+			_T("编目工程文件|*.") PROJ_EXT _T("|所有文件|*.*||"), ::AfxGetMainWnd());
+		fdlg.m_ofn.lpstrInitialDir = g_pSet->m_strAppUserPath;
+		if (fdlg.DoModal() == IDOK)
+		{
+			::AfxGetMainWnd()->BeginWaitCursor();
+			m_szProj = fdlg.GetFileName();
+			CString strpath = fdlg.GetPathName();
+
+			m_szProjPath = CUtil::GetFilePath(strpath);//fdlg.GetFolderPath();
+			CString str = m_szProjPath;
+			m_szPathRes = str + _T("\\") CFG_RES_FOLDER;
+			::CreateDirectory(m_szPathRes, NULL);
+			m_strTmCreateProj = CTime::GetCurrentTime().Format(TIME_FMT);
+			m_strTmModifyProj = m_strTmCreateProj;
+			CString sXml;
+			CString strTempXmlFile = g_pSet->strCurPath;
+			strTempXmlFile += _T("metadetail.template");
+			sXml = CUtil::File2Unc(strTempXmlFile);
+			if (sXml[0] == 0xFFFE || sXml[0] == 0xFEFF) sXml.Delete(0, 1);
+			if (sXml.IsEmpty())  { ::AfxGetMainWnd()->EndWaitCursor(); return PR_ERR_NOT_FIND_FILE; }
+			sXml.Replace(_T("!&Target"), ConvertXmlString(m_szTargetFileName));
+			sXml.Replace(_T("!&id"), ConvertXmlString(m_strUuid));// this->m_strLoginUser);
+			sXml.Replace(_T("!&ProjCreateTime"), m_strTmCreateProj);
+			sXml.Replace(_T("!&ProjModifyTime"), m_strTmModifyProj);
+			sXml.Replace(_T("!&srcCreateTime"), m_strTmCreateSrc);
+			sXml.Replace(_T("!&SrcModifyTime"), m_strTmModifySrc);
+			sXml.Replace(_T("!&digestMethod"), _T("MD5"));
+			sXml.Replace(_T("!&digest"), _T(""));
+			sXml.Replace(_T("!&version"), _T("1"));
+
+			SaveMeta(sXml); //m_pMetaWnd->SendMessage(WM_VIEW_PROJ, SAVE_PROJ, (WPARAM)(&sXml));//save meta
+
+			CString  sdir;  //save directory information
+			SaveDirs(sdir);
+			sXml.Replace(_T("!&directory"), sdir);
+
+			CString sAttachment;
+			this->Res2Xml(sAttachment);
+			sXml.Replace(_T("!&attachments"), sAttachment); //resource in xml;
+
+			CFile of;
+			CString spath = m_szPathRes + _T("\\__meta.xml");
+
+			if (of.Open(spath, CFile::modeReadWrite | CFile::modeCreate))
+			{		
+				CStringA astr;
+				QUnc2Utf(sXml, astr);
+				of.Write(astr, astr.GetLength());
+				of.Close();
+
+				CString spath = m_szProjPath + _T("\\");
+				spath += m_szProj + _T(".")PROJ_EXT;//_T(".zip");
+				if (ZipRes(spath) == FALSE)
+				{
+					::AfxGetMainWnd()->EndWaitCursor();
+					return PR_ERR_ZIP_FAIL;
+				}
+				m_szZipPath = spath;
+			}
+			SaveProjToDb();
+			::AfxGetMainWnd()->EndWaitCursor();
+		}
+	}
+	return PR_OK;
+}
+//<==============save functions=================================saving========================<<<<<<
+
+//>>>>>>==============open functions=================================opening========================>
 
 static void XMLCALL endXmlRoot(void *userData, const char *name);
 static void XMLCALL ParseXmlRoot(void *userData, const char *name, const char **atts);
+
+int CPackerProj::Open(LPCTSTR szProj)
+{
+	strError.Empty();
+	if ( !this->m_szTargetPath.IsEmpty())
+	{
+		if (::AfxGetMainWnd()->MessageBox(_T("旧工程是否要保存？"), _T("保存"), MB_YESNO) == IDYES)
+		{
+			Save();
+		}
+	}
+	if (szProj == NULL)
+	{
+		CFileDialog fdlg(TRUE, 0, _T("*.") PROJ_EXT, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
+			_T("编目工程文件|*.") PROJ_EXT _T("|所有文件|*.*||"), ::AfxGetMainWnd());
+		fdlg.m_ofn.lpstrInitialDir = g_pSet->m_strAppUserPath;
+		if (fdlg.DoModal() == IDOK)
+		{
+			if (!m_szTargetPath.IsEmpty())
+				DestoryProj();
+			m_szProj = fdlg.GetFileName();
+			CString strpath = fdlg.GetPathName();
+			m_szProjPath = CUtil::GetFilePath(strpath); //fdlg.GetFolderPath();
+			ClearResTable();
+			if (m_pProjDir) m_pProjDir->DeleteAllItems();
+			UnzipProj();
+			map<CStringA, CString >::iterator l_it;
+			l_it = m_mapMetaValue.find(CStringA("ebook_type"));
+			if (l_it != m_mapMetaValue.end())
+			{
+				if (l_it->second.CompareNoCase(_T("PDF")) == 0)
+					m_type = VIEW_PDF;
+				else if (l_it->second.CompareNoCase(_T("EPUB")) == 0)
+					m_type = VIEW_EPUB;
+				else
+				{
+					strError = _T("不识别的类型");
+					DestoryProj();
+					return PR_ERR_UNKOWN_TYPE;
+				}
+			}
+			CFile of;
+			if (of.Open(m_szTargetPath, CFile::modeRead|CFile::shareDenyNone))
+			{
+				m_nTargetFLen = of.GetLength();
+				CFileStatus ofs;
+				if (of.GetStatus(ofs))
+				{
+					m_strTmCreateSrc = ofs.m_ctime.Format(TIME_FMT);
+					m_strTmModifySrc = ofs.m_mtime.Format(TIME_FMT);
+				}
+				of.Close();
+				SetProjStatus(OPEN_PROJ);
+			}
+			else
+			{
+				strError = _T("书已损坏，不可识别");
+				DestoryProj();
+				return PR_ERR_OPEN_BOOK;
+			}
+		}
+	}
+	return PR_OK;
+}
 
 static void XMLCALL ParseXmlDir(void *userData, const char *name, const char **atts)
 {
@@ -551,7 +771,7 @@ static void XMLCALL ParseXmlDir(void *userData, const char *name, const char **a
 		pg = atoi(atts[3]);
 		HTREEITEM hpt = proj->m_hDirCur;
 		proj->m_hDirCur = proj->m_pProjDir->InsertItem(str, proj->m_hDirCur);
-		proj->m_pProjDir->SetItemData(hpt, pg);
+		proj->m_pProjDir->SetItemData(proj->m_hDirCur, pg);
 	}
 }
 
@@ -579,30 +799,32 @@ static void XMLCALL ParseXmlAttachment(void *userData, const char *name, const c
 
 static void XMLCALL endXmlAttachment(void *userData, const char *name)
 {
-	CPackerProj * proj = (CPackerProj*)userData;
-	XML_Parser parser = (XML_Parser)proj->m_ptrUserData;
-	XML_SetElementHandler(parser, ParseXmlRoot, endXmlRoot);
+	if (strcmp(name, "attachments") == 0)
+	{
+		CPackerProj * proj = (CPackerProj*)userData;
+		XML_Parser parser = (XML_Parser)proj->m_ptrUserData;
+		XML_SetElementHandler(parser, ParseXmlRoot, endXmlRoot);
+	}
 }
-
-
-#define SET_XML_STR_ITEM(xml_sect, sxml, strval )  {\
-	if( strcmp(xml_sect, sxml[0]) == 0) QUtf2Unc(sxml[1], strval);}
 
 static void DecMainSection(CPackerProj * proj, const char ** atts)
 {
 	if (atts == NULL) return;
 	const char * * pxml = atts;
+	CString strVal;
 	while ( pxml[0] )
 	{
 		if (strcmp(pxml[0], "src") == 0)
 			QUtf2Unc(pxml[1], proj->m_szTargetFileName);
 		else if (strcmp(pxml[0], "id") == 0)
 			QUtf2Unc(pxml[1], proj->m_strUuid);
-		proj->m_mapMetaValue.insert(make_pair(pxml[0], pxml[1]));
+		QUtf2Unc(pxml[1], strVal);
+		MyTracex("%s=", pxml[0]);
+		TRACE(_T("%s\r\n"), strVal);
+		proj->m_mapMetaValue.insert(make_pair(pxml[0], strVal));
 		pxml += 2;
 	}
 }
-
 
 static void XMLCALL ParseXmlRoot(void *userData, const char *name, const char **atts)
 {
@@ -621,7 +843,7 @@ static void XMLCALL ParseXmlRoot(void *userData, const char *name, const char **
 		XML_SetElementHandler(parser, ParseXmlAttachment, endXmlAttachment);
 	}
 	else if ((strcmp(name, "main") == 0) || (strcmp(name, "Book_info") == 0) || (strcmp(name, "EBook") == 0) ||
-		(strcmp(name, "version") == 0) )
+		(strcmp(name, "version") == 0) || strcmp(name, "BookClass") == 0 || strcmp(name, "author") == 0  )
 	{
 		DecMainSection(proj, atts);
 	}
@@ -641,16 +863,27 @@ static void XMLCALL ParseXmlRoot(void *userData, const char *name, const char **
 static void XMLCALL endXmlRoot(void *userData, const char *name)
 {
 	CPackerProj * proj = (CPackerProj*)userData;
-	
-	if (strcmp(name, "content")){ proj->m_mapMetaValue.insert(make_pair(name, proj->m_sXmlData)); }
-	else if (strcmp(name, "author_introduce")){ proj->m_mapMetaValue.insert(make_pair(name, proj->m_sXmlData)); }
-	else if (strcmp(name, "force_word")){ proj->m_mapMetaValue.insert(make_pair(name, proj->m_sXmlData)); }
-	else if (strcmp(name, "book_recomend")){ proj->m_mapMetaValue.insert(make_pair(name, proj->m_sXmlData)); }
-	else if (strcmp(name, "notes")){ proj->m_mapMetaValue.insert(make_pair(name, proj->m_sXmlData)); }
-
+	LPCTSTR ptr = proj->m_sXmlData;
+	while (*ptr)
+	{
+		if (ptr[0] != '\r' && ptr[0] != '\n' && ptr[0] != ' ' && ptr[0] != '\t')
+		{
+			proj->m_sXmlData.Trim();
+			proj->m_mapMetaValue.insert(make_pair(name, proj->m_sXmlData));
+		}
+		ptr++;
+	}
+	/*
+	if (strcmp(name, "content") == 0) { proj->m_mapMetaValue.insert(make_pair(name, proj->m_sXmlData)); }
+	else if (strcmp(name, "author_introduce") == 0){ proj->m_mapMetaValue.insert(make_pair(name, proj->m_sXmlData)); }
+	else if (strcmp(name, "force_word") == 0 ){ proj->m_mapMetaValue.insert(make_pair(name, proj->m_sXmlData)); }
+	else if (strcmp(name, "book_recomend") == 0 ){ proj->m_mapMetaValue.insert(make_pair(name, proj->m_sXmlData)); }
+	else if (strcmp(name, "notes") == 0 ){ proj->m_mapMetaValue.insert(make_pair(name, proj->m_sXmlData)); }
+	else if (strcmp(name, "cover") == 0){ proj->m_mapMetaValue.insert(make_pair(name, proj->m_sXmlData)); }
+*/
 }
 
-static void XMLCALL parsedata(void *userData, const XML_Char *s, int len)
+static void XMLCALL parsedata(void *userData, const XML_Char *s, int len)//Combine element data 
 {
 	if (len)
 	{
@@ -660,7 +893,10 @@ static void XMLCALL parsedata(void *userData, const XML_Char *s, int len)
 		char buf[BUFSIZ+1];
 		memcpy(buf, s, len);
 		buf[len] = 0;
-		proj->m_sXmlData += buf;
+		TCHAR bufx[BUFSIZ];
+		Utf2Unc(buf, bufx, -1, BUFSIZ);
+		proj->m_sXmlData += bufx;
+		
 		//delete buf;
 	}
 }
@@ -682,8 +918,7 @@ BOOL CPackerProj::ParseXml()
 		int len = of.Read(buf, BUFSIZ);
 		done = len < sizeof(buf);
 		if (XML_Parse(parser, buf, len, done) == XML_STATUS_ERROR) {
-			fprintf(stderr,
-				"%s at line %""u\n",
+			MyTracex( "%s at line %""u\n",
 				XML_ErrorString(XML_GetErrorCode(parser)),
 				XML_GetCurrentLineNumber(parser));
 			return 1;
@@ -715,9 +950,9 @@ int UnzipEncFile(HZIP hz, ZIPENTRYW * pze, LPCTSTR sfile, BOOL bres = FALSE)
 	ZRESULT zret = FindZipItem(hz, sfile, 0, &index, pze);
 	if (zret == ZR_OK)
 	{
-		int flen = pze->unc_size;
+		int flen = pze->unc_size ;
 		char * pbuf = new char[flen];
-		zret = UnzipItem(hz, index, pbuf, flen, ZIP_MEMORY);//bres not using
+		zret = UnzipItem(hz, index, pbuf, flen , ZIP_MEMORY);//bres not using
 		if (zret == ZR_OK)
 		{
 			CString strF = bres ? CFG_RES_FOLDER : _T("");
@@ -774,6 +1009,7 @@ BOOL CPackerProj::UnzipProj()
 					pres->m_tmCreate = CTime(ze.ctime);
 					m_imglist.Add(CUtil::GetFileIcon(ze.name));
 					pres->m_icon_id = m_imglist.GetImageCount() - 1;
+					//no break since maybe other same file attachments just different page relation also need set res structure.
 				}
 				pres = pres->pNext;
 			}
@@ -782,6 +1018,8 @@ BOOL CPackerProj::UnzipProj()
 	CloseZip(hz);
 	return TRUE;
 }
+
+//<==============open functions=================================opening========================<<<<<<
 
 void CPackerProj::SetProjStatus(int proj_st)
 {

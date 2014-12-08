@@ -25,6 +25,7 @@ protected:
 	CListCtrl  m_listRes;
 	CListCtrl m_listBooks;
 	CPackerProj  * m_proj;
+	INT			m_nBookResIdCol;
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV Ö§³Ö
 	void LoadBooks();

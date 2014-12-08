@@ -5,7 +5,7 @@
 
 #include "deelx.h"
 
-//encode 1 加密, other value 解密
+//加密, 解密
 BOOL decode_mem(LPVOID penc_buf, LPCTSTR outpath, INT  flen);
 int decode_file(LPCTSTR inpath, LPCTSTR outpath);
 int enc_file(LPCTSTR inpath, LPCTSTR outpath);

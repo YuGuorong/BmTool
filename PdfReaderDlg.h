@@ -15,6 +15,7 @@ public:
 	virtual void ViewFile(LPCTSTR szpdf);
 	virtual int  GetPageInfo(INT *cur, INT *count);
 	virtual void GotoPage(int pgnum);
+	virtual void GetBookInfo(LPCTSTR skey, CString &str);
 // 对话框数据
 	enum { IDD = IDD_PDF_DLG };
 

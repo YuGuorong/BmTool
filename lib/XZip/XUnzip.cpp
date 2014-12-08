@@ -4065,11 +4065,11 @@ ZRESULT TUnzip::Unzip(int index,void *dst,unsigned int len,DWORD flags)
 			currentfile=index;
 		}
 		int res = unzReadCurrentFile(uf,dst,len);
-		if (res>0) 
+		if (res>0 && res > len) //++1.3 res = iread
 			return ZR_MORE;
 		unzCloseCurrentFile(uf); 
 		currentfile=-1;
-		if (res==0) 
+		if (res == 0 || res <= len) //++1.3 res = iread
 			return ZR_OK;
 		else 
 			return ZR_FLATE;

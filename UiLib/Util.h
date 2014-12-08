@@ -5,10 +5,11 @@ public:
 	CUtil(void);
 	~CUtil(void);
 	static void GetCurPath(CString &strPath);
+	static CString GetUserFolder();
 	static CString GetFilePath(CString &strFile);
 	static CString GetFileName(CString &strFile);
 	static HANDLE FindProcessByName(LPCTSTR szFileName, BOOL bKill = FALSE, INT exit_code = 0);
-	static HANDLE CUtil::RunProc(LPCTSTR strcmd, LPCTSTR strparam, LPCTSTR strPath);
+	static HANDLE CUtil::RunProc(LPCTSTR strcmd, LPCTSTR strparam, LPCTSTR strPath, BOOL bsync = TRUE);
 	static CSize GetBitmapSize(CBitmap &bmp);
 	static void DrawGradientFill(CDC * pdc, CRect &r, COLORREF clt, COLORREF cbt, int mode=GRADIENT_FILL_RECT_H);
 	static CStringA File2Asc(LPCTSTR sfilename);
@@ -20,6 +21,7 @@ public:
 };
 
 #define  AString   CStringA
+
 typedef  CArray<CStringA, CStringA> AStringArray;
 //Utf-8 to Wide char(unicode), not use too much stack 
 void Unc2Utf(LPCTSTR   wstr, char  * bstr, int lenw, int lens);
@@ -47,6 +49,7 @@ class CSetting
 {
 public:
 	CString strCurPath;
+	CString m_strAppUserPath;
 	CString m_strUserName;
 	CString m_strPassword;
 	CString m_strServerIP;

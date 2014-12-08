@@ -121,8 +121,9 @@ BOOL CBMDlg::OnInitDialog()
 	HTREEITEM hRootDir = m_trDir.InsertItem(_T("根目录"), NULL);
 
 	
-	LPCTSTR  szColumns[] = { { _T("资源文件包") }, { _T("文件大小") }, { _T("修改时间") }, { _T("文件格式") }  };
-	int colum_w[] = { 300, 180, 200, 200 };
+	LPCTSTR  szColumns[] = { { _T("资源文件包") }, { _T("文件大小") }, { _T("修改时间") }, { _T("文件格式") }, { _T("id") } };
+	int colum_w[] = { 300, 180, 200, 200 ,0};
+	m_nResIdCol = sizeof(colum_w) / sizeof(int)-1;
 	for (int i = 0; i<sizeof(szColumns) / sizeof(LPCTSTR); i++)
 	{
 		m_listRes.InsertColumn(i, szColumns[i], LVCFMT_CENTER);
@@ -231,57 +232,6 @@ CReaderView * CBMDlg::GetProjView()
 	return NULL; //m_pViews[0]
 }
 
-void EndDirToXml(CString &sxml, int sublevel)
-{
-	CString str;
-	for (int i = 0; i < sublevel; i++)
-		str += _T("\t");
-	sxml += str;
-	sxml += _T("\t</direntry>\r\n");
-}
-
-void CBMDlg::SaveDirToXml(HTREEITEM hit, CString &sxml, int sublevel)
-{
-	CString sdir = m_trDir.GetItemText(hit);
-	UINT32 npg = m_trDir.GetItemData(hit);
-	CString str;
-	for (int i = 0; i < sublevel; i++)
-		str += _T("\t");
-	sxml += str;
-	str.Format(_T("\t<direntry name=\"%s\" pageNo=\"%d\">\r\n"), ConvertXmlString(sdir), npg);
-	sxml += str;
-}
-
-void CBMDlg::SaveDirs(CString &sxml)
-{
-	HTREEITEM hroot = m_trDir.GetRootItem();
-	HTREEITEM hpt = hroot;// m_trDir.GetNextItem(hroot, TVGN_CHILD);
-	int sub = 0;
-	while (hpt)
-	{
-		SaveDirToXml(hpt, sxml, sub);
-		HTREEITEM hnext = m_trDir.GetNextItem(hpt, TVGN_CHILD);
-		if (hnext == NULL)
-		{
-			hnext = m_trDir.GetNextItem(hpt, TVGN_NEXT);
-				EndDirToXml(sxml, sub);
-		}
-		else
-			sub++;
-		while (hnext == NULL) //no sblin and child ,track back
-		{
-			if (hpt == hroot) break; //root no parent
-			EndDirToXml(sxml, --sub);
-			hpt = m_trDir.GetNextItem(hpt, TVGN_PARENT);
-			hnext = m_trDir.GetNextItem(hpt, TVGN_NEXT);
-			if (hnext == NULL && hpt == NULL )
-				return;
-		}
-		hpt = hnext;
-	}
-}
-
-
 LRESULT CBMDlg::OnViewProjMsg(WPARAM wParam, LPARAM lParam)
 {
 	CString * pxml = (CString *)lParam;
@@ -294,6 +244,9 @@ LRESULT CBMDlg::OnViewProjMsg(WPARAM wParam, LPARAM lParam)
 			if (np >= 0) str.Delete(0, np + 1);
 			GetProjView()->ViewFile(m_proj->m_szTargetPath);
 			ChangeView(m_proj->m_type);
+			GetMetaWnd()->SetMetaValues();
+			GetMetaWnd()->LoadCoverImage();
+			
 		}
 		break;
 	case NEW_PROJ:
@@ -303,15 +256,36 @@ LRESULT CBMDlg::OnViewProjMsg(WPARAM wParam, LPARAM lParam)
 			if (np >= 0) str.Delete(0, np + 1);
 			GetProjView()->ViewFile(m_proj->m_szTargetPath);
 			ChangeView(m_proj->m_type);
+			GetProjView()->GetBookInfo(_T("Title"), str);
+			if (str.IsEmpty())
+			{
+				str = m_proj->m_szTargetPath;
+				int np = str.ReverseFind(_T('\\'));
+				if (np >= 0) str.Delete(0, np + 1);
+				np = str.ReverseFind(_T('.'));
+				if (np >= 0) str.Delete(np, str.GetLength() - np);
+				GetProjView()->ViewFile(m_proj->m_szTargetPath);
+				ChangeView(m_proj->m_type);
+			}
 			GetMetaWnd()->SetItemValue(_T("图书名称"), str);
-			GetMetaWnd()->SetItemValue(_T("电子书籍类别"), _T("Pdf"));
 
+			GetMetaWnd()->SetItemValue(_T("电子书籍类别"), _T("Pdf"));
 			str.Format(_T("%d"), m_proj->m_nTargetFLen);
 			GetMetaWnd()->SetItemValue(_T("电子书籍文件大小"), str);
-			GetMetaWnd()->SetItemValue(_T("学科门类 "), _T("工学"));
-			GetMetaWnd()->SetItemValue(_T("专业类 "), _T("计算机科学与技术"));
-			GetMetaWnd()->SetItemValue(_T("专业名称 "), _T("计算机软件与理论"));
-			GetMetaWnd()->SetItemValue(_T("教材分类 "), _T("公共基础课"));
+			GetMetaWnd()->SetItemValue(_T("学科门类"), _T("工学"));
+			GetMetaWnd()->SetItemValue(_T("专业类"), _T("计算机科学与技术"));
+			GetMetaWnd()->SetItemValue(_T("专业名称"), _T("计算机软件与理论"));
+			GetMetaWnd()->SetItemValue(_T("教材分类"), _T("公共基础课"));
+			str.Format(_T("%d"), m_proj->m_nBookPageCount);
+			GetMetaWnd()->SetItemValue(_T("页数"), str);
+			GetProjView()->GetBookInfo(_T("Keywords"), str);
+			GetMetaWnd()->SetItemValue(_T("关键字 "), str);
+			GetProjView()->GetBookInfo(_T("Author"), str);
+			if (str.IsEmpty())
+				GetProjView()->GetBookInfo(_T("Creator"), str);
+			GetMetaWnd()->SetItemValue(_T("作 者 "), str);
+
+			MyTracex("new_proj message\r\n");
 		}
 		//GetMetaWnd()->SetItemValue(_T("页数"), _T("Pdf"));
 		break;
@@ -322,10 +296,6 @@ LRESULT CBMDlg::OnViewProjMsg(WPARAM wParam, LPARAM lParam)
 	
 	case SAVE_PROJ:
 	{
-		GetMetaWnd()->SaveMetaData(m_proj, *pxml);
-		CString  sdir;
-		SaveDirs(sdir);
-		pxml->Replace(_T("!&directory"),sdir);
 	}
 	default:
 		break;
@@ -337,6 +307,7 @@ LRESULT CBMDlg::OnPdfPageEvent(WPARAM wParam, LPARAM lParam)
 {
 	m_proj->m_nCurPage = wParam;
 	m_proj->m_nBookPageCount = lParam;
+	
 	ResOnPageChange();
 	return 0;
 }
@@ -352,6 +323,7 @@ void CBMDlg::InsertRes(CResMan* pRes)
 	CString stime = pRes->m_tmCreate.Format(TIME_FMT);
 	m_listRes.SetItemText(row, 2, stime);
 	m_listRes.SetItemText(row, 3, pRes->m_sformat);
+	m_listRes.SetItemText(row, 4, pRes->m_strResId);
 }
 
 void CBMDlg::ResOnPageChange()
@@ -489,6 +461,28 @@ void CBMDlg::OnBnClickedBtnAddRes()
 void CBMDlg::OnBnClickedBtnRemoveRes()
 {
 	// TODO:  在此添加控件通知处理程序代码
+	INT row = -1;
+	while ( (row =m_listRes.GetNextItem(row, LVNI_ALL | LVNI_SELECTED)) != -1)
+	{
+		CString strid = m_listRes.GetItemText(row, m_nResIdCol);
+		if (CResMan::Remove(strid))
+		{
+			m_listRes.DeleteItem(row);
+			row--;
+		}		
+	}
+
+	//POSITION  pos = m_listRes.GetFirstSelectedItemPosition();
+	//if (pos != NULL)
+	//{
+	//	int row = m_listRes.GetNextSelectedItem(pos);
+	//	CString strid = m_listRes.GetItemText(row, -1);
+	//	if (CResMan::Remove(strid))
+	//	{
+	//		m_listRes.DeleteItem(row);
+	//	}
+	//}
+
 }
 
 

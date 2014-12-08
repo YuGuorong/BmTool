@@ -1,0 +1,107 @@
+#pragma once
+#include <vector>
+using namespace std;
+
+static unsigned int __stdcall threadFunction(void *);
+
+class Thread {
+	friend unsigned int __stdcall threadFunction(void *);
+public:
+	Thread();
+	virtual ~Thread();
+	int start(void * = NULL);//线程启动函数，其输入参数是无类型指针。
+	void stop();
+	void* join();//等待当前线程结束
+	void detach();//不等待当前线程
+	void Reset();//让当前线程休眠给定时间，单位为毫秒
+
+protected:
+	virtual void * run(void *) = 0;//用于实现线程类的线程函数调用
+
+protected:
+	HANDLE threadHandle;
+	bool started;
+	bool detached;
+	void * param;
+	unsigned int threadID;
+};
+
+#define MAX_RECV_LEN           100   // 每次接收最大字符串长度.
+#define MAX_PENDING_CONNECTS   4     // 等待队列的长度.
+class CDealSocket
+{
+public:
+	CDealSocket();
+	virtual ~CDealSocket();
+public:
+	SOCKET GetConnect(LPCSTR host, int port);
+	SOCKET Listening(int port);
+	SOCKET  m_hSocket;
+	void Close();
+	CStringA GetResponse();
+	BOOL Send(CStringA sdata);
+};
+
+
+class CAsyncHttp : public Thread
+{
+protected:
+	CAsyncHttp();           
+	CAsyncHttp(LPCTSTR szIP, LPCTSTR szUrl, int port = 80);
+
+public:
+	CStringA  m_szHttpType;
+	CStringA  m_szRespHeader;    //
+	void SetProxy(LPCTSTR szProxyIp, int nProxyPort, LPCTSTR szUser = NULL, LPCTSTR pwd = NULL);
+	INT   Connect();
+	INT   Disconnect();
+	void  AppendHeader(LPCTSTR szheader);
+	void  HttpProcess();
+
+public:
+	void setOnFinish(void(*func)());
+	virtual void * run(void *);
+	virtual INT SendData() ;
+	virtual ~CAsyncHttp();
+
+protected:
+	BOOL  SendHttpHeader();
+	DWORD GetHttpHeader(CStringA &strResp);
+	vector<CStringA> m_vstrHeaders;  //
+	CStringA  m_hostIP;
+	int       m_nport;
+	CStringA  m_url;
+	DWORD     m_bProxyMode;      // 下载模态. 
+	CStringA  m_szProxyIp;       // 代理理服务器地址.
+	int       m_nProxyPort;      // 代理服务端口号.
+	CStringA  m_szProxyUser;     // 代理理服务器用户， 为空表示不需要登录
+	CStringA  m_szProxyPwd;      // 代理理服务器密码.
+	CDealSocket * m_pSocket;	
+	INT (*onFinish)(void * parm);//完成后调用的函数
+
+	INT ConnectHttp();
+	INT ConnectProxyHttp();
+
+	void * m_pBody;
+	int    m_nBodyLen;
+};
+
+class CHttpPost : public CAsyncHttp
+{
+public:
+	CHttpPost(LPCTSTR szIP, LPCTSTR szUrl, int port = 80, LPCTSTR shdr[] = NULL, int headerCount = 0);
+	~CHttpPost();
+	INT SendFile(LPCTSTR slclfname);
+};
+
+class CGetHttp : public CAsyncHttp
+{
+	CString m_strLocalFile;
+public:
+	CGetHttp(LPCTSTR szIP, LPCTSTR szUrl, int port = 80, LPCTSTR shdr[] = NULL, int headerCount = 0);
+	~CGetHttp();
+	void GetFile(LPCTSTR slclfname);
+	INT RecvData();
+};
+
+// CAsyncHttp

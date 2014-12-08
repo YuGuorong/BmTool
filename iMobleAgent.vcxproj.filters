@@ -204,6 +204,9 @@
     <ClInclude Include="include\libs.h">
       <Filter>libs</Filter>
     </ClInclude>
+    <ClInclude Include="AsyncHttp.h">
+      <Filter>Uilib</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -295,6 +298,9 @@
     </ClCompile>
     <ClCompile Include="lib\Encode.cpp">
       <Filter>libs</Filter>
+    </ClCompile>
+    <ClCompile Include="AsyncHttp.cpp">
+      <Filter>Uilib</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -1,4 +1,5 @@
 #include "StdAfx.h"
+#include <locale.h>
 #include "resource.h"
 #include "Util.h"
 #include <Psapi.h>
@@ -22,6 +23,17 @@ void CUtil::GetCurPath(CString &strPath)
     strPath = strPath.Left(pos+1);
 }
 
+CString CUtil::GetUserFolder()
+{
+	CString strUserFolder;
+	TCHAR szPath[MAX_PATH];
+	PIDLIST_ABSOLUTE  pidl;
+	SHGetSpecialFolderLocation(::AfxGetMainWnd()->GetSafeHwnd(), CSIDL_MYDOCUMENTS, &pidl);
+	SHGetPathFromIDList(pidl, strUserFolder.GetBuffer(MAX_PATH));
+	strUserFolder.ReleaseBuffer();
+	return strUserFolder;
+}
+
 CString CUtil::GetFilePath(CString &strFile)
 {
 	int pos = strFile.ReverseFind('\\');
@@ -37,7 +49,7 @@ CString CUtil::GetFileName(CString &strFilePath)
 	return strFilePath.Right(strFilePath.GetLength() - pos - 1);
 }
 
-HANDLE CUtil::RunProc(LPCTSTR strcmd, LPCTSTR strparam, LPCTSTR strPath)
+HANDLE CUtil::RunProc(LPCTSTR strcmd, LPCTSTR strparam, LPCTSTR strPath, BOOL bsync )
 {
 	SHELLEXECUTEINFO ShExecInfo = {0};
 	ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
@@ -47,10 +59,11 @@ HANDLE CUtil::RunProc(LPCTSTR strcmd, LPCTSTR strparam, LPCTSTR strPath)
 	ShExecInfo.lpFile = strcmd;            
 	ShExecInfo.lpParameters = strparam;    
 	ShExecInfo.lpDirectory = strPath;
-	ShExecInfo.nShow = SW_SHOW;
+	ShExecInfo.nShow = SW_HIDE;// SW_SHOW;
 	ShExecInfo.hInstApp = NULL;      
 	ShellExecuteEx(&ShExecInfo);
-	//WaitForSingleObject(ShExecInfo.hProcess,INFINITE);
+	if ( bsync )
+		WaitForSingleObject(ShExecInfo.hProcess,INFINITE);
 	return ShExecInfo.hProcess;
 }
 
@@ -178,7 +191,7 @@ CStringA CUtil::File2Asc(LPCTSTR sfilename)
 {
 	CStringA strAsc;
 	CFile of;
-	if (of.Open(sfilename, CFile::modeRead))
+	if (of.Open(sfilename, CFile::modeRead|CFile::shareDenyNone))
 	{
 		UINT len = (UINT)of.GetLength();
 		CHAR * pbuf = strAsc.GetBuffer(len + 1);
@@ -194,7 +207,7 @@ CString CUtil::File2Unc(LPCTSTR sfilename)
 {
 	CString strUnc;
 	CFile of;
-	if (of.Open(sfilename, CFile::modeRead))
+	if (of.Open(sfilename, CFile::modeRead | CFile::shareDenyNone))
 	{
 		int len = (INT)of.GetLength();
 		TCHAR * pbuf = strUnc.GetBuffer(len /2 + 1);
@@ -406,6 +419,9 @@ BOOL ShowTips()
 CSetting::CSetting()
 {
 	CUtil::GetCurPath(strCurPath);
+	m_strAppUserPath = CUtil::GetUserFolder();
+	m_strAppUserPath += _T("\\") CFG_OPENCN_FOLDER;
+	::CreateDirectory(m_strAppUserPath, NULL);
 }
 
 CSetting::~CSetting()
@@ -473,7 +489,7 @@ int BaseAppInit()
     CCommandLineInfo cmdInfo; 
     ParseCommandLine(cmdInfo); 
 
-
+	_tsetlocale(LC_CTYPE, _T("chs"));
     //创建互斥对象
 #if 0
     TCHAR strAppName[] = TEXT("eExpressMutex");

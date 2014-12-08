@@ -28,6 +28,7 @@ public:
 	virtual void GotoPage(int pgnum){};
 	virtual void AddResource(LPCTSTR szResFile){};
 	virtual void Save(){};
+	virtual void GetBookInfo(LPCTSTR skey, CString &str){};
 	view_type  m_vType;
 	
 // 对话框数据

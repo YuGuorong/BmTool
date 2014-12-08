@@ -95,12 +95,23 @@ INT GetJsonString(CString &sjson, LPCTSTR skey, CString &sval)
 }
 
 #include "PackerProj.h"
-#define DEBUG_LOGIN 
+//#ifdef DEBUG
+//#define DEBUG_LOGIN 
+//#endif
 //192.168.1.61  fixopen.xicp.net
+#include "AsyncHttp.h"
+void TestGetSocket()
+{
+	CGetHttp *ot = new CGetHttp(_T("www.baidu.com"), _T("/img/bdlogo.png"));
+	ot->GetFile(_T("C:\\temp\\bdlogo.png"));
+}
+
 void CLoginDlg::OnBnClickedBtnLogin()
 {//{"state": 200, "sessionId": "12ea2d36e9b638e88887b0081deabeaec11d7bad", "id" : "33542438663913472"}
 	EndWaitCursor();
 	void TestSocket();
+	TestGetSocket();
+	return;
 //	TestSocket();
 	char post_data[64] = ("{\"password\":\"admin\"}");
 	CString str, strUrl, strdata, strResp, strUser;

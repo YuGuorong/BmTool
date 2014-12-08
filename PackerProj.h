@@ -2,8 +2,17 @@
 
 #include <time.h>
 #include "tables.h"
+#include "Util.h"
 #include <map>
 using std::map;
+
+#define PR_OK                    0
+#define PR_ERR_CONTENT         -101
+#define PR_ERR_NOT_FIND_FILE   -102
+#define PR_ERR_ZIP_FAIL        -103
+#define PR_ERR_UNKOWN_TYPE     -104
+#define PR_ERR_OPEN_BOOK       -105
+
 
 #define WM_PDF_PAGE     (WM_APP  + 179)
 #define WM_VIEW_PROJ    (WM_USER + 313)
@@ -61,6 +70,8 @@ public:
 	~CResMan();
 	static CResMan * NewRes(const char ** sxml);
 	static CResMan * NewRes(CFileDialog &fdlg);
+	static INT Remove(CResMan * pres);
+	static INT Remove(LPCTSTR szResId);
 	BOOL SaveRes(CString &strXml);
 public:
 	int    m_icon_id;
@@ -74,6 +85,67 @@ public:
 	CDigest m_digest;
 	CResMan * pNext;
 	CPackerProj * m_proj;
+};
+
+
+typedef enum
+{
+	META_NOT_SHOW = 0x0001,
+	META_READONLY = 0x0002,
+	META_READWRITE = 0x0004,
+	META_SUB_ITEM = 0x0008,
+	META_PASSWORD = 0x0010,
+	META_PWDCONFIRM = 0x0020,
+	META_SECUREITY1 = 0x0040,
+	META_SECUREITY2 = 0x0080,
+	META_COMBOBOX = 0x0100,
+	META_PICTURE = 0x0200,
+	META_DATETIME = 0x0400,
+	META_MULTLINE = 0x0800,
+}META_STYLE;
+
+typedef CWnd * PCWnd;
+
+#define ID_META_CTRL_START  0x3e00
+#define ID_META_CTRL_END    0x5e00
+class CMetaExtend
+{
+public:
+	CString strKey;
+	TCHAR * pszMetaDetail;
+
+public:
+	CMetaExtend(){ pszMetaDetail = NULL; };
+	INT NewExtendItem(CString strFile, CWnd * pParent);
+	~CMetaExtend(){ if (pszMetaDetail) FreePtr(pszMetaDetail); };
+};
+
+class CMetaDataItem
+{
+public:
+	CString  strKey;
+	CString	 strValue;
+	CString  strDefVal;
+	DWORD    style;   /*在设置窗口显示 META_STYLE*/
+	int		 nCtrlID;
+	PCWnd    pWnd[3];
+	CBitmap *pimg;
+	CMetaDataItem * pNext;
+	CMetaExtend   * pExt; //Next Group item
+	INT      nSubIdx;
+public:
+	CMetaDataItem()
+	{
+		nSubIdx = -1;
+		nCtrlID = ID_META_CTRL_START;
+		for (int i = 0; i<3; i++) pWnd[i] = NULL;
+		pimg = NULL; pExt = NULL; pNext = NULL;
+	};
+	~CMetaDataItem()
+	{
+		for (int i = 0; i< 3; i++) { if (pWnd[i]) { delete pWnd[i]; pWnd[i] = NULL; } }
+		if (pimg) { pimg->DeleteObject(); delete pimg; pimg = NULL; }
+	}
 };
 
 
@@ -105,6 +177,8 @@ public:
 	CResMan * m_pRes;  //Resources
 	CWnd * m_pMetaWnd; //Meta input window
 
+	CMetaDataItem * m_pMeta;
+
 	CString m_strSession; //Login session
 	CString m_strLoginUser;//Login user name
 	CTime   m_tmLogin;  //Login time
@@ -116,11 +190,12 @@ public:
 
 	//xml parser used purpose--->
 	void * m_ptrUserData;  //parser
-	CStringA m_sXmlData;  //for combine element data
+	CString m_sXmlData;  //for combine element data
 
 	CTreeCtrl * m_pProjDir;
 	HTREEITEM  m_hDirCur;  //reorgenize directory tree
-	map<CStringA, CStringA> m_mapMetaValue;  //all xml value here
+	map<CStringA, CString> m_mapMetaValue;  //all xml value here
+	map <CStringA, CString> m_mapKeyCaps;
 	//<-----------------------------
 	void * m_ptrDbCol[MAX_BOOK_DB_COL];
 	SQL_DB_BOOK  m_db_items;
@@ -130,22 +205,31 @@ protected:
 	HGLOBAL m_hG;  //globale resource of MIME type map.
 
 public:
-	CPackerProj(CWnd * pParent);
-	~CPackerProj();
 	INT CreateProj(LPCTSTR szTarget);
 	INT DestoryProj();
 	int Save();
 	int Open(LPCTSTR szProj);
-	BOOL ZipRes(LPCTSTR szZipFile);
-	BOOL UnzipProj();
-	BOOL ParseXml();
-	BOOL Res2Xml(CString &strResXml);
-	void SetProjStatus(int proj_st);
-	BOOL GetFileMemiType(LPCTSTR szExt, CString &type);
 	BOOL UpLoadProj();	
-	BOOL SaveProjToDb();
-	BOOL SetBookState(LPCTSTR sbookid, LPCTSTR sState);
 	BOOL ClearResTable();
+	BOOL GetFileMemiType(LPCTSTR szExt, CString &type);
+	void SetProjStatus(int proj_st);                     //login? new proj? save proj? close proj?
+	BOOL SetBookState(LPCTSTR sbookid, LPCTSTR sState);  //uploaded? uploading? local 
+public:
+	CPackerProj(CWnd * pParent);
+	~CPackerProj();
+protected:
+	BOOL PrecheckContent();
+	void SaveMeta(CString &sxml);
+	void SaveDirToXml(HTREEITEM hit, CString &sxml, int sublevel);
+	void SaveDirs(CString &sxml);
+	BOOL Res2Xml(CString &strResXml);
+	BOOL ZipRes(LPCTSTR szZipFile);
+
+	BOOL ParseXml();
+	BOOL UnzipProj();
+
+	BOOL SaveProjToDb();
+	BOOL LoadMetaCol();
 };
 
 

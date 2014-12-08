@@ -542,7 +542,7 @@ void winhelp(pdfapp_t*app)
 #define WM_PDF_PAGE (WM_APP+179)
 void dlgAppPageChangeEvent(int newpg,  int pgcount)
 {
-	PostMessage(hwndframe, WM_PDF_PAGE, newpg, pgcount);
+	SendMessage(hwndframe, WM_PDF_PAGE, newpg, pgcount);
 }
 /*
  * Main window
@@ -1149,4 +1149,24 @@ void FreePdf(HANDLE ctx)
 {
 	do_close(&gapp);
 	fz_free_context((fz_context *)ctx);
+}
+
+/*
+buf, in as following value
+(  "Title");
+(  "Author");
+(  "Subject");
+(  "Keywords");
+(  "Creator");
+(  "Producer");
+(  "CreationDate");
+(  "ModDate");
+out ,buf in a null terminal string*/
+void GetPdfInfo(const char * sitem, char * bufin, int buf_size)
+{
+	fz_document *doc = gapp.doc;
+	*(char **)bufin = sitem;
+	if (fz_meta(doc, FZ_META_INFO, bufin, 256) <= 0) \
+		bufin[0] = 0;
+
 }

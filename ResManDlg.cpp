@@ -125,6 +125,7 @@ void CResManDlg::LoadBooks()
 	LPCTSTR  szColumns[] = { { _T("图书名") },  { _T("图书大小") }, { _T("创建时间") },
 	                         { _T("上传状态")}, { _T("位置") },     { _T("ID") } };
 	int colum_w[] = { 300, 80, 120, 80, 400, 0 };
+	m_nBookResIdCol = sizeof(colum_w) / sizeof(int) - 1;
 	for (int i = 0; i<sizeof(szColumns) / sizeof(LPCTSTR); i++)
 	{
 		m_listRes.InsertColumn(i, szColumns[i], LVCFMT_CENTER);
@@ -144,8 +145,9 @@ void CResManDlg::LoadBookResList()
 	m_listRes.DeleteAllItems();
 
 	while (m_listRes.DeleteColumn(0)){};
-	LPCTSTR  szColumns[] = { { _T("资源文件包") }, { _T("文件大小") }, { _T("修改时间") }, { _T("文件格式") } };
-	int colum_w[] = { 300, 180, 200, 200 };
+	LPCTSTR  szColumns[] = { { _T("资源文件包") }, { _T("对应书所在页面") }, { _T("文件大小") }, { _T("修改时间") }, { _T("文件格式") }, { _T("ID") } };
+	int colum_w[] = { 300, 120, 180, 200, 200 , 0};
+	m_nBookResIdCol = sizeof(colum_w) / sizeof(int) - 1;
 	for (int i = 0; i<sizeof(szColumns) / sizeof(LPCTSTR); i++)
 	{
 		m_listRes.InsertColumn(i, szColumns[i], LVCFMT_CENTER);
@@ -156,14 +158,18 @@ void CResManDlg::LoadBookResList()
 	CResMan * pRes = m_proj->m_pRes;
 	while (pRes)
 	{
+		int col = 1;
 		int imgid = pRes->m_icon_id;
 		m_listRes.InsertItem(LVIF_TEXT | LVIF_STATE | LVIF_IMAGE, row, pRes->m_sfileName,
 			LVIS_SELECTED | LVIF_IMAGE, LVIS_SELECTED | LVIF_IMAGE, imgid, 0);
+		CString spg; spg.Format(_T("%d"), pRes->m_relation);
+		m_listRes.SetItemText(row, col++, spg);
 		CString strsize = GetReadableSize((UINT32)pRes->m_fsize);
-		m_listRes.SetItemText(row, 1, strsize);
+		m_listRes.SetItemText(row, col++, strsize);
 		CString stime = pRes->m_tmCreate.Format(TIME_FMT);
-		m_listRes.SetItemText(row, 2, stime);
-		m_listRes.SetItemText(row, 3, pRes->m_sformat);
+		m_listRes.SetItemText(row, col++, stime);
+		m_listRes.SetItemText(row, col++, pRes->m_sformat);
+		m_listRes.SetItemText(row, col++, pRes->m_strResId);
 		pRes = pRes->pNext;
 		row++;
 	}
@@ -265,7 +271,23 @@ void CResManDlg::OnBnClickedBtnResupload()
 
 void CResManDlg::OnBnClickedBtnSelect()
 {
-	// TODO:  在此添加控件通知处理程序代码
+	BOOL bToSelall = FALSE;
+	for (int j = 0; j < m_listRes.GetItemCount(); j++)
+	{
+		if (m_listRes.GetCheck(j) == FALSE)
+		{
+			m_listRes.SetCheck(j);
+			bToSelall = TRUE;
+		}
+	}
+
+	if (bToSelall == FALSE)
+	{
+		for (int j = 0; j < m_listRes.GetItemCount(); j++)
+		{
+			m_listRes.SetCheck(j, FALSE);
+		}
+	}
 }
 
 
@@ -278,6 +300,25 @@ void CResManDlg::OnBnClickedBtnAdd()
 void CResManDlg::OnBnClickedBtnRemove()
 {
 	// TODO:  在此添加控件通知处理程序代码
+	if (m_CurResType == TYPE_LOCAL_RES)
+	{
+		for (int j = 0; j < m_listRes.GetItemCount(); )
+		{
+			if (m_listRes.GetCheck(j))
+			{
+				CString sid = m_listRes.GetItemText(j, m_nBookResIdCol);
+				if (CResMan::Remove(sid))
+				{
+					m_listRes.DeleteItem(j);
+				}
+			}
+			else
+				j++;
+		}
+	}
+	else
+	{
+	}
 }
 
 

@@ -15,6 +15,7 @@ extern "C" {
 	int OnPdfFrameClose(HWND hwnd);
 	int PdfPageInfo(int * pcur, int * pcount);
 	void PdfGotPage(int pgnum);
+	void GetPdfInfo(const char * sitem, char * buf, int buf_size);
 	HWND GetViewHand();
 }
 
@@ -164,4 +165,15 @@ int CPdfReaderDlg::GetPageInfo(INT *cur, INT *count)
 void CPdfReaderDlg::GotoPage(int pgnum)
 {
 	PdfGotPage(pgnum);
+}
+
+void CPdfReaderDlg::GetBookInfo(LPCTSTR skey, CString &str)
+{
+/*	str.Empty();*/
+
+	AString sakey, saval;
+	QUnc2Utf(skey, sakey);
+	::GetPdfInfo(sakey, saval.GetBuffer(MAX_PATH), MAX_PATH);
+	saval.ReleaseBuffer();
+	QUtf2Unc(saval, str);
 }

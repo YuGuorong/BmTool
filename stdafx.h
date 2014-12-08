@@ -50,7 +50,7 @@ void MyTracex(const char * fmt, ...);
 #endif
 #endif
 
-//#include <vld.h> 
+#include <vld.h> 
 // VC6
 #if defined(_MSC_VER) && _MSC_VER == 1200
 
@@ -77,5 +77,8 @@ void SwitchBackMainDlg();
 #define PROJ_EXT  _T("zip")
 #define CFG_META_FILE   _T("__meta.xml")
 #define CFG_COVER_FILE  _T("__cover.jpg")
+#define CFG_PREVIEW_FILE _T("__preview.swf")
+#define CFG_SWF_EXE      _T("pdf2swf.exe")
 #define CFG_RES_FOLDER  _T("res")
+#define CFG_OPENCN_FOLDER _T("∞¬≈Ù ÈºÆ")
 #endif
