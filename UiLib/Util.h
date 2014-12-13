@@ -8,16 +8,22 @@ public:
 	static CString GetUserFolder();
 	static CString GetFilePath(CString &strFile);
 	static CString GetFileName(CString &strFile);
+	static CString GetFileType(LPCTSTR szFile);
+	static BOOL GetFileMemiType(LPCTSTR szExt, CString &stype);
 	static HANDLE FindProcessByName(LPCTSTR szFileName, BOOL bKill = FALSE, INT exit_code = 0);
 	static HANDLE CUtil::RunProc(LPCTSTR strcmd, LPCTSTR strparam, LPCTSTR strPath, BOOL bsync = TRUE);
 	static CSize GetBitmapSize(CBitmap &bmp);
 	static void DrawGradientFill(CDC * pdc, CRect &r, COLORREF clt, COLORREF cbt, int mode=GRADIENT_FILL_RECT_H);
 	static CStringA File2Asc(LPCTSTR sfilename);
+	static int Asc2File(LPCTSTR sfilename, CStringA &sa);
 	static CString File2Unc(LPCTSTR sfilename);
 	static HICON GetFileIcon(LPCTSTR sfilename);
 	static HICON GetFileIcon(CFileDialog &fdlg);
 	static CString GenGuidString();
 	static BOOL GetFileSize(LPCTSTR  sfile, DWORD &flen);
+
+	static HGLOBAL m_hG;
+	static LPCTSTR m_szMimeType; //contend type
 };
 
 #define  AString   CStringA
@@ -31,6 +37,8 @@ void Utf2Unc(const char  * bstr, WCHAR  * wstr, int lens, int lenw);
 void QUtf2Unc(LPCSTR  astr, CString &wstr);   //Wide char to Utf-8 , not use too much stack
 //Utf-8 to Wide char(unicode), not use too much stack 
 void QUnc2Utf(LPCWSTR wstr, AString &astr);  //Utf-8 to Wide char, not use too much stack 
+
+int atox(const char *str);
 
 void QA2W(LPCSTR  astr, CString &wstr);
 WCHAR* QA2W(LPCSTR astr);

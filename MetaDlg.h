@@ -8,6 +8,7 @@
 // CMetaDlg dialog
 #define ITEM_CAPTION_SIZE  120
 #define ITEM_HIGHT         28
+#define ITEM_LARG_HIGH     (64)
 
 class CMetaDlg : public CReaderView
 {
@@ -56,4 +57,5 @@ public:
 	afx_msg void OnDestroy();
 	afx_msg void OnSelchangeCombboxs(UINT id);
 	afx_msg void OnPictureClick(UINT id);
+	virtual BOOL PreTranslateMessage(MSG* pMsg);
 };

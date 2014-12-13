@@ -66,6 +66,8 @@ CPackerProj * GetPackProj()
 }
 // CDirPackgeDlg dialog
 
+CWnd * CreateHttpManageWnd(CWnd * pParent);
+
 CDirPackgeDlg::CDirPackgeDlg(CWnd* pParent /*=NULL*/)
 	: CeExDialog(CDirPackgeDlg::IDD, pParent,EX_STRETCH_BK|EX_FILL_BK)
 {
@@ -80,6 +82,7 @@ CDirPackgeDlg::CDirPackgeDlg(CWnd* pParent /*=NULL*/)
 		m_pSubDlgs[i] = NULL;
 		m_cTabBtns[i] = NULL;
 	}
+	m_pHttpWnd = NULL;
 }
 
 void CDirPackgeDlg::DoDataExchange(CDataExchange* pDX)
@@ -92,7 +95,7 @@ BEGIN_MESSAGE_MAP(CDirPackgeDlg, CeExDialog)
 	ON_WM_SYSCOMMAND()
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
-	ON_MESSAGE(WM_VIEW_PROJ, &CDirPackgeDlg::OnProjStateChange)		//自定义托盘事件
+	ON_MESSAGE(WM_VIEW_PROJ, &CDirPackgeDlg::OnProjStateChange)		//自定义事件
 	ON_BN_CLICKED(IDC_BTN_EXIT, &CDirPackgeDlg::OnBnClickedBtnExit)
 	ON_BN_CLICKED(IDC_BTN_LOGIN, &CDirPackgeDlg::OnBnClickedBtnLogin)
 	ON_BN_CLICKED(IDC_BTN_NEWPRJ, &CDirPackgeDlg::OnBnClickedBtnNewprj)
@@ -137,6 +140,7 @@ BOOL CDirPackgeDlg::OnInitDialog()
 		}
 	}
 	m_frame.SubclassDlgItem(IDC_FRAME, this);
+	m_pHttpWnd = CreateHttpManageWnd(this);
 	// Set the icon for this dialog.  The framework does this automatically
 	//  when the application's main window is not a dialog
 	SetIcon(m_hIcon, TRUE);			// Set big icon
@@ -327,6 +331,7 @@ void CDirPackgeDlg::SetWindowStatus(int proj_state)
 	memset(ben, 0, sizeof(ben));
 	ben[SETTING_TAB] = TRUE;
 	ben[BTN_EXIT] = TRUE;
+	m_Proj->m_bProjModified = FALSE; 
 	if (proj_state & LOCKED)
 	{
 		m_LogDlgIdx = 0;
@@ -438,6 +443,8 @@ void CDirPackgeDlg::OnDestroy()
 	m_plogDlgs[1 - m_LogDlgIdx]->DestroyWindow();
 	delete m_plogDlgs[1 - m_LogDlgIdx];
 
+	if (m_pHttpWnd) FreePtr(m_pHttpWnd);
+
 	if (m_Proj) FreePtr(m_Proj);
 	CeExDialog::OnDestroy();
 
@@ -497,15 +504,16 @@ void CDirPackgeDlg::OnBnClickedBtnNewprj()
 {
 	if (m_Proj)
 	{
-		if (!m_Proj->m_szProj.IsEmpty())
+		if (m_Proj->m_bProjModified)
+		{
+			if (MessageBox(_T("工程已被修改，新建会清除现有数据！确认要新建吗？"), _T("新建工程"), MB_YESNO) == IDNO)
+				return;
+		}
+		if (!m_Proj->m_szTargetPath.IsEmpty())
 		{
 			m_Proj->DestoryProj();
 		}
-		if (m_Proj->CreateProj(NULL))
-		{
-		}
 	}
-
 }
 
 
@@ -536,6 +544,7 @@ void CDirPackgeDlg::OnBnClickedBtnSave()
 		{
 		case PR_ERR_CONTENT:
 			SwitchDlg(BM_TAB);
+			((CBMDlg*)m_pSubDlgs[BM_TAB])->SetFocus();
 			((CBMDlg*)m_pSubDlgs[BM_TAB])->ChangeView(VIEW_META_DATA);
 			break;
 		}

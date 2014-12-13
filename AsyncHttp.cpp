@@ -5,7 +5,7 @@
 #include "AsyncHttp.h"
 #include "Util.h"
 #include <process.h>
-
+CHttpResMan * g_pHttpResMan = NULL;
 //>>>>>>>>====================>thread class============================>
 unsigned int __stdcall threadFunction(void * object)
 {
@@ -66,9 +66,14 @@ void Thread::detach()
 
 void Thread::stop()
 {
+	DWORD status = (DWORD)NULL;
 	if (started && !detached)
 	{
-		TerminateThread(threadHandle, 0);
+		if (!GetExitCodeThread(threadHandle, &status) || status == STILL_ACTIVE)
+		{
+			WaitForSingleObject(threadHandle, 1000);
+			TerminateThread(threadHandle, 0);
+		}
 		CloseHandle(threadHandle);
 		detached = true;
 	}
@@ -157,6 +162,37 @@ BOOL CDealSocket::Send(CStringA sdata)
 	}
 	return TRUE;
 }
+
+INT CDealSocket::Recv(void * buf, int len)
+{
+	char * ptr = (char *)buf;
+	int m_CurRecvBytes = 0;
+	int timeout = 4;
+	m_RecvTotLen = len;
+	while (m_CurRecvBytes < len)
+	{
+		int plen = (len - m_CurRecvBytes) > 4096 ? 4096 : (len - m_CurRecvBytes);
+		int rxb = recv(m_hSocket, ptr, plen, 0);
+		if (rxb == 0)
+		{
+			if (--timeout == 0) return m_CurRecvBytes;
+		}
+		else
+		{
+			timeout = 4; TRACE("socked read timeout %d\r\n", m_CurRecvBytes);
+		}
+		m_CurRecvBytes += rxb;
+		ptr += rxb;
+	}	
+	return m_CurRecvBytes;
+}
+
+void CDealSocket::GetRecvStatus(INT * p_ncur, INT * p_nTot)
+{
+	if (p_ncur) *p_ncur = m_CurRecvBytes;
+	if (p_nTot) *p_nTot = m_RecvTotLen;
+}
+
 //--------------- 
 SOCKET CDealSocket::GetConnect(LPCSTR host, int port)
 {
@@ -165,12 +201,18 @@ SOCKET CDealSocket::GetConnect(LPCSTR host, int port)
 	PHOSTENT phostent = NULL;	   // 指向HOSTENT结构指针.
 
 	// 创建一个绑定到服务器的TCP/IP套接字.
-	if ((hSocket = socket(AF_INET, SOCK_STREAM, 0)) == INVALID_SOCKET)
+	if ((hSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == INVALID_SOCKET)
 	{
 		TRACE("Allocating socket failed. Error: %d\n", WSAGetLastError());
 		return INVALID_SOCKET;
 	}
-	m_hSocket = hSocket;
+
+	unsigned long ulSockeMode = 0; // 0 block mode, 1, unblock mode
+	if (ioctlsocket(hSocket, FIONBIO, &ulSockeMode) == SOCKET_ERROR)
+	{
+		TRACE("ioctlsocket errno:\t%d\n", WSAGetLastError());
+		return INVALID_SOCKET;
+	}
 
 	// 使用TCP/IP协议.
 	saServer.sin_family = AF_INET;
@@ -259,9 +301,11 @@ CAsyncHttp::CAsyncHttp() :Thread()
 	m_pBody = NULL;
 	m_nBodyLen = 0;
 	onFinish = NULL;
+	m_pMsgWnd = g_pHttpResMan;
+	m_pFile = NULL;
 }
 
-CAsyncHttp::CAsyncHttp(LPCTSTR szIP, LPCTSTR szUrl, int port )
+CAsyncHttp::CAsyncHttp(LPCTSTR szIP, LPCTSTR szUrl, CWnd * pmsgWnd, int port )
 	:Thread()
 {
 	QUnc2Utf(szIP, m_hostIP);
@@ -273,12 +317,19 @@ CAsyncHttp::CAsyncHttp(LPCTSTR szIP, LPCTSTR szUrl, int port )
 	m_pBody = NULL;
 	m_nBodyLen = 0;
 	m_bProxyMode = FALSE;
+	m_pFile = NULL;
+	m_pMsgWnd = pmsgWnd == NULL ?  g_pHttpResMan : pmsgWnd ;
 }
 
 CAsyncHttp::~CAsyncHttp()
 {
 	if (m_pSocket)
 		delete m_pSocket;
+	if (m_pFile != NULL)
+	{
+		delete m_pFile;
+		m_pFile = NULL;;
+	}
 	m_vstrHeaders.clear();
 }
 
@@ -301,7 +352,7 @@ void CAsyncHttp::SetProxy(LPCTSTR szProxyIp, int nProxyPort, LPCTSTR szUser, LPC
 	}
 }
 
-void CAsyncHttp::HttpProcess()
+void * CAsyncHttp::run(void * param)
 {
 	if (m_pSocket == NULL)
 		m_pSocket = new CDealSocket();
@@ -316,21 +367,24 @@ void CAsyncHttp::HttpProcess()
 	}
 	if (bret > 0)
 	{
-		if (SendHttpHeader())
+		if ((bret = SendHttpHeader()) == TRUE)
 		{
-			if (SendData() && onFinish)
+			if (( bret = OnHttpHeaderSend()) == TRUE)
 			{
-				if (onFinish(param) > 0)
-					return ;
+				bret = SendData();					
 			}
 		}
-		if (m_pSocket) m_pSocket->Close();
+
+		if (onFinish  && onFinish(param, bret) < 0 )
+			return NULL;	
 	}
-}
-void * CAsyncHttp::run(void * param)
-{
-	CAsyncHttp * ptr = (CAsyncHttp*)param;
-	ptr->HttpProcess();
+
+	if (m_pMsgWnd && m_pMsgWnd->GetSafeHwnd() &&
+		PostMessage(m_pMsgWnd->GetSafeHwnd(), WM_HTTP_DONE, (WPARAM)this, bret) )
+	{
+		return NULL;
+	}
+	if (m_pSocket) m_pSocket->Close();	
 	return NULL;
 }
 
@@ -413,11 +467,16 @@ DWORD CAsyncHttp::GetHttpHeader(CStringA &strResp)
 	}
 }
 
-void CAsyncHttp::AppendHeader(LPCTSTR szheader)
+void CAsyncHttp::AppendHeader(LPCWSTR szheader)
 {
 	CStringA sheadr;
 	QUnc2Utf(szheader, sheadr);
 	m_vstrHeaders.insert(m_vstrHeaders.end(), sheadr);
+}
+
+void  CAsyncHttp::AppendHeader(LPCSTR szheader)
+{
+	m_vstrHeaders.insert(m_vstrHeaders.end(), szheader);
 }
 
 BOOL CAsyncHttp::SendHttpHeader()
@@ -441,45 +500,161 @@ BOOL CAsyncHttp::SendHttpHeader()
 	return m_pSocket->Send(sheadr);
 }
 
+INT CAsyncHttp::GetContentLen(CStringA &sheadr)
+{
+	const char szContLen[] = { "Content-Length:" };
+	int ps = sheadr.Find(szContLen);
+	int len = -1;
+	if (ps > 0)
+	{
+		sscanf_s((LPCSTR)sheadr + ps + sizeof(szContLen), "%d", &len);
+	}
+	return -1;
+}
+
 INT CAsyncHttp::SendData()
 {
 	if (m_pSocket)
 	{
-		if (m_pBody == NULL) return TRUE;
+		if (m_pBody == NULL || m_nBodyLen <= 0) return TRUE;
 		if (send(m_pSocket->m_hSocket, (char*)m_pBody, m_nBodyLen, 0) != SOCKET_ERROR)
 		{
 			return TRUE;
 		}
 	}
-	closesocket(m_pSocket->m_hSocket);
-	TRACE("发送请求失败!\n");
 	return FALSE;
 }
 
+
+INT CAsyncHttp::GetChunckSize()
+{
+	int iread = 0;
+	char sbuf[64];
+	while (1)
+	{
+		int ret = recv(m_pSocket->m_hSocket, sbuf + iread, 1, 0);
+		if (ret > 0)
+		{
+			iread++;
+			if (sbuf[iread - 1] == '\n' && iread > 2)
+			{
+				if ( sbuf[iread - 2] == '\r')
+				{
+					ret = atox(sbuf);
+					return ret;
+				}
+			}
+		}
+		else if (ret == 0)
+			return 0; //socket closed
+		else
+		{	// if (!(ret == EINTR || ret == EWOULDBLOCK || ret == EAGAIN)
+			return -1;
+		}
+	}
+}
+
+INT CAsyncHttp::GetBody()
+{
+	if (m_szRespHeader.IsEmpty())
+		GetHttpHeader(m_szRespHeader);
+	INT len = GetContentLen(m_szRespHeader);
+	if (m_pFile == NULL) { delete m_pFile; m_pFile = NULL; }
+	m_nBodyLen = 0;
+	if (len <= 0)
+	{
+		if (m_szRespHeader.Find("Transfer-Encoding: chunked") >= 0)
+		{
+			while (1)
+			{
+				len = GetChunckSize();
+				if (len == 0) break;				
+				m_pFile = (BYTE *)realloc(m_pFile, m_nBodyLen + len+1);
+				len = m_pSocket->Recv(m_pFile + m_nBodyLen, len);
+				if (len == 0) break;
+				m_nBodyLen += len;
+			}
+		}
+	}
+	else
+	{
+		m_pFile = new BYTE[len+1];
+		m_pSocket->Recv(m_pFile, len);
+		m_pBody = m_pFile;
+		m_nBodyLen = len;
+	}
+	m_pFile[m_nBodyLen] = 0;
+	m_pBody = m_pFile;
+	return m_nBodyLen;
+}
 //<====================CAsyncHttp class<============================<<<<<<<<<
 
 CHttpPost::~CHttpPost()
 {
 	
 }
-CHttpPost::CHttpPost(LPCTSTR szIP, LPCTSTR szUrl, int port, LPCTSTR shdr[], int headerCount)
-	:CAsyncHttp( szIP,  szUrl,  port )
+
+CHttpPost::CHttpPost(LPCTSTR szIP, LPCTSTR szUrl, CWnd * pmsgWnd, int port, LPCTSTR shdr[], int headerCount)
+	:CAsyncHttp(szIP, szUrl, pmsgWnd, port)
 {
 	m_szHttpType = "POST";
-	/*	sheadr += "Content-Type: ";
-	sheadr += (ftype == NULL) ? "application/octet-stream" : ftype;
-	sheadr += "\r\n";
-	stemp.Format("Content-Length: %d\r\n\r\n", len);
-	sheadr += stemp;*/
+	for (int i = 0; i < headerCount; i++)
+		AppendHeader(shdr[i]);
 }
 
+
+INT CHttpPost::SendFile(LPCTSTR slclfname)
+{
+	m_strLocalFile = slclfname;
+	CFile of;
+	if (of.Open(slclfname, CFile::modeRead | CFile::shareDenyNone))
+	{
+		m_nBodyLen = of.GetLength();
+		m_pBody = new BYTE[m_nBodyLen];
+		m_pFile = (BYTE *)m_pBody;
+		of.Read(m_pBody, m_nBodyLen);
+		of.Close();
+		CString strtype = CUtil::GetFileType(slclfname);
+		CStringA stype; QUnc2Utf(strtype, stype);
+		CStringA sheadr;
+		sheadr.Format("Content-Type: %s\r\n", stype);
+		AppendHeader(sheadr);
+		sheadr.Format("Content-Length: %d\r\n\r\n", m_nBodyLen);
+		AppendHeader(sheadr);
+		Connect();
+	}
+	return 0;
+}
+
+INT CHttpPost::SendFile(const void * ptr, int len, LPCTSTR sztype)
+{
+	CStringA stype; 
+	if (sztype == NULL) 
+		stype = "application/octet-stream";
+	else
+		QUnc2Utf(sztype, stype);
+	CStringA sheadr;
+	sheadr.Format("Content-Type: %s\r\n", stype);
+	AppendHeader(sheadr);
+	sheadr.Format("Content-Length: %d\r\n\r\n", len);
+	AppendHeader(sheadr);
+	m_pBody = (BYTE*)ptr;
+	m_nBodyLen = len;
+	Connect();
+	return 0;
+}
+
+
+INT CHttpPost::OnHttpHeaderSend()
+{
+	return 1;
+}
+
+
 //<====================CHttpPost class<============================<<<<<<<<<
-INT OnHttpHeaderSend(void * param)
+INT OnHttpGetDone(void * param, int http_status)
 {
 	CGetHttp * phttp = (CGetHttp*)param;
-	phttp->RecvData();
-
-	
 	return 0;
 }
 
@@ -489,11 +664,13 @@ CGetHttp::~CGetHttp()
 
 }
 
-CGetHttp::CGetHttp(LPCTSTR szIP, LPCTSTR szUrl, int port, LPCTSTR shdr[], int headerCount)
-	:CAsyncHttp( szIP,  szUrl,  port )
+CGetHttp::CGetHttp(LPCTSTR szIP, LPCTSTR szUrl, CWnd * pmsgWnd, int port, LPCTSTR shdr[], int headerCount)
+	:CAsyncHttp(szIP, szUrl, pmsgWnd, port)
 {
 	m_szHttpType = "GET";
-	this->onFinish = OnHttpHeaderSend;
+	this->onFinish = OnHttpGetDone;
+	for (int i = 0; i < headerCount; i++)
+		AppendHeader(shdr[i]);
 }
 
 void CGetHttp::GetFile(LPCTSTR slclfname)
@@ -502,26 +679,33 @@ void CGetHttp::GetFile(LPCTSTR slclfname)
 	Connect();
 }
 
-INT CGetHttp::RecvData()
+void CGetHttp::GetFile()
+{
+	Connect();
+}
+
+INT CGetHttp::OnHttpHeaderSend()
 {
 	int len = GetHttpHeader(m_szRespHeader);
 	if (len > 0)
 	{
 		if (m_szRespHeader.Find(" 200 OK") >= 0)
 		{
-			const char szContLen[] = { "Content-Length:" };
-			int ps = m_szRespHeader.Find(szContLen);
-			if (ps > 0)
+			len = GetContentLen(m_szRespHeader);
+			if (len > 0)
 			{
-				int len = 0;
-				sscanf((LPCSTR)m_szRespHeader + ps + sizeof(szContLen), "%d", &len);
-				char * buf = new char[len + 1];
-				recv(m_pSocket->m_hSocket, buf, len, 0);
-				CFile of;
-				if (of.Open(m_strLocalFile, CFile::modeCreate | CFile::modeReadWrite))
+				char * buf = new char[len + 1];				
+				int rxlen = m_pSocket->Recv(buf, len);
+				if (!m_strLocalFile.IsEmpty())
 				{
-					of.Write(buf, len);
-					of.Close();
+					CFile of;
+					if (of.Open(m_strLocalFile, CFile::modeCreate | CFile::modeReadWrite))
+					{
+						of.Write(buf, rxlen);
+						of.Flush();
+						of.Close();
+						TRACE("HTTP Write %d %X bytes", rxlen, buf[len - 1]);
+					}					
 				}
 				delete buf;
 			}
@@ -530,4 +714,41 @@ INT CGetHttp::RecvData()
 	return 0;
 }
 
+
 //<====================CHttpPost class<============================<<<<<<<<<
+
+
+// CHttpResMan
+
+IMPLEMENT_DYNAMIC(CHttpResMan, CWnd)
+
+CHttpResMan::CHttpResMan()
+{
+}
+
+CHttpResMan::~CHttpResMan()
+{
+}
+
+
+BEGIN_MESSAGE_MAP(CHttpResMan, CWnd)
+	ON_MESSAGE(WM_HTTP_DONE, &CHttpResMan::OnHttpFinishMsg)		//自定义事件
+END_MESSAGE_MAP()
+
+
+LRESULT CHttpResMan::OnHttpFinishMsg(WPARAM wParam, LPARAM lParam)
+{
+	CAsyncHttp * pHttp = (CAsyncHttp*)wParam;
+	delete pHttp;
+	return 0;
+}
+
+CWnd * CreateHttpManageWnd(CWnd * pParent)
+{
+	CHttpResMan * phttpMan = new CHttpResMan();
+	phttpMan->Create(NULL, _T(""), WS_CHILD, CRect(0, 0, 0, 0), pParent, IDC_STATIC, NULL);
+	g_pHttpResMan = phttpMan;
+	return phttpMan;
+}
+
+// CHttpResMan 消息处理程序

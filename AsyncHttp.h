@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 using namespace std;
+#define WM_HTTP_DONE  (WM_APP + 137)
 
 static unsigned int __stdcall threadFunction(void *);
 
@@ -40,6 +41,11 @@ public:
 	void Close();
 	CStringA GetResponse();
 	BOOL Send(CStringA sdata);
+	INT Recv(void * buf, int len);
+	void GetRecvStatus(INT * p_ncur, INT * p_nTot);
+protected:
+	INT m_RecvTotLen;
+	INT m_CurRecvBytes;
 };
 
 
@@ -47,7 +53,7 @@ class CAsyncHttp : public Thread
 {
 protected:
 	CAsyncHttp();           
-	CAsyncHttp(LPCTSTR szIP, LPCTSTR szUrl, int port = 80);
+	CAsyncHttp(LPCTSTR szIP, LPCTSTR szUrl ,CWnd * pmsgWnd, int port = 80);
 
 public:
 	CStringA  m_szHttpType;
@@ -55,18 +61,22 @@ public:
 	void SetProxy(LPCTSTR szProxyIp, int nProxyPort, LPCTSTR szUser = NULL, LPCTSTR pwd = NULL);
 	INT   Connect();
 	INT   Disconnect();
-	void  AppendHeader(LPCTSTR szheader);
-	void  HttpProcess();
+	void  AppendHeader(LPCWSTR szheader);
+	void  AppendHeader(LPCSTR szheader);
+	DWORD GetHttpHeader(CStringA &strResp);
+	INT GetBody();
+	void * m_pBody;
+	int    m_nBodyLen;
 
 public:
 	void setOnFinish(void(*func)());
 	virtual void * run(void *);
 	virtual INT SendData() ;
 	virtual ~CAsyncHttp();
+	virtual INT OnHttpHeaderSend() = 0;
 
 protected:
 	BOOL  SendHttpHeader();
-	DWORD GetHttpHeader(CStringA &strResp);
 	vector<CStringA> m_vstrHeaders;  //
 	CStringA  m_hostIP;
 	int       m_nport;
@@ -77,31 +87,56 @@ protected:
 	CStringA  m_szProxyUser;     // 代理理服务器用户， 为空表示不需要登录
 	CStringA  m_szProxyPwd;      // 代理理服务器密码.
 	CDealSocket * m_pSocket;	
-	INT (*onFinish)(void * parm);//完成后调用的函数
+	CWnd  * m_pMsgWnd;
+	INT (*onFinish)(void * parm, INT http_send_status);//完成后调用的函数. Status < 0 means fail ; return < 0 ,keep connection
 
 	INT ConnectHttp();
 	INT ConnectProxyHttp();
+	INT GetContentLen(CStringA &sheader);
+	BYTE * m_pFile;
 
-	void * m_pBody;
-	int    m_nBodyLen;
+	INT GetChunckSize();
+
 };
 
 class CHttpPost : public CAsyncHttp
 {
+	CString m_strLocalFile;
 public:
-	CHttpPost(LPCTSTR szIP, LPCTSTR szUrl, int port = 80, LPCTSTR shdr[] = NULL, int headerCount = 0);
+	CHttpPost(LPCTSTR szIP, LPCTSTR szUrl, CWnd * pmsgWnd , int port = 80, LPCTSTR shdr[] = NULL, int headerCount = 0);
 	~CHttpPost();
 	INT SendFile(LPCTSTR slclfname);
+	INT SendFile(const void * ptr, int len, LPCTSTR sztype=NULL);
+	virtual INT OnHttpHeaderSend();
 };
 
 class CGetHttp : public CAsyncHttp
 {
 	CString m_strLocalFile;
 public:
-	CGetHttp(LPCTSTR szIP, LPCTSTR szUrl, int port = 80, LPCTSTR shdr[] = NULL, int headerCount = 0);
+	CGetHttp(LPCTSTR szIP, LPCTSTR szUrl, CWnd * pmsgWnd = NULL, int port = 80, LPCTSTR shdr[] = NULL, int headerCount = 0);
 	~CGetHttp();
 	void GetFile(LPCTSTR slclfname);
-	INT RecvData();
+	void GetFile();//buffer is m_pBody, length is m_nBodyLen;
+	virtual INT OnHttpHeaderSend();
 };
 
+
+
+class CHttpResMan : public CWnd
+{
+	DECLARE_DYNAMIC(CHttpResMan)
+
+public:
+	CHttpResMan();
+	virtual ~CHttpResMan();
+protected:
+	DECLARE_MESSAGE_MAP()
+public:
+	afx_msg LRESULT OnHttpFinishMsg(WPARAM wParam, LPARAM lParam);
+};
+
+
+
 // CAsyncHttp
+

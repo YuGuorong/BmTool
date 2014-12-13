@@ -5,6 +5,8 @@
 #include "DirPackge.h"
 #include "LoginDlg.h"
 #include "afxdialogex.h"
+#include "AsyncHttp.h"
+#include "PackerProj.h"
 
 
 // CLoginDlg dialog
@@ -32,6 +34,7 @@ BEGIN_MESSAGE_MAP(CLoginDlg, CExDialog)
 	ON_WM_SIZE()
 	ON_BN_CLICKED(IDC_BTN_LOGIN, &CLoginDlg::OnBnClickedBtnLogin)
 	ON_WM_DESTROY()
+	ON_MESSAGE(WM_HTTP_DONE, &CLoginDlg::OnHttpFinishMsg)		//×Ô¶¨ÒåÊÂ¼þ
 END_MESSAGE_MAP()
 
 
@@ -94,67 +97,124 @@ INT GetJsonString(CString &sjson, LPCTSTR skey, CString &sval)
 	return 0;
 }
 
-#include "PackerProj.h"
 //#ifdef DEBUG
 //#define DEBUG_LOGIN 
 //#endif
 //192.168.1.61  fixopen.xicp.net
-#include "AsyncHttp.h"
 void TestGetSocket()
 {
-	CGetHttp *ot = new CGetHttp(_T("www.baidu.com"), _T("/img/bdlogo.png"));
-	ot->GetFile(_T("C:\\temp\\bdlogo.png"));
+//	CGetHttp *ot = new CGetHttp(_T("www.baidu.com"), _T("/img/bdlogo.png"));
+//	ot->GetFile(_T("C:\\temp\\bdlogo.png"));
+
+}
+
+
+LRESULT CLoginDlg::OnHttpFinishMsg(WPARAM wParam, LPARAM lParam)
+{
+	CAsyncHttp * pHttp = (CAsyncHttp*)wParam;
+	BOOL  stat = (BOOL)lParam;
+	if (stat)
+	{
+		int len = pHttp->GetHttpHeader(pHttp->m_szRespHeader);
+		if (pHttp->m_szRespHeader.Find(" 200 OK") >= 0)
+		{
+			pHttp->GetBody();
+			CString strResp; QUtf2Unc((LPCSTR)(pHttp->m_pBody), strResp);
+			CPackerProj * proj = ::GetPackProj();
+			proj->m_logState = 1;
+#ifdef DEBUG_LOGIN
+			proj->m_strSession = _T("12ea2d36e9b638e88887b0081deabeaec11d7bad");
+			proj->m_strLogId = _T("33542438663913472");
+#else
+			GetJsonString(strResp, _T("\"sessionId\""), proj->m_strSession);
+			GetJsonString(strResp, _T("\"id\""), proj->m_strLogId);
+#endif
+			BOOL GetLockState();
+			if (!GetLockState())
+				proj->SetProjStatus(LOGIN_PROJ);
+			void LockSystem(BOOL block);
+			LockSystem(FALSE);
+			stat = TRUE;
+		}
+	}
+	if (stat == FALSE)
+	{
+		MessageBox(_T("µÇÂ¼Ê§°Ü"), _T("µÇÂ¼"));
+	}
+	GetDlgItem(IDC_BTN_LOGIN)->SetWindowText(TEXT("µÇ  Â¼"));
+	EndWaitCursor();
+	::AfxGetMainWnd()->EndWaitCursor();
+ 
+	pHttp->stop();
+	delete pHttp;
+	return 0;
 }
 
 void CLoginDlg::OnBnClickedBtnLogin()
 {//{"state": 200, "sessionId": "12ea2d36e9b638e88887b0081deabeaec11d7bad", "id" : "33542438663913472"}
-	EndWaitCursor();
+	BeginWaitCursor();
+	::AfxGetMainWnd()->BeginWaitCursor();
+	CWnd * pwnd = GetDlgItem(IDC_BTN_LOGIN);
+	CString strtxt;
+	pwnd->GetWindowText(strtxt);
+	if (strtxt.Compare(TEXT("µÇÂ¼ÖÐ...")) == 0)
+		return;
+	pwnd->SetWindowText(TEXT("µÇÂ¼ÖÐ..."));
 	void TestSocket();
 	TestGetSocket();
-	return;
+	//return;
 //	TestSocket();
-	char post_data[64] = ("{\"password\":\"admin\"}");
 	CString str, strUrl, strdata, strResp, strUser;
 	GetDlgItem(IDC_EDIT_USER)->GetWindowText(strUser);
 	strUrl.Format(_T("/api/users/%s/sessions"), strUser);
 	GetDlgItem(IDC_EDIT_PWD)->GetWindowText(str);
 	strdata.Format(_T("{\"password\":\"%s\"}"), str);
-	USES_CONVERSION;
-	CHAR * pdata = W2A(strdata);	
-	int nLogState = 0;
+
+	CHttpPost * opost = new CHttpPost(g_pSet->m_strServerIP, strUrl, this, g_pSet->m_nPort);
+	QUnc2Utf(strdata, m_strHttpData);
+	opost->SendFile((LPCSTR)m_strHttpData, m_strHttpData.GetLength(), TEXT("application/json"));
+	CPackerProj * proj = ::GetPackProj();
+	proj->m_strLoginUser = strUser;
 	CTime tmlogin = CTime::GetCurrentTime();
-	
-#ifdef DEBUG_LOGIN
-	nLogState = 200;
-#else
-	HttpPost(g_pSet->m_strServerIP, g_pSet->m_nPort, strUrl, pdata, strdata.GetLength(), strResp);
-	nLogState = 0;
-	GetJsonInt(strResp, _T("\"state\""), nLogState);
-#endif	
-	if (nLogState == 200)
-	{
-		CPackerProj * proj = ::GetPackProj();
-		proj->m_logState = 1;
-#ifdef DEBUG_LOGIN
-		proj->m_strSession = _T("12ea2d36e9b638e88887b0081deabeaec11d7bad");
-		proj->m_strLogId = _T("33542438663913472");
-#else
-		GetJsonString(strResp, _T("\"sessionId\""), proj->m_strSession);
-		GetJsonString(strResp, _T("\"id\""), proj->m_strLogId);
-#endif
-		proj->m_strLoginUser = strUser;
-		proj->m_tmLogin = tmlogin;
-		BOOL GetLockState();
-		if (!GetLockState())
-			proj->SetProjStatus(LOGIN_PROJ);
-		void LockSystem(BOOL block);
-		LockSystem(FALSE);
-	}
-	else
-	{
-		MessageBox(_T("µÇÂ¼Ê§°Ü"), _T("µÇÂ¼"));
-	}
-	EndWaitCursor();
+	proj->m_tmLogin = tmlogin;
+	return;
+
+//	USES_CONVERSION;
+//	CHAR * pdata = W2A(strdata);	
+//	int nLogState = 0;
+//	CTime tmlogin = CTime::GetCurrentTime();
+//	
+//#ifdef DEBUG_LOGIN
+//	nLogState = 200;
+//#else
+//	HttpPost(g_pSet->m_strServerIP, g_pSet->m_nPort, strUrl, pdata, strdata.GetLength(), strResp);
+//	nLogState = 0;
+//	GetJsonInt(strResp, _T("\"state\""), nLogState);
+//#endif	
+//	if (nLogState == 200)
+//	{
+//		CPackerProj * proj = ::GetPackProj();
+//		proj->m_logState = 1;
+//#ifdef DEBUG_LOGIN
+//		proj->m_strSession = _T("12ea2d36e9b638e88887b0081deabeaec11d7bad");
+//		proj->m_strLogId = _T("33542438663913472");
+//#else
+//		GetJsonString(strResp, _T("\"sessionId\""), proj->m_strSession);
+//		GetJsonString(strResp, _T("\"id\""), proj->m_strLogId);
+//#endif
+//		proj->m_strLoginUser = strUser;
+//		proj->m_tmLogin = tmlogin;
+//		BOOL GetLockState();
+//		if (!GetLockState())
+//			proj->SetProjStatus(LOGIN_PROJ);
+//		void LockSystem(BOOL block);
+//		LockSystem(FALSE);
+//	}
+//	else
+//	{
+//		MessageBox(_T("µÇÂ¼Ê§°Ü"), _T("µÇÂ¼"));
+//	}
+//	EndWaitCursor();
 }
 
 

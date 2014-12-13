@@ -34,6 +34,7 @@ protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 	void MoveCtrlRect(int id, int right, int top, CRect &r);
 	void InsertRes(CResMan* pRes);
+	void UpdateInfoText();
 	DECLARE_MESSAGE_MAP()
 public:
 	virtual BOOL OnInitDialog();
@@ -42,6 +43,7 @@ public:
 	CTreeCtrl m_trMeta;
 	CTreeCtrl m_trDir;
 	CListCtrl m_listRes;
+	CString   m_strInfo;
 	
 	afx_msg void OnDestroy();
 	afx_msg LRESULT OnViewProjMsg(WPARAM wParam, LPARAM lParam);
@@ -54,4 +56,7 @@ public:
 	afx_msg void OnBnClickedBtnAddRes();
 	afx_msg void OnBnClickedBtnRemoveRes();
 	afx_msg void OnTvnSelchangedTreeDir(NMHDR *pNMHDR, LRESULT *pResult);
+	virtual BOOL PreTranslateMessage(MSG* pMsg);
+	virtual void OnOK();
+	afx_msg void OnTvnEndlabeleditTreeDir(NMHDR *pNMHDR, LRESULT *pResult);
 };

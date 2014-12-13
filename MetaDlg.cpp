@@ -130,12 +130,12 @@ INT CMetaDlg::ParseMetaItem(CString &strRawMeta )
 		else if (str.Find(_T("图片")) >= 0)
 		{
 			style = META_PICTURE;
-			m_nMaxHight += 60;//
+			m_nMaxHight += ITEM_LARG_HIGH;//
 		}
 		else if (str.Find(_T("中文")) >= 0)
 		{
 			style = META_READWRITE | META_MULTLINE;
-			m_nMaxHight += 60;//
+			m_nMaxHight += ITEM_LARG_HIGH;//
 		}
 		else if( str.Find(_T("时间"))>= 0 ) 
 			style = META_DATETIME; 
@@ -415,41 +415,41 @@ CMetaDataItem * CMetaDlg::NewMetaItem(int style, LPCTSTR szKey, LPCTSTR strDefV)
 	}
 	return pit;
 }
-
-void CMetaDlg::LoadMetaImage( CMetaDataItem * pItem, LPCTSTR strV, CRect r)
-{
-	r.InflateRect(-1,-1);
-	CImage img ;
-	if( img.Load(strV) != S_OK )
-	{
-		img.LoadFromResource(::AfxGetInstanceHandle(), IDB_BITMAP_UNSHOWN );
-	}		
-	HDC hDC = img.GetDC();
-	CDC *pDC = CDC::FromHandle(hDC);
-	CBitmap * pbtmp = new CBitmap();
-	pbtmp->CreateCompatibleBitmap(pDC,r.Width(),r.Height());
-	CDC memDC;
-	memDC.CreateCompatibleDC(pDC);
-	CBitmap *pOld = memDC.SelectObject(pbtmp);
-	CRect rsrc(0,0, img.GetWidth(), img.GetHeight());
-	CRect rc1(r);
-	rc1.OffsetRect(-r.left, -r.top);
-	::SetStretchBltMode(memDC.m_hDC, HALFTONE);
-	::SetBrushOrgEx(memDC.m_hDC, 0, 0, NULL);
-	img.StretchBlt(memDC.m_hDC,rc1,rsrc,SRCCOPY);
-	memDC.SelectObject(pOld->m_hObject);
-	img.ReleaseDC();
-	ReleaseDC(&memDC);
-	if( pItem->pimg ) 
-	{
-		pItem->pimg->DeleteObject();
-		delete pItem->pimg;
-	}
-	pItem->pimg = pbtmp;
-
-	CLink * pbmp = (CLink * )pItem->pWnd[1] ;
-	pbmp->SetBitmap(pItem->pimg->operator HBITMAP());
-}
+//
+//void CMetaDlg::LoadMetaImage( CMetaDataItem * pItem, LPCTSTR strV, CRect r)
+//{
+//	r.InflateRect(-1,-1);
+//	CImage img ;
+//	if( img.Load(strV) != S_OK )
+//	{
+//		img.LoadFromResource(::AfxGetInstanceHandle(), IDB_BITMAP_UNSHOWN );
+//	}		
+//	HDC hDC = img.GetDC();
+//	CDC *pDC = CDC::FromHandle(hDC);
+//	CBitmap * pbtmp = new CBitmap();
+//	pbtmp->CreateCompatibleBitmap(pDC,r.Width(),r.Height());
+//	CDC memDC;
+//	memDC.CreateCompatibleDC(pDC);
+//	CBitmap *pOld = memDC.SelectObject(pbtmp);
+//	CRect rsrc(0,0, img.GetWidth(), img.GetHeight());
+//	CRect rc1(r);
+//	rc1.OffsetRect(-r.left, -r.top);
+//	::SetStretchBltMode(memDC.m_hDC, HALFTONE);
+//	::SetBrushOrgEx(memDC.m_hDC, 0, 0, NULL);
+//	img.StretchBlt(memDC.m_hDC,rc1,rsrc,SRCCOPY);
+//	memDC.SelectObject(pOld->m_hObject);
+//	img.ReleaseDC();
+//	ReleaseDC(&memDC);
+//	if( pItem->pimg ) 
+//	{
+//		pItem->pimg->DeleteObject();
+//		delete pItem->pimg;
+//	}
+//	pItem->pimg = pbtmp;
+//
+//	CLink * pbmp = (CLink * )pItem->pWnd[1] ;
+//	pbmp->SetBitmap(pItem->pimg->operator HBITMAP());
+//}
 
 void CMetaDlg::CreateTitle(PCWnd * pWnd , LPCTSTR szKey, CRect &rs)
 {
@@ -469,9 +469,10 @@ void CMetaDlg::CreateItem( CMetaDataItem * pItem, LPCTSTR strV, CRect &rs  )
 	CRect rc;
 	this->GetClientRect(rc);
 	this->ScreenToClient(rc);
-	CRect r(rs);
+	rc.bottom -= 40;
+	CRect r(rs); 
 	int left = r.left;
-	if(pItem->style & (META_PICTURE|META_MULTLINE) ) r.bottom+=60;
+	if (pItem->style & (META_PICTURE | META_MULTLINE)) r.bottom += ITEM_LARG_HIGH;
 	if( r.bottom >= rc.bottom - 2)  
 	{
 		r.MoveToXY(r.left + (m_nMaxCapLen + 1) * META_CAPTION_FOUNT_SIZE + r.Width() + 1, 4);
@@ -490,7 +491,7 @@ void CMetaDlg::CreateItem( CMetaDataItem * pItem, LPCTSTR strV, CRect &rs  )
 		pItem->pWnd[1] = pbox;
 		CRect rb = r;//rcb;
 		rb.top += 1;
-        rb.bottom += 60;        
+		rb.bottom += ITEM_LARG_HIGH;
 
 		pbox->Create(WS_CHILD|WS_VISIBLE|WS_TABSTOP|WS_BORDER|CBS_DROPDOWNLIST|WS_VSCROLL, rb, /*pItem->pWnd[2]*/this,  pItem->nCtrlID );
         CString str = pItem->strDefVal;
@@ -510,7 +511,7 @@ void CMetaDlg::CreateItem( CMetaDataItem * pItem, LPCTSTR strV, CRect &rs  )
 		r.InflateRect(-1,-1); 
 		pItem->pWnd[1] = pbmp;
 		pbmp->Create(_T("static"), WS_CHILD|WS_VISIBLE|SS_BITMAP|SS_NOTIFY, r, this,  pItem->nCtrlID);
-		LoadMetaImage(pItem, strV, r);		
+		m_proj->LoadMetaImage(pItem, strV, r);		
 		HCURSOR hCurHand  =  LoadCursor( NULL  , IDC_HAND ) ;
 		pbmp->SetLinkCursor(hCurHand);
 			
@@ -671,7 +672,7 @@ void CMetaDlg::OnPictureClick(UINT id)
 			{
 				CRect r;
 				pit->pWnd[2]->GetWindowRect(r);
-				LoadMetaImage(pit, dlg.GetPathName(), r);
+				m_proj->LoadMetaImage(pit, dlg.GetPathName(), r);
 				pit->strValue = dlg.GetFileName();
 				if (pit->strKey.Compare(_T("实体封面")) == 0)
 				{
@@ -725,7 +726,7 @@ INT CMetaDlg::SetItemValue(LPCTSTR ItemCaption, LPCTSTR strValue, BOOL bSetSubCo
 				CString strpath = m_proj->m_szProjPath + _T("\\")CFG_RES_FOLDER _T("\\") + strValue;
 				CRect r;
 				pit->pWnd[2]->GetWindowRect(r);
-				LoadMetaImage(pit, strpath, r);
+				m_proj->LoadMetaImage(pit, strpath, r);
 			}
 			else
 			{
@@ -738,3 +739,17 @@ INT CMetaDlg::SetItemValue(LPCTSTR ItemCaption, LPCTSTR strValue, BOOL bSetSubCo
 	return 0;
 }
 
+BOOL CMetaDlg::PreTranslateMessage(MSG* pMsg)
+{
+	// TODO:  在此添加专用代码和/或调用基类
+	if (pMsg->message == WM_COMMAND)
+	{
+		WORD notify = HIWORD(pMsg->wParam);
+		WORD id = LOWORD(pMsg->wParam);
+		if ( id >= ID_META_CTRL_START )
+		{
+			m_proj->m_bProjModified = TRUE;
+		}
+	}
+	return CReaderView::PreTranslateMessage(pMsg);
+}

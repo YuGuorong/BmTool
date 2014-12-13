@@ -200,9 +200,7 @@ public:
 	void * m_ptrDbCol[MAX_BOOK_DB_COL];
 	SQL_DB_BOOK  m_db_items;
 	CString strError;
-protected:
-	LPCTSTR m_szMimeType; //contend type
-	HGLOBAL m_hG;  //globale resource of MIME type map.
+	BOOL   m_bProjModified;
 
 public:
 	INT CreateProj(LPCTSTR szTarget);
@@ -211,14 +209,16 @@ public:
 	int Open(LPCTSTR szProj);
 	BOOL UpLoadProj();	
 	BOOL ClearResTable();
-	BOOL GetFileMemiType(LPCTSTR szExt, CString &type);
 	void SetProjStatus(int proj_st);                     //login? new proj? save proj? close proj?
 	BOOL SetBookState(LPCTSTR sbookid, LPCTSTR sState);  //uploaded? uploading? local 
+	void LoadMetaImage(CMetaDataItem * pItem, LPCTSTR strV, CRect r);
+	void GenPreview(void * hz);
+	void Pdf2Swf();
 public:
 	CPackerProj(CWnd * pParent);
 	~CPackerProj();
 protected:
-	BOOL PrecheckContent();
+	CMetaDataItem *  PrecheckContent(); //NULL is OK. other value identicate what item fail
 	void SaveMeta(CString &sxml);
 	void SaveDirToXml(HTREEITEM hit, CString &sxml, int sublevel);
 	void SaveDirs(CString &sxml);

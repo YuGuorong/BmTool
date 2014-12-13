@@ -5,13 +5,24 @@
 #include <Psapi.h>
 #pragma comment (lib,"Psapi.lib")
 
+HGLOBAL CUtil::m_hG;
+LPCTSTR CUtil::m_szMimeType; //contend type
+
 CUtil::CUtil(void)
 {
+	HRSRC hr = ::FindResource(NULL, MAKEINTRESOURCE(IDR_MIME_TYPE), _T("MIME"));
+	if (hr)
+	{
+		ULONG nResSize = ::SizeofResource(NULL, hr);  // Data size/length  
+		m_hG = ::LoadResource(NULL, hr);
+		m_szMimeType = (LPCTSTR)LockResource(m_hG);    // Data Ptr 
+	}
 }
-
 
 CUtil::~CUtil(void)
 {
+	BaseAppExit();
+	::UnlockResource(m_hG);
 }
 
 void CUtil::GetCurPath(CString &strPath)
@@ -49,6 +60,50 @@ CString CUtil::GetFileName(CString &strFilePath)
 	return strFilePath.Right(strFilePath.GetLength() - pos - 1);
 }
 
+BOOL CUtil::GetFileMemiType(LPCTSTR szExt, CString &stype)
+{
+	if (szExt && *szExt != 0)
+	{
+		CString strext = _T("\n");
+		strext += szExt;
+		strext += _T(":");
+		LPCTSTR ptr = _tcsstr(m_szMimeType, strext);
+		if (ptr)
+		{
+			LPCTSTR pstart = ptr + strext.GetLength();
+			LPCTSTR pend = _tcschr(pstart, _T('\r'));
+			if (pend)
+			{
+				int cplen = pend - pstart;
+				TCHAR * pdst = stype.GetBuffer(cplen + 1);
+				memcpy(pdst, pstart, cplen*sizeof(TCHAR));
+				pdst[cplen] = 0;
+				stype.ReleaseBuffer();
+				return TRUE;
+			}
+		}
+	}
+	stype = _T("application/octet-stream");
+	return FALSE;
+
+}
+
+CString CUtil::GetFileType(LPCTSTR szFile)
+{
+	CString strFile = szFile;
+	int ps = strFile.ReverseFind('\\');
+	int pt = strFile.ReverseFind('.');
+	if (pt > 0 && (ps < pt) )
+	{
+		CString strExt = strFile.Right(strFile.GetAllocLength()-pt);
+		CString strtype;
+		GetFileMemiType(strExt, strtype);
+		return strtype;
+	}
+	else
+		return CString(TEXT("application/octet-stream"));
+}
+
 HANDLE CUtil::RunProc(LPCTSTR strcmd, LPCTSTR strparam, LPCTSTR strPath, BOOL bsync )
 {
 	SHELLEXECUTEINFO ShExecInfo = {0};
@@ -59,7 +114,7 @@ HANDLE CUtil::RunProc(LPCTSTR strcmd, LPCTSTR strparam, LPCTSTR strPath, BOOL bs
 	ShExecInfo.lpFile = strcmd;            
 	ShExecInfo.lpParameters = strparam;    
 	ShExecInfo.lpDirectory = strPath;
-	ShExecInfo.nShow = SW_HIDE;// SW_SHOW;
+	ShExecInfo.nShow = bsync ? SW_HIDE : SW_SHOW;
 	ShExecInfo.hInstApp = NULL;      
 	ShellExecuteEx(&ShExecInfo);
 	if ( bsync )
@@ -219,6 +274,17 @@ CString CUtil::File2Unc(LPCTSTR sfilename)
 	return strUnc;
 }
 
+int CUtil::Asc2File(LPCTSTR sfilename,  CStringA &sa)
+{
+	CFile of;
+	if (of.Open(sfilename, CFile::modeCreate | CFile::modeWrite))
+	{
+		of.Write(sa, sa.GetLength());
+		of.Close();
+		return 1;
+	}
+	return 0;
+}
 
 HICON CUtil::GetFileIcon(LPCTSTR sfilename)
 {
@@ -358,6 +424,7 @@ int atox(const char *str)
 	int		i = 0;
 	char	ch;
 	if (str == NULL) return 0;
+	str += strspn(str, " \t0xX");
 	sum = 0;
 	while (*str && i<8)
 	{
@@ -517,7 +584,6 @@ int BaseAppInit()
 	return 0;
 }
 
-
 void BaseAppExit()
 {
 	if( g_pSet )
@@ -527,16 +593,7 @@ void BaseAppExit()
 	}
 }
 
-
-
-class CSys
-{
-public: 
-	CSys(){};
-	~CSys(){BaseAppExit();};
-};
-
-CSys g_sys;
+CUtil g_util;
 
 #include <Wininet.h>  
 
@@ -766,6 +823,7 @@ void HttpPost(LPCTSTR szServer, int nPort, LPCTSTR url, void * postdata, int dle
 	} while (dwDownloaded != 0);
 
 	QA2W(str, strResponse);
+	delete lpHeadersA;
 	// ¹Ø±Õ¾ä±ú
 	InternetCloseHandle(hRequest);
 	InternetCloseHandle(hSession);

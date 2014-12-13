@@ -51,6 +51,7 @@ BEGIN_MESSAGE_MAP(CBMDlg, CExDialog)
 	ON_BN_CLICKED(IDC_BTN_ADD_RES, &CBMDlg::OnBnClickedBtnAddRes)
 	ON_BN_CLICKED(IDC_BTN_REMOVE_RES, &CBMDlg::OnBnClickedBtnRemoveRes)
 	ON_NOTIFY(TVN_SELCHANGED, IDC_TREE_DIR, &CBMDlg::OnTvnSelchangedTreeDir)
+	ON_NOTIFY(TVN_ENDLABELEDIT, IDC_TREE_DIR, &CBMDlg::OnTvnEndlabeleditTreeDir)
 END_MESSAGE_MAP()
 
 // CBMDlg message handlers
@@ -59,12 +60,15 @@ view_type CBMDlg::ChangeView(view_type vtype)  //view_type
 	view_type oldview = m_cur_view;
 
 	m_pViews[vtype]->ShowWindow(SW_SHOW);
+
+	
 	for (int i = 0; i < (int)VIEW_MAX; i++)
 	{
 		if (i != vtype)
 			m_pViews[i]->ShowWindow(SW_HIDE);
 	}
 	m_cur_view = vtype;
+	UpdateInfoText();
 	return oldview;
 }
 
@@ -89,6 +93,8 @@ BOOL CBMDlg::OnInitDialog()
 	{
 		m_pViews[i]->MoveWindow(r, FALSE);
 	}
+	int txtids[] = { IDC_ST_INFO };
+	SubTextItems(txtids, sizeof(txtids) / sizeof(int), NULL, NULL);
 	
 	//ChangeView(VIEW_META_DATA);
 	UINT btnids[][2] = {
@@ -186,7 +192,9 @@ void CBMDlg::OnSize(UINT nType, int cx, int cy)
 		MoveCtrlRect(IDC_BTN_REMOVE_RES, r.left, ftop, r);
 		MoveCtrlRect(IDC_BTN_ADD_RES, r.left, ftop, r);
 
-		
+		r.right = r.left-4;
+		r.left = resleft;
+		GetDlgItem(IDC_ST_INFO)->MoveWindow(r);
 		r.SetRect(resleft, 1, cx - 1, r.top - 1);
 		m_FrameMeta.MoveWindow(r);
 		r.OffsetRect(-r.left, -r.top );	
@@ -229,7 +237,7 @@ CReaderView * CBMDlg::GetProjView()
 		if (m_pViews[i]->m_vType == m_proj->m_type)
 			return m_pViews[i];
 	}
-	return NULL; //m_pViews[0]
+	return NULL; //m_pViews[0] 
 }
 
 LRESULT CBMDlg::OnViewProjMsg(WPARAM wParam, LPARAM lParam)
@@ -256,20 +264,12 @@ LRESULT CBMDlg::OnViewProjMsg(WPARAM wParam, LPARAM lParam)
 			if (np >= 0) str.Delete(0, np + 1);
 			GetProjView()->ViewFile(m_proj->m_szTargetPath);
 			ChangeView(m_proj->m_type);
-			GetProjView()->GetBookInfo(_T("Title"), str);
-			if (str.IsEmpty())
-			{
-				str = m_proj->m_szTargetPath;
-				int np = str.ReverseFind(_T('\\'));
-				if (np >= 0) str.Delete(0, np + 1);
-				np = str.ReverseFind(_T('.'));
-				if (np >= 0) str.Delete(np, str.GetLength() - np);
-				GetProjView()->ViewFile(m_proj->m_szTargetPath);
-				ChangeView(m_proj->m_type);
-			}
+
+			np = str.ReverseFind(_T('.'));
+			if (np >= 0) str.Delete(np, str.GetLength() - np);
 			GetMetaWnd()->SetItemValue(_T("图书名称"), str);
 
-			GetMetaWnd()->SetItemValue(_T("电子书籍类别"), _T("Pdf"));
+			GetMetaWnd()->SetItemValue(_T("电子书籍类别"), m_proj->m_type == VIEW_PDF ?  _T("Pdf") : _T("Epub"));
 			str.Format(_T("%d"), m_proj->m_nTargetFLen);
 			GetMetaWnd()->SetItemValue(_T("电子书籍文件大小"), str);
 			GetMetaWnd()->SetItemValue(_T("学科门类"), _T("工学"));
@@ -326,6 +326,25 @@ void CBMDlg::InsertRes(CResMan* pRes)
 	m_listRes.SetItemText(row, 4, pRes->m_strResId);
 }
 
+
+void CBMDlg::UpdateInfoText()
+{
+	const LPCTSTR sViewText[] = { { TEXT("元数据编辑") }, { TEXT("Epub 当前页：%d， 总页数:%d") }, \
+			{ TEXT("PDF  当前页：%d ，总页数: %d") }, { TEXT("未打开书籍") } };
+	m_strInfo.Format(sViewText[m_cur_view], m_proj->m_nCurPage, m_proj->m_nBookPageCount);
+	CWnd * pwnd = GetDlgItem(IDC_ST_INFO);
+	pwnd->SetWindowText(m_strInfo);
+	pwnd->ShowWindow(SW_HIDE);
+	CRect r;
+	pwnd->GetWindowRect(r);
+	this->ScreenToClient(r);
+	//GetParent()->Invalidate();
+	InvalidateRect(r);
+	pwnd->ShowWindow(SW_SHOW);
+	//GetParent()->Invalidate();
+	InvalidateRect(r);
+
+}
 void CBMDlg::ResOnPageChange()
 {
 	int npg = m_proj->m_nCurPage;
@@ -340,12 +359,18 @@ void CBMDlg::ResOnPageChange()
 		}
 		pRes = pRes->pNext;
 	}
+	UpdateInfoText();
 }
 
 void CBMDlg::OnBnClickedBtnAddDir()
 {
 	// TODO:  在此添加控件通知处理程序代码
 	INT page = GetProjView()->GetPageInfo(NULL, NULL);
+	if (m_proj->m_type == VIEW_EMPTY)
+	{
+		MessageBox(_T("请打开书对应页后添加该页目录！"), _T("还没有打开书！"));
+		return;
+	}
 	
 	HTREEITEM hroot = m_trDir.GetSelectedItem();
 	if (hroot == NULL) hroot = m_trDir.GetRootItem();
@@ -392,6 +417,12 @@ void CBMDlg::OnBnClickedBtnAddDir()
 
 void CBMDlg::OnBnClickedBtnRemoveDir()
 {
+	if (m_proj->m_type == VIEW_EMPTY)
+	{
+		MessageBox(_T("请打开书后才能删除目录！"), _T("还没有打开书！"));
+		return;
+	}
+
 	HTREEITEM hroot = m_trDir.GetSelectedItem();
 	if (hroot != NULL)
 	{
@@ -445,6 +476,11 @@ void CBMDlg::OnNMDblclkTreeDir(NMHDR *pNMHDR, LRESULT *pResult)
 
 void CBMDlg::OnBnClickedBtnAddRes()
 {
+	if (m_proj->m_type == VIEW_EMPTY)
+	{
+		MessageBox(_T("请打开书对应页后添加该页资源！"), _T("还没有打开书！"));
+		return;
+	}
 
 	CFileDialog fdlg(TRUE, 0, _T("*.*"), OFN_HIDEREADONLY,
 		_T("所有文件|*.*||"), ::AfxGetMainWnd());
@@ -462,6 +498,11 @@ void CBMDlg::OnBnClickedBtnRemoveRes()
 {
 	// TODO:  在此添加控件通知处理程序代码
 	INT row = -1;
+	if (m_proj->m_type == VIEW_EMPTY)
+	{
+		MessageBox(_T("请打开书后才可删除资源！"), _T("还没有打开书！"));
+		return;
+	}
 	while ( (row =m_listRes.GetNextItem(row, LVNI_ALL | LVNI_SELECTED)) != -1)
 	{
 		CString strid = m_listRes.GetItemText(row, m_nResIdCol);
@@ -485,4 +526,33 @@ void CBMDlg::OnBnClickedBtnRemoveRes()
 
 }
 
+BOOL CBMDlg::PreTranslateMessage(MSG* pMsg)
+{
+	// TODO:  在此添加专用代码和/或调用基类
+	if (pMsg->message == WM_KEYDOWN &&
+		pMsg->wParam == VK_RETURN || pMsg->wParam == VK_ESCAPE)
+	{
+		//if (pMsg->hwnd != this->GetSafeHwnd())
+		CEdit* edit = m_trDir.GetEditControl();
+		if (edit)
+		{
+			edit->SendMessage(pMsg->message, pMsg->wParam, pMsg->lParam);
+			return TRUE;
+		}
+	}
+	return CExDialog::PreTranslateMessage(pMsg);
+}
 
+void CBMDlg::OnOK()
+{
+	// TODO:  在此添加专用代码和/或调用基类
+	CExDialog::OnOK();
+}
+
+
+void CBMDlg::OnTvnEndlabeleditTreeDir(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	LPNMTVDISPINFO pTVDispInfo = reinterpret_cast<LPNMTVDISPINFO>(pNMHDR);
+	// TODO:  在此添加控件通知处理程序代码
+	*pResult = 1;
+}

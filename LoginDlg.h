@@ -23,6 +23,7 @@ public:
 	CSkinBtn * m_pbtns;
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
+	CStringA m_strHttpData;
 
 	DECLARE_MESSAGE_MAP()
 public:
@@ -31,4 +32,5 @@ public:
 	virtual BOOL OnInitDialog();
 	afx_msg void OnBnClickedBtnLogin();
 	afx_msg void OnDestroy();
+	afx_msg LRESULT OnHttpFinishMsg(WPARAM wParam, LPARAM lParam);
 };

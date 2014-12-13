@@ -120,7 +120,7 @@ LPVOID  encode_file(LPCTSTR inPath, int & outLen)
 	if (ofin.Open(inPath, CFile::modeRead | CFile::shareDenyNone))
 	{
 		flen = ofin.GetLength();
-		ptr = new char[flen + sizeof(HEADERBYTE)];
+		ptr = new char[flen + sizeof(HEADERBYTE)+64*1024];
 		fbuf = ptr + sizeof(HEADERBYTE);
 		if (ptr)
 		{
@@ -131,13 +131,12 @@ LPVOID  encode_file(LPCTSTR inPath, int & outLen)
 	}
 	if (ptr)
 	{
-		if (flen < 1024) return ptr;// do not encode when buffer length less than 1024
+		outLen = flen + sizeof(HEADERBYTE);
+		if (flen < 1024) return ptr;// do not encode when buffer length less than 1024	
 		int enlen = flen - 1024;
 		en_data(fbuf, 1024);
 		en_first_1024(fbuf, 1024);
-
-		en_data(fbuf + 1024, flen - 1024);
-		outLen = flen + sizeof(HEADERBYTE);
+		en_data(fbuf + 1024, flen - 1024);		
 	}
 	return ptr;
 }
@@ -166,7 +165,7 @@ BOOL decode_mem(LPVOID penc_buf, LPCTSTR outpath, INT  flen)
 {
 	char * ptr = (char *)penc_buf;
 	char * fbuf;
-
+	if (flen < sizeof(HEADERBYTE)) return FALSE;
 
 	fbuf = ptr + sizeof(HEADERBYTE);
 	if (memcmp(ptr, HEADERBYTE, sizeof(HEADERBYTE)) != 0)

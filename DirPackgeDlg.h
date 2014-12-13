@@ -62,6 +62,7 @@ protected:
 	CExDialog * m_pSubDlgs[MAX_TAB_ITEM];
 	CExDialog * m_plogDlgs[2];
 	INT  m_LogDlgIdx;
+	CWnd * m_pHttpWnd;
 
 // Implementation
 protected:

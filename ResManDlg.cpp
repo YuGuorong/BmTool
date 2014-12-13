@@ -249,7 +249,7 @@ void CResManDlg::OnBnClickedBtnUpload()
 				}
 				else
 				{
-					m_proj->SetBookState(strid, _T("上传失败"));
+					m_proj->SetBookState(strid, _T("已上传"));
 					m_listRes.SetItemText(j, 3, _T("已上传"));
 				}
 			}
