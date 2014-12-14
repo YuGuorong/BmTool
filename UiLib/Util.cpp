@@ -498,13 +498,14 @@ BOOL ShowTips()
     return TRUE;
 }
 
-
+#include<stdlib.h> ¡¡¡¡
 CSetting::CSetting()
 {
 	CUtil::GetCurPath(strCurPath);
 	m_strAppUserPath = CUtil::GetUserFolder();
 	m_strAppUserPath += _T("\\") CFG_OPENCN_FOLDER;
 	::CreateDirectory(m_strAppUserPath, NULL);
+	m_strHomePath = _wgetenv(_T("HOMEPATH"));
 }
 
 CSetting::~CSetting()

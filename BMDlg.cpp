@@ -291,6 +291,8 @@ LRESULT CBMDlg::OnViewProjMsg(WPARAM wParam, LPARAM lParam)
 		break;
 
 	case CLOSE_PROJ:
+		m_trDir.DeleteAllItems();
+		m_trDir.InsertItem(_T("¸ùÄ¿Â¼"), NULL);
 		ChangeView(m_proj->m_type);
 		break;
 	

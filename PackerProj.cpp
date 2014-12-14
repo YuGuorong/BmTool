@@ -599,32 +599,55 @@ void CPackerProj::SaveDirs(CString &sxml)
 	}
 }
 //<----save direcotries-----<
+int QUnc2Gbk(LPCTSTR lwstr, CStringA &sgbk)
+{
+	int needlen = WideCharToMultiByte(936, 0, lwstr, -1, 0, 0, NULL, NULL);
+	if (needlen <= 0)
+	{
+		return 0;
+	}
+	else
+	{
+		WideCharToMultiByte(936, 0, lwstr, -1, sgbk.GetBuffer(needlen), needlen, NULL, NULL);
+		sgbk.ReleaseBuffer();
+	}
+	return needlen;
+}
 void CPackerProj::GenPreview(void * hhz)
 {
 	HZIP hz = (HZIP)hhz;
 	CString spath = m_szPathRes + _T("\\")CFG_PREVIEW_FILE;
-	if (m_type == VIEW_PDF)
+	CString sparm = _T("-p 1-20 ");
+	if (m_type == VIEW_EPUB)
 	{
-		CString sexe = g_pSet->strCurPath + _T("\\")CFG_PDF2SWF_EXE;
-		CString sparm = _T("-p 1-20 ");
-		sparm += m_szTargetPath;
-		sparm += _T(" -o ") + spath;
-		::CUtil::RunProc(sexe, sparm, m_szPathRes);
+		CString epub_tool_path = g_pSet->strCurPath + _T("\\")CFG_EPUB2PDF_TOOL_DIR;
+		
+		//CStringA sapdf; QUnc2Gbk(m_szPathRes, sapdf);//gbk???
+		//CStringA sini = CUtil::File2Asc(epub_tool_path + CFG_EPUB2PDF_INF_FILE _T(".temp"));
+		//sapdf.Replace("\\", "\\\\");
+		//sini += sapdf + "\n\n";
+		//CUtil::Asc2File(epub_tool_path + CFG_EPUB2PDF_INF_FILE, sini);
+		CString sfname = m_szTargetFileName;
+		int np = sfname.ReverseFind(_T('.'));
+		if (np >= 0) sfname.Delete(np, sfname.GetLength() - np);
+		CString srespdf = m_szPathRes + _T("\\") + sfname + _T(".pdf");
+		CString stpdf = g_pSet->m_strHomePath + _T("\\") + sfname + _T(".pdf");
+
+		CString sexe = epub_tool_path + CFG_EPUB2PDF_EXE;
+		CString sparm_epubpdf = m_szTargetPath;		
+		::CUtil::RunProc(sexe, sparm_epubpdf, epub_tool_path);
+		CopyFile(stpdf, srespdf, FALSE);
+		DeleteFile(stpdf);
+		sparm += srespdf;
 	}
 	else
 	{
-		CStringA sapdf; QUnc2Utf(m_szPathRes, sapdf);
-		CString epub_tool_path = g_pSet->strCurPath + _T("\\")CFG_EPUB2PDF_TOOL_DIR;
-		
-		CStringA sini = CUtil::File2Asc(epub_tool_path + CFG_EPUB2PDF_INF_FILE _T(".temp"));
-		sapdf.Replace("\\", "\\\\");
-		sini += sapdf + "\n\n";
-		CUtil::Asc2File(epub_tool_path + CFG_EPUB2PDF_INF_FILE, sini);
-
-		CString sexe = epub_tool_path + CFG_EPUB2PDF_EXE;
-		CString sparm = m_szTargetPath;		
-		::CUtil::RunProc(sexe, sparm, m_szPathRes);
+		sparm += m_szTargetPath;
 	}
+	CString sexe = g_pSet->strCurPath + _T("\\")CFG_PDF2SWF_EXE;
+	sparm += _T(" -o ") + spath;
+	::CUtil::RunProc(sexe, sparm, m_szPathRes);
+
 	ZipAdd(hz, CFG_PREVIEW_FILE, spath.GetBuffer(spath.GetLength()), 0, ZIP_FILENAME);
 	spath.ReleaseBuffer();
 }
@@ -802,7 +825,12 @@ int CPackerProj::Open(LPCTSTR szProj)
 			m_szProjPath = CUtil::GetFilePath(strpath); //fdlg.GetFolderPath();
 			ClearResTable();
 			if (m_pProjDir) m_pProjDir->DeleteAllItems();
-			UnzipProj();
+			if (UnzipProj() == FALSE)
+			{
+				DestoryProj();
+				MessageBox(::AfxGetMainWnd()->GetSafeHwnd(), _T("工程文件内容不可识别，文件内容被损坏！"), _T("打开工程失败"), MB_OK);
+				return PR_ERR_UNKOWN_TYPE;
+			}
 			map<CStringA, CString >::iterator l_it;
 			l_it = m_mapMetaValue.find(CStringA("ebook_type"));
 			if (l_it != m_mapMetaValue.end())
@@ -838,6 +866,7 @@ int CPackerProj::Open(LPCTSTR szProj)
 				return PR_ERR_OPEN_BOOK;
 			}
 		}
+		//SaveProjToDb();
 	}
 	return PR_OK;
 }
@@ -1057,6 +1086,10 @@ BOOL CPackerProj::UnzipProj()
 
 	SetCurrentDirectory(m_szProjPath);
 	HZIP hz = OpenZip(pbuf, 0, ZIP_FILENAME);
+	if (hz == NULL)
+	{
+		return FALSE;
+	}
 	ZIPENTRYW ze; GetZipItem(hz, -1, &ze); 
 	int numitems = ze.index;
 	int idx_xml, idx_cover, idx_book;
@@ -1066,33 +1099,39 @@ BOOL CPackerProj::UnzipProj()
 		m_mapMetaValue.clear();
 		idx_xml = UnZipFile(hz, &ze, CFG_META_FILE);
 		idx_cover = UnZipFile(hz, &ze, CFG_COVER_FILE);
-		ParseXml();
+		m_szCoverPath = m_szProjPath + _T("\\")CFG_RES_FOLDER _T("\\") CFG_COVER_FILE;		
+		ParseXml();	
 		idx_book = UnzipEncFile(hz, &ze, m_szTargetFileName);
 		m_szTargetPath = m_szProjPath + _T("\\") + m_szTargetFileName;
+		m_szPathRes = m_szProjPath + _T("\\")CFG_RES_FOLDER _T("\\");
+		
 	}
 	for (int i = 0; i<numitems; i++)
 	{
-		if (i != idx_xml && i != idx_cover && idx_book)
+		if (i != idx_xml && i != idx_cover && i != idx_book)
 		{
 			GetZipItem(hz, i, &ze);
-			/*CString strres = _T("res\\");
-			strres += ze.name;
-			UnzipItem(hz, i, strres.GetBuffer(strres.GetLength()), 0, ZIP_FILENAME);			
-			strres.ReleaseBuffer();*/
-			//delete buf;
+
 			CResMan * pres = m_pRes;
+
 			while (pres)
 			{
-				/*AString sname = ze.name;
-				CString szename; QUtf2Unc(sname, szename);*/
 				if (pres->m_sfileName.Compare(ze.name) == 0)
 				{
+					pres->m_sPath = m_szPathRes + ze.name;
+					if (GetFileAttributes(pres->m_sPath) == -1)
+					{
+						CString strres = pres->m_sPath;
+						UnzipItem(hz, i, strres.GetBuffer(strres.GetLength()), 0, ZIP_FILENAME);
+						strres.ReleaseBuffer();
+					}
 					pres->m_fsize = ze.unc_size;
 					pres->m_tmCreate = CTime(ze.ctime);
 					m_imglist.Add(CUtil::GetFileIcon(ze.name));
 					pres->m_icon_id = m_imglist.GetImageCount() - 1;
 					//no break since maybe other same file attachments just different page relation also need set res structure.
 				}
+
 				pres = pres->pNext;
 			}
 		}

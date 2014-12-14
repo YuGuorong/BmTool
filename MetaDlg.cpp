@@ -213,6 +213,7 @@ INT  CMetaDlg::LoadExtMetaValue(CMetaDataItem * pit, CString &szKeyIn )
 INT CMetaDlg::LoadCoverImage()
 {
 	CString strpath = m_proj->m_szProjPath + _T("\\")CFG_RES_FOLDER _T("\\")  CFG_COVER_FILE;
+	SetItemValue(_T("ÊµÌå·âÃæ"), _T("__cover.jpg"));
 
 	/*CRect r;
 	CMetaDataItem * pit = m_proj->m_pMeta;
@@ -727,6 +728,7 @@ INT CMetaDlg::SetItemValue(LPCTSTR ItemCaption, LPCTSTR strValue, BOOL bSetSubCo
 				CRect r;
 				pit->pWnd[2]->GetWindowRect(r);
 				m_proj->LoadMetaImage(pit, strpath, r);
+				pit->strValue = strValue;
 			}
 			else
 			{

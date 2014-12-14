@@ -1,3 +1,8 @@
++	CAsyncHttp	this	0x0044d2d0 {m_strLocalFile=L"C:\\Users\\guoryu\\Documents\\奥鹏书籍\\PROJ\\测试大数据2.zip.zip" }	CAsyncHttp *
++	CDealSocket	this	0x0044e6b0 {m_hSocket=576 m_RecvTotLen=-842150451 m_CurRecvBytes=-842150451 ...}	CDealSocket *
+
+
+
 POST /api/users/admin/sessions HTTP/1.1
 Accept: */*
 Accept-Language: zh-cn

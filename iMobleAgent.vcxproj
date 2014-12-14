@@ -134,12 +134,12 @@
     <None Include="res\ui_base\按钮_on.BMP" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="AsyncHttp.h" />
     <ClInclude Include="BMDlg.h" />
     <ClInclude Include="DirPackge.h" />
     <ClInclude Include="DirPackgeDlg.h" />
     <ClInclude Include="EpubReaderDlg.h" />
     <ClInclude Include="include\libs.h" />
+    <ClInclude Include="lib\AsyncHttp.h" />
     <ClInclude Include="lib\deelx.h" />
     <ClInclude Include="lib\md5.h" />
     <ClInclude Include="lib\sha256.h" />
@@ -171,11 +171,11 @@
     <ClInclude Include="UiLib\Util.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="AsyncHttp.cpp" />
     <ClCompile Include="BMDlg.cpp" />
     <ClCompile Include="DirPackge.cpp" />
     <ClCompile Include="DirPackgeDlg.cpp" />
     <ClCompile Include="EpubReaderDlg.cpp" />
+    <ClCompile Include="lib\AsyncHttp.cpp" />
     <ClCompile Include="lib\DB.cpp" />
     <ClCompile Include="lib\Encode.cpp" />
     <ClCompile Include="lib\md5.cpp" />

@@ -67,6 +67,7 @@ public:
 	INT     m_nProxyPort;
 	CString m_strProxyUser;
 	CString m_strProxyPwd;
+	CString m_strHomePath;
 
 public :
 	int operator=(int id){ return 0;};

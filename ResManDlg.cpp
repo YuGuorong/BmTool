@@ -304,8 +304,8 @@ BOOL CResManDlg::CheckTask(LPCTSTR bookid, BOOL bremove)
 			{
 				CAsyncHttp* phttp = (CAsyncHttp*)m_listTask.GetItemData(row);
 				phttp->Disconnect();
-				delete phttp;
 				m_listTask.DeleteItem(row);
+				delete phttp;
 			}
 			return   TRUE;
 		}
@@ -408,6 +408,10 @@ void CResManDlg::OnBnClickedBtnRemove()
 				if (m_listRes.GetCheck(row))
 				{
 					CString sid = m_listRes.GetItemText(row, IDX_COL_BOOK_ID);
+					CString strwsql; strwsql.Format(_T("DELETE FROM books WHERE BookId == \"%s\" "), sid);
+					AString sql_del;
+					QUnc2Utf(strwsql, sql_del);
+					execSQL(sql_del);
 					if (CheckTask(sid, TRUE) == FALSE)
 					{
 						m_setQueueId.erase(sid);
@@ -433,42 +437,42 @@ LRESULT CResManDlg::OnHttpFinishMsg(WPARAM wParam, LPARAM lParam)
 {
 	CAsyncHttp * pHttp = (CAsyncHttp*)wParam;
 	BOOL  stat = (BOOL)lParam;
-	if (stat>0)
+	int taskidx = 0;
+	if (stat > 0)
 	{
 		int len = pHttp->GetHttpHeader(pHttp->m_szRespHeader);
 		if (pHttp->m_szRespHeader.Find(" 200 OK") >= 0)
-		{						
+		{
 			stat = TRUE;
 		}
-	
-		for (int i = 0; i < m_listTask.GetItemCount(); i++)
+		else
+			stat = FALSE;
+	}
+	for (int i = 0; i < m_listTask.GetItemCount(); i++)
+	{
+		if (m_listTask.GetItemData(i) == (DWORD_PTR)pHttp)
 		{
-			if (m_listTask.GetItemData(i) == (DWORD_PTR)pHttp)
-			{
-				LPCTSTR strRet = stat ? _T("上传成功") : _T("上传失败");
-				CString strid = m_listTask.GetItemText(i, 0);			
+			LPCTSTR strRet = (stat > 0) ? _T("上传成功") : _T("上传失败");
+			CString strid = m_listTask.GetItemText(i, 0);
 
-				m_proj->SetBookState(strid, strRet);
-				for (int j = 0; j < m_listRes.GetItemCount(); j++)
-				{
-					CString sres_id = m_listRes.GetItemText(j, IDX_COL_BOOK_ID);
-					if (sres_id.Compare(strid) == 0)
-					{					
-						m_listRes.SetItemText(j, IDX_COL_ST_UPLOAD, strRet);
-						break;
-					}
-				}
-				m_listTask.DeleteItem(i);//delete from task
-				break;
+			m_proj->SetBookState(strid, strRet);
+			std::map<CString, int>::iterator fit = m_mapBookid_listIdx.find(strid);
+			if (fit != m_mapBookid_listIdx.end())
+			{
+				int row = fit->second;
+				m_listRes.SetItemText(row, IDX_COL_ST_UPLOAD, strRet);
+				m_listRes.SetItemText(row, IDX_COL_NU_UPLOAD, _T("100%"));
 			}
+			m_listTask.DeleteItem(i);//delete from task
+			pHttp->stop();
+			delete pHttp;
+			break;
 		}
 	}
 
 	EndWaitCursor();
 	::AfxGetMainWnd()->EndWaitCursor();
 
-	pHttp->stop();
-	delete pHttp;
 	return 0;
 }
 
@@ -487,7 +491,7 @@ BOOL CResManDlg::ScanTask()
 			CAsyncHttp * phttp = (CAsyncHttp *)m_listTask.GetItemData(i);
 			if (phttp != NULL)
 			{
-				int per = (phttp->m_pSocket->m_curTxBytes *100 )/ phttp->m_pSocket->m_RecvTotLen;
+				int per = (phttp->m_pSocket->m_curTxBytes *100 )/ phttp->m_pSocket->m_SendTotLen;
 				CString sprog;
 				sprog.Format(_T("%d%%"), per);
 				m_listRes.SetItemText(row, IDX_COL_NU_UPLOAD, sprog);

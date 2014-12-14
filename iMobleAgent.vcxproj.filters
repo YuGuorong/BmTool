@@ -201,9 +201,6 @@
     <ClInclude Include="include\libs.h">
       <Filter>libs</Filter>
     </ClInclude>
-    <ClInclude Include="AsyncHttp.h">
-      <Filter>Uilib</Filter>
-    </ClInclude>
     <ClInclude Include="UiLib\ListCtrlCellEx.h">
       <Filter>Uilib\ListCtrlEx</Filter>
     </ClInclude>
@@ -212,6 +209,9 @@
     </ClInclude>
     <ClInclude Include="UiLib\PerfTimer.h">
       <Filter>Uilib\ListCtrlEx</Filter>
+    </ClInclude>
+    <ClInclude Include="lib\AsyncHttp.h">
+      <Filter>libs</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -299,14 +299,14 @@
     <ClCompile Include="lib\Encode.cpp">
       <Filter>libs</Filter>
     </ClCompile>
-    <ClCompile Include="AsyncHttp.cpp">
-      <Filter>Uilib</Filter>
-    </ClCompile>
     <ClCompile Include="UiLib\ListCtrlCellEx.cpp">
       <Filter>Uilib\ListCtrlEx</Filter>
     </ClCompile>
     <ClCompile Include="UiLib\ListCtrlEx.cpp">
       <Filter>Uilib\ListCtrlEx</Filter>
+    </ClCompile>
+    <ClCompile Include="lib\AsyncHttp.cpp">
+      <Filter>libs</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
