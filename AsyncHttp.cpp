@@ -163,6 +163,24 @@ BOOL CDealSocket::Send(CStringA sdata)
 	return TRUE;
 }
 
+INT CDealSocket::Send(void * buf, int len)
+{
+	m_SendTotLen = len;
+	m_curTxBytes = 0;
+	while (m_curTxBytes < m_SendTotLen)
+	{
+		int leftlen = m_SendTotLen - m_curTxBytes;
+		int slen = leftlen > 64 * 1024 ? 64 * 1024 : leftlen;
+		slen = send(m_hSocket, ((char*)buf) + m_curTxBytes, slen, 0);
+		if (slen <= 0)// SOCKET_ERROR)
+		{
+			return 0;
+		}
+		m_curTxBytes += slen;
+	}
+	return m_curTxBytes;
+}
+
 INT CDealSocket::Recv(void * buf, int len)
 {
 	char * ptr = (char *)buf;
@@ -516,11 +534,8 @@ INT CAsyncHttp::SendData()
 {
 	if (m_pSocket)
 	{
-		if (m_pBody == NULL || m_nBodyLen <= 0) return TRUE;
-		if (send(m_pSocket->m_hSocket, (char*)m_pBody, m_nBodyLen, 0) != SOCKET_ERROR)
-		{
-			return TRUE;
-		}
+		if (m_pBody == NULL || m_nBodyLen <= 0) return FALSE;
+		return m_pSocket->Send(m_pBody, m_nBodyLen);
 	}
 	return FALSE;
 }
@@ -588,7 +603,6 @@ INT CAsyncHttp::GetBody()
 	return m_nBodyLen;
 }
 //<====================CAsyncHttp class<============================<<<<<<<<<
-
 CHttpPost::~CHttpPost()
 {
 	
@@ -596,14 +610,14 @@ CHttpPost::~CHttpPost()
 
 CHttpPost::CHttpPost(LPCTSTR szIP, LPCTSTR szUrl, CWnd * pmsgWnd, int port, LPCTSTR shdr[], int headerCount)
 	:CAsyncHttp(szIP, szUrl, pmsgWnd, port)
-{
+{	
 	m_szHttpType = "POST";
 	for (int i = 0; i < headerCount; i++)
 		AppendHeader(shdr[i]);
 }
 
 
-INT CHttpPost::SendFile(LPCTSTR slclfname)
+INT CHttpPost::SendFile(LPCTSTR slclfname, void * param)
 {
 	m_strLocalFile = slclfname;
 	CFile of;
@@ -621,6 +635,8 @@ INT CHttpPost::SendFile(LPCTSTR slclfname)
 		AppendHeader(sheadr);
 		sheadr.Format("Content-Length: %d\r\n\r\n", m_nBodyLen);
 		AppendHeader(sheadr);
+		if (param != NULL)
+			this->param = param;
 		Connect();
 	}
 	return 0;

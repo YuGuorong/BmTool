@@ -563,3 +563,92 @@ void CDirPackgeDlg::OnBnClickedBtnExport()
 	// TODO:  在此添加控件通知处理程序代码
 
 }
+
+
+
+
+// CProgressWnd 对话框
+
+class CProgressWnd : public CDialogEx
+{
+	DECLARE_DYNAMIC(CProgressWnd)
+
+public:
+	CProgressWnd(CWnd* pParent = NULL);   // 标准构造函数
+	virtual ~CProgressWnd();
+	CProgressCtrl m_prog;
+
+	// 对话框数据
+	enum { IDD = IDD_PROGRESS };
+
+protected:
+	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 支持
+
+	DECLARE_MESSAGE_MAP()
+	virtual void PreInitDialog();
+public:
+	afx_msg void OnDestroy();
+};
+
+
+// CProgressWnd 对话框
+
+IMPLEMENT_DYNAMIC(CProgressWnd, CDialogEx)
+
+CProgressWnd::CProgressWnd(CWnd* pParent /*=NULL*/)
+: CDialogEx(CProgressWnd::IDD, pParent)
+{
+
+}
+
+CProgressWnd::~CProgressWnd()
+{
+}
+
+void CProgressWnd::DoDataExchange(CDataExchange* pDX)
+{
+	CDialogEx::DoDataExchange(pDX);
+	DDX_Control(pDX, IDC_PROGRESS, m_prog);
+}
+
+
+BEGIN_MESSAGE_MAP(CProgressWnd, CDialogEx)
+	ON_WM_DESTROY()
+END_MESSAGE_MAP()
+
+
+// CProgressWnd 消息处理程序
+
+
+
+void CProgressWnd::PreInitDialog()
+{
+	// TODO:  在此添加专用代码和/或调用基类
+
+	CDialogEx::PreInitDialog();
+}
+
+
+void CProgressWnd::OnDestroy()
+{
+	CDialogEx::OnDestroy();
+
+	// TODO:  在此处添加消息处理程序代码
+}
+
+
+CWnd * NewProcess(int max, int min)
+{
+	CProgressWnd * pwnd = new CProgressWnd(::AfxGetMainWnd());
+	pwnd->Create(CProgressWnd::IDD, ::AfxGetMainWnd());
+	CRect r;
+	::AfxGetMainWnd()->GetWindowRect(r);
+	CRect rs;
+	pwnd->GetWindowRect(rs);
+	
+	pwnd->m_prog.SetRange32(min, max);
+	pwnd->m_prog.SetPos(min);
+	pwnd->ShowWindow(SW_HIDE);
+	return pwnd;
+}
+

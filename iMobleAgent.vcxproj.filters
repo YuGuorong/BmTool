@@ -34,6 +34,9 @@
     <Filter Include="Header Files\views">
       <UniqueIdentifier>{ad421ea0-5644-4567-bab1-e37f390076c7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Uilib\ListCtrlEx">
+      <UniqueIdentifier>{515b0087-b6b1-4d51-a825-c1a4b6051dce}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="ReadMe.txt" />
@@ -192,12 +195,6 @@
     <ClInclude Include="EpubReaderDlg.h">
       <Filter>Header Files\views</Filter>
     </ClInclude>
-    <ClInclude Include="UiLib\HeaderCtrlCl.h">
-      <Filter>Uilib</Filter>
-    </ClInclude>
-    <ClInclude Include="UiLib\ListCtrlCl.h">
-      <Filter>Uilib</Filter>
-    </ClInclude>
     <ClInclude Include="LoginStateDlg.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -206,6 +203,15 @@
     </ClInclude>
     <ClInclude Include="AsyncHttp.h">
       <Filter>Uilib</Filter>
+    </ClInclude>
+    <ClInclude Include="UiLib\ListCtrlCellEx.h">
+      <Filter>Uilib\ListCtrlEx</Filter>
+    </ClInclude>
+    <ClInclude Include="UiLib\ListCtrlEx.h">
+      <Filter>Uilib\ListCtrlEx</Filter>
+    </ClInclude>
+    <ClInclude Include="UiLib\PerfTimer.h">
+      <Filter>Uilib\ListCtrlEx</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -284,12 +290,6 @@
     <ClCompile Include="lib\DB.cpp">
       <Filter>libs</Filter>
     </ClCompile>
-    <ClCompile Include="UiLib\HeaderCtrlCl.cpp">
-      <Filter>Uilib</Filter>
-    </ClCompile>
-    <ClCompile Include="UiLib\ListCtrlCl.cpp">
-      <Filter>Uilib</Filter>
-    </ClCompile>
     <ClCompile Include="LoginStateDlg.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -301,6 +301,12 @@
     </ClCompile>
     <ClCompile Include="AsyncHttp.cpp">
       <Filter>Uilib</Filter>
+    </ClCompile>
+    <ClCompile Include="UiLib\ListCtrlCellEx.cpp">
+      <Filter>Uilib\ListCtrlEx</Filter>
+    </ClCompile>
+    <ClCompile Include="UiLib\ListCtrlEx.cpp">
+      <Filter>Uilib\ListCtrlEx</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

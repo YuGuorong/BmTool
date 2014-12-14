@@ -161,11 +161,12 @@
     <ClInclude Include="UiLib\CGdiPlusBitmap.h" />
     <ClInclude Include="UiLib\ExDialog.h" />
     <ClInclude Include="UiLib\GdipButton.h" />
-    <ClInclude Include="UiLib\HeaderCtrlCl.h" />
     <ClInclude Include="UiLib\Link.h" />
-    <ClInclude Include="UiLib\ListCtrlCl.h" />
+    <ClInclude Include="UiLib\ListCtrlCellEx.h" />
+    <ClInclude Include="UiLib\ListCtrlEx.h" />
     <ClInclude Include="UiLib\MemDC.h" />
     <ClInclude Include="UiLib\OfficeXPMenu.h" />
+    <ClInclude Include="UiLib\PerfTimer.h" />
     <ClInclude Include="UiLib\SkinBtn.h" />
     <ClInclude Include="UiLib\Util.h" />
   </ItemGroup>
@@ -213,9 +214,9 @@
     </ClCompile>
     <ClCompile Include="UiLib\ExDialog.cpp" />
     <ClCompile Include="UiLib\GdipButton.cpp" />
-    <ClCompile Include="UiLib\HeaderCtrlCl.cpp" />
     <ClCompile Include="UiLib\Link.cpp" />
-    <ClCompile Include="UiLib\ListCtrlCl.cpp" />
+    <ClCompile Include="UiLib\ListCtrlCellEx.cpp" />
+    <ClCompile Include="UiLib\ListCtrlEx.cpp" />
     <ClCompile Include="UiLib\OfficeXPMenu.cpp" />
     <ClCompile Include="UiLib\SkinBtn.cpp" />
     <ClCompile Include="UiLib\Util.cpp" />

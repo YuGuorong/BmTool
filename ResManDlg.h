@@ -2,12 +2,16 @@
 #include "ExDialog.h"
 #include "ReaderView.h"
 #include "PackerProj.h"
+#include <set>
+
 // CResManDlg 对话框
 enum
 {
 	TYPE_LOCAL_RES,
 	TYPE_BOOKS_RES
 };
+
+
 class CResManDlg : public CExDialog
 {
 	DECLARE_DYNAMIC(CResManDlg)
@@ -22,15 +26,21 @@ public:
 
 protected:
 	CSkinBtn * m_pbtns[8];
+	CListCtrl  m_listTask;
 	CListCtrl  m_listRes;
-	CListCtrl m_listBooks;
 	CPackerProj  * m_proj;
 	INT			m_nBookResIdCol;
+
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 支持
 	void LoadBooks();
 	void LoadBookResList();
-	BOOL UploadBook(LPCTSTR book);
+	void * UploadBook(LPCTSTR book);
+	BOOL CheckTask(LPCTSTR bookid, BOOL bremove = FALSE);
+	BOOL ScanTask();
+	BOOL UploadItem(CString &sid, int row =-1);
+	map<CString, int> m_mapBookid_listIdx;
+	set<CString> m_setQueueId;
 	DECLARE_MESSAGE_MAP()
 public:
 	afx_msg void OnSize(UINT nType, int cx, int cy);
@@ -44,4 +54,6 @@ public:
 	afx_msg void OnBnClickedBtnAdd();
 	afx_msg void OnBnClickedBtnRemove();
 	afx_msg void OnBnClickedBtnReturn();
+	afx_msg LRESULT OnHttpFinishMsg(WPARAM wParam, LPARAM lParam);
+	afx_msg void OnTimer(UINT_PTR nIDEvent);
 };

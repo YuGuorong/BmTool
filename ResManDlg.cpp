@@ -4,12 +4,29 @@
 #include "stdafx.h"
 #include "ResManDlg.h"
 #include "afxdialogex.h"
+#include "AsyncHttp.h"
 
 // CResManDlg 对话框
 static const INT btnids[] = { IDC_BTN_LOCAL, IDC_BTN_RESUPLOAD, IDC_BTN_ADD,
 IDC_BTN_REMOVE, IDC_BTN_SELECT, IDC_BTN_UPLOAD, IDC_BTN_RETURN };
 
 IMPLEMENT_DYNAMIC(CResManDlg, CExDialog)
+static LPCTSTR  szColumns[] = { { _T("图书名") }, { _T("图书大小") }, { _T("创建时间") },
+{ _T("上传状态") }, { _T("上传进度") }, { _T("位置") }, { _T("ID") } };
+static int colum_w[] = { 300, 80, 120, 80, 60, 400, 0 };
+enum
+{
+	IDX_COL_BOOK_NAME,
+	IDX_COL_BOOK_SIZE,
+	IDX_COL_TM_CREATE,
+	IDX_COL_ST_UPLOAD,
+	IDX_COL_NU_UPLOAD,
+	IDX_COL_BOOK_PATH,
+	IDX_COL_BOOK_ID,
+
+	ID_TMR_SCAN_TASK,
+};
+
 
 CResManDlg::CResManDlg(CWnd* pParent /*=NULL*/)
 	: CExDialog(CResManDlg::IDD, pParent)
@@ -27,6 +44,7 @@ void CResManDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CExDialog::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_LIST_RES, m_listRes);
+	DDX_Control(pDX, IDC_LIST_BOOKS, m_listTask);
 }
 
 
@@ -41,6 +59,8 @@ BEGIN_MESSAGE_MAP(CResManDlg, CExDialog)
 	ON_BN_CLICKED(IDC_BTN_ADD, &CResManDlg::OnBnClickedBtnAdd)
 	ON_BN_CLICKED(IDC_BTN_REMOVE, &CResManDlg::OnBnClickedBtnRemove)
 	ON_BN_CLICKED(IDC_BTN_RETURN, &CResManDlg::OnBnClickedBtnReturn)
+	ON_MESSAGE(WM_HTTP_DONE, &CResManDlg::OnHttpFinishMsg)		//自定义HTTP事件
+	ON_WM_TIMER()
 END_MESSAGE_MAP()
 
 
@@ -82,6 +102,9 @@ BOOL CResManDlg::OnInitDialog()
 	CExDialog::OnInitDialog();
 
 	// TODO:  在此添加额外的初始化
+	m_setQueueId.clear();
+	m_mapBookid_listIdx.clear();
+
 	for (int i = 0; i < sizeof(btnids) / sizeof(int); i++)
 	{
 		m_pbtns[i] = new CSkinBtn();
@@ -95,6 +118,22 @@ BOOL CResManDlg::OnInitDialog()
 		m_proj->m_imglist.Create(nSmallCx, nSmallCy, ILC_MASK | ILC_COLOR32, 0, 1);
 	m_listRes.SetImageList(&m_proj->m_imglist, LVSIL_SMALL);
 	m_listRes.SetExtendedStyle(LVS_EX_FULLROWSELECT | LVS_EX_CHECKBOXES | LVS_EX_JUSTIFYCOLUMNS | LVS_EX_SINGLEROW | LVS_EX_SNAPTOGRID);
+	
+	m_listRes.DeleteAllItems();
+	while (m_listRes.DeleteColumn(0)){};
+	m_nBookResIdCol = sizeof(colum_w) / sizeof(int) - 1;
+
+	static const LPCTSTR  szBookColumns[] = { { _T("ID") }, { _T("上传状态") }, { _T("上传进度") } };
+	static const int book_colum_w[] = { 300, 80, 120, 80, 400, 0 };
+	for (int i = 0; i<sizeof(szBookColumns) / sizeof(LPCTSTR); i++)
+	{
+		m_listTask.InsertColumn(i, szBookColumns[i], LVCFMT_CENTER);
+		m_listTask.SetColumnWidth(i, book_colum_w[i]);
+	}
+
+	LoadBooks();
+	SetTimer(ID_TMR_SCAN_TASK, 5000, NULL);
+	
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// 异常:  OCX 属性页应返回 FALSE
 }
@@ -109,11 +148,12 @@ static int cb_Show_Record(void * param, int argc, char ** argv, char ** aszColNa
 		LVIS_SELECTED | LVIF_IMAGE, LVIS_SELECTED | LVIF_IMAGE, 0, 0); //BookName; /* 2*/
 
 	CString strsize = GetReadableSize((UINT32)(atoi(argv[4])) );
-	plist->SetItemText(row, 1, strsize);  //BookSize; /*4*/
-	QUtf2Unc(argv[5], str);	plist->SetItemText(row, 2, str);//tmCreate;   /* 5 */
-	QUtf2Unc(argv[8], str); plist->SetItemText(row, 3, str);//BookState; /* 8*/
-	QUtf2Unc(argv[1], str); plist->SetItemText(row, 5, str);//BookPath; /*3*/
-	QUtf2Unc(argv[3], str); plist->SetItemText(row, 4, str);//ID; /*1*/
+	plist->SetItemText(row, IDX_COL_BOOK_SIZE, strsize);  //BookSize; /*4*/
+	QUtf2Unc(argv[5], str);	plist->SetItemText(row, IDX_COL_TM_CREATE, str);//tmCreate;   /* 5 */
+	QUtf2Unc(argv[8], str); plist->SetItemText(row, IDX_COL_ST_UPLOAD, str);//BookState; /* 8*/
+	QUtf2Unc(argv[3], str); plist->SetItemText(row, IDX_COL_BOOK_PATH, str);//BookPath; /*3*/
+	QUtf2Unc(argv[1], str); plist->SetItemText(row, IDX_COL_BOOK_ID, str);//ID; /*1*/
+	plist->SetItemText(row, IDX_COL_NU_UPLOAD, _T("..."));  //BookSize; /*4*/
 	return 0;
 }
 
@@ -122,9 +162,6 @@ void CResManDlg::LoadBooks()
 	m_CurResType = TYPE_BOOKS_RES;
 	m_listRes.DeleteAllItems();
 	while (m_listRes.DeleteColumn(0)){};
-	LPCTSTR  szColumns[] = { { _T("图书名") },  { _T("图书大小") }, { _T("创建时间") },
-	                         { _T("上传状态")}, { _T("位置") },     { _T("ID") } };
-	int colum_w[] = { 300, 80, 120, 80, 400, 0 };
 	m_nBookResIdCol = sizeof(colum_w) / sizeof(int) - 1;
 	for (int i = 0; i<sizeof(szColumns) / sizeof(LPCTSTR); i++)
 	{
@@ -137,6 +174,13 @@ void CResManDlg::LoadBooks()
 	QUnc2Utf(str, sql_show);
 	execSQL(sql_show, cb_Show_Record, &m_listRes, &pErrMsg);
 	GetDlgItem(IDC_BTN_UPLOAD)->EnableWindow(TRUE);
+	CString stritem;
+	m_mapBookid_listIdx.clear();
+	for (int i = 0; i < m_listRes.GetItemCount(); i++)
+	{
+		stritem = m_listRes.GetItemText(i, IDX_COL_BOOK_ID);
+		m_mapBookid_listIdx.insert(m_mapBookid_listIdx.end(), make_pair(stritem, i));
+	}
 }
 
 void CResManDlg::LoadBookResList()
@@ -186,7 +230,7 @@ void CResManDlg::OnShowWindow(BOOL bShow, UINT nStatus)
 	}
 }
 
-BOOL CResManDlg::UploadBook(LPCTSTR book)
+void * CResManDlg::UploadBook(LPCTSTR book)
 {
 	CPackerProj * proj = ::GetPackProj();
 	//::CreateDirectory(str, NULL);
@@ -196,38 +240,84 @@ BOOL CResManDlg::UploadBook(LPCTSTR book)
 	CString strSession;
 	strSession.Format(_T("Cookie: sessionId=%s;tooken=11111\r\n"), proj->m_strSession);
 	LPCTSTR * cookies = new LPCTSTR[4];
-	cookies[0] = headerLanguage;
-	cookies[1] = headerEncoding;
-	cookies[2] = headerContentType;
-	cookies[3] =  strSession;
+	int hdrs = 0;
+	cookies[hdrs++] = headerLanguage;
+	cookies[hdrs++] = headerEncoding;
+	cookies[hdrs++] = headerContentType;
+	cookies[hdrs++] = strSession;
 
+	
 	CFile of;
 	int flen = 0;
-	if (of.Open(book, CFile::modeRead | CFile::shareDenyNone))
-	{
-		flen = (INT)of.GetLength();
-		BYTE * lpbuf = new BYTE[flen + 1];
-		of.Read(lpbuf, flen);
-		of.Close();
+	CHttpPost * pTask = new CHttpPost(g_pSet->m_strServerIP, _T("/books/streamUpload.whtml"),\
+		this, g_pSet->m_nPort, cookies, hdrs);
+	
+	pTask->SendFile(book);
+	SetTimer(ID_TMR_SCAN_TASK, 500, NULL);
+	return pTask;
+}
 
-		CString strResp;
-		if (HttpPostEx(g_pSet->m_strServerIP, g_pSet->m_nPort, _T("/books/streamUpload.whtml"),
-			cookies, 4, 1, lpbuf, flen, strResp) == TRUE)
+BOOL CResManDlg::UploadItem(CString &sid, int row)
+{
+	if (row == -1)
+	{
+		std::map<CString, int>::iterator fit = m_mapBookid_listIdx.find(sid);
+		if (fit != m_mapBookid_listIdx.end())
 		{
-			return TRUE;
+			row = fit->second;
 		}
 		else
+			return FALSE;
+	}
+
+	if (m_listTask.GetItemCount() < CFG_MAX_TASK_LIMIT)
+	{
+		CString str = m_listRes.GetItemText(row, IDX_COL_BOOK_PATH);
+		m_proj->SetBookState(sid, _T("上传中"));
+		m_listRes.SetItemText(row, IDX_COL_ST_UPLOAD, _T("上传中"));
+		m_listRes.SetItemText(row, IDX_COL_NU_UPLOAD, _T("0%"));
+		void * ptask = UploadBook(str);
+		int row_task = m_listTask.GetItemCount();
+		m_listTask.InsertItem(row_task, sid);
+		m_listTask.SetItemText(row_task, 1, _T("上传中"));
+		m_listTask.SetItemData(row_task, (DWORD_PTR)ptask);
+	}
+	else //full
+	{
+		m_listRes.SetItemText(row, IDX_COL_ST_UPLOAD, _T("等待上传"));
+		m_listRes.SetItemText(row, IDX_COL_NU_UPLOAD, _T("0%"));
+		set<CString>::iterator fit = m_setQueueId.find(sid);
+		if (fit == m_setQueueId.end())
+			m_setQueueId.insert(m_setQueueId.end(), sid);
+	}
+}
+
+BOOL CResManDlg::CheckTask(LPCTSTR bookid, BOOL bremove)
+{
+	
+	for (int row = 0; row < m_listTask.GetItemCount(); row++)
+	{
+		CString strtaskid = m_listTask.GetItemText(row, 0);
+		if (strtaskid.Compare(bookid) == 0)
 		{
-			
+			if (bremove)
+			{
+				CAsyncHttp* phttp = (CAsyncHttp*)m_listTask.GetItemData(row);
+				phttp->Disconnect();
+				delete phttp;
+				m_listTask.DeleteItem(row);
+			}
+			return   TRUE;
 		}
 	}
 	return FALSE;
 }
+
 void CResManDlg::OnBnClickedBtnUpload()
 {
 	if (m_CurResType == TYPE_LOCAL_RES)
 	{
-		MessageBox(_T("请选择上传资源"),_T("没发现上传资源"));
+		MessageBox(_T("请选择上传资源"),_T("没选择上传资源"));
 		LoadBooks();
 	}
 	else
@@ -236,24 +326,15 @@ void CResManDlg::OnBnClickedBtnUpload()
 		{
 			if (m_listRes.GetCheck(j))
 			{
-				CString str = m_listRes.GetItemText(j, 4);
-				CString strid = m_listRes.GetItemText(j, 5);
-				CString strResult;
-				m_proj->SetBookState(strid, _T("上传中"));
-				m_listRes.SetItemText(j, 3, _T("上传中"));
-				this->UpdateWindow();
-				if (UploadBook(str))
+				CString strid = m_listRes.GetItemText(j, IDX_COL_BOOK_ID);
+				BOOL bAlreadyUpload = CheckTask(strid);
+				if (bAlreadyUpload == FALSE) //not in task ,then put into task 
 				{
-					m_proj->SetBookState(strid, _T("已上传"));
-					m_listRes.SetItemText(j, 3, _T("已上传"));
-				}
-				else
-				{
-					m_proj->SetBookState(strid, _T("已上传"));
-					m_listRes.SetItemText(j, 3, _T("已上传"));
-				}
+					UploadItem(strid, j);
+				}//bAlreadyUpload true: no process, nothing todo!
 			}
 		}
+		this->UpdateWindow();
 	}
 }
 
@@ -318,6 +399,25 @@ void CResManDlg::OnBnClickedBtnRemove()
 	}
 	else
 	{
+		if (MessageBox(_T("确认要删除所选择的书籍吗？\r\n（正在上传的会自动中止上传并删除）"), _T("删除上传资料"), MB_YESNO)
+			== IDYES)
+		{
+			int row = 0;
+			while (row < m_listRes.GetItemCount())
+			{
+				if (m_listRes.GetCheck(row))
+				{
+					CString sid = m_listRes.GetItemText(row, IDX_COL_BOOK_ID);
+					if (CheckTask(sid, TRUE) == FALSE)
+					{
+						m_setQueueId.erase(sid);
+						m_listRes.DeleteItem(row);
+						continue;
+					}
+				}
+				row++;
+			}
+		}
 	}
 }
 
@@ -326,4 +426,98 @@ void CResManDlg::OnBnClickedBtnReturn()
 {
 	// TODO:  在此添加控件通知处理程序代码
 	::SwitchBackMainDlg();
+}
+
+
+LRESULT CResManDlg::OnHttpFinishMsg(WPARAM wParam, LPARAM lParam)
+{
+	CAsyncHttp * pHttp = (CAsyncHttp*)wParam;
+	BOOL  stat = (BOOL)lParam;
+	if (stat>0)
+	{
+		int len = pHttp->GetHttpHeader(pHttp->m_szRespHeader);
+		if (pHttp->m_szRespHeader.Find(" 200 OK") >= 0)
+		{						
+			stat = TRUE;
+		}
+	
+		for (int i = 0; i < m_listTask.GetItemCount(); i++)
+		{
+			if (m_listTask.GetItemData(i) == (DWORD_PTR)pHttp)
+			{
+				LPCTSTR strRet = stat ? _T("上传成功") : _T("上传失败");
+				CString strid = m_listTask.GetItemText(i, 0);			
+
+				m_proj->SetBookState(strid, strRet);
+				for (int j = 0; j < m_listRes.GetItemCount(); j++)
+				{
+					CString sres_id = m_listRes.GetItemText(j, IDX_COL_BOOK_ID);
+					if (sres_id.Compare(strid) == 0)
+					{					
+						m_listRes.SetItemText(j, IDX_COL_ST_UPLOAD, strRet);
+						break;
+					}
+				}
+				m_listTask.DeleteItem(i);//delete from task
+				break;
+			}
+		}
+	}
+
+	EndWaitCursor();
+	::AfxGetMainWnd()->EndWaitCursor();
+
+	pHttp->stop();
+	delete pHttp;
+	return 0;
+}
+
+
+BOOL CResManDlg::ScanTask()
+{
+	int i;
+	if (m_CurResType == TYPE_LOCAL_RES) return FALSE;
+	for (i = 0; i < m_listTask.GetItemCount(); i++) //update process indications
+	{
+		CString sid = m_listTask.GetItemText(i, 0);
+		std::map<CString, int>::iterator fit = m_mapBookid_listIdx.find(sid);
+		if (fit != m_mapBookid_listIdx.end())
+		{
+			int row = fit->second;
+			CAsyncHttp * phttp = (CAsyncHttp *)m_listTask.GetItemData(i);
+			if (phttp != NULL)
+			{
+				int per = (phttp->m_pSocket->m_curTxBytes *100 )/ phttp->m_pSocket->m_RecvTotLen;
+				CString sprog;
+				sprog.Format(_T("%d%%"), per);
+				m_listRes.SetItemText(row, IDX_COL_NU_UPLOAD, sprog);
+			}
+		}
+	}
+	if (m_listTask.GetItemCount() < CFG_MAX_TASK_LIMIT) //update queue 
+	{
+		if (m_setQueueId.size() != 0)
+		{
+			CString sid = *m_setQueueId.begin();
+			m_setQueueId.erase(m_setQueueId.begin());
+			UploadItem(sid);
+		}
+	}
+	return (i!= 0);
+}
+
+void CResManDlg::OnTimer(UINT_PTR nIDEvent)
+{
+	switch (nIDEvent)
+	{
+	case ID_TMR_SCAN_TASK:
+		KillTimer(ID_TMR_SCAN_TASK);
+		if( ScanTask() )
+			SetTimer(ID_TMR_SCAN_TASK, 500, NULL);
+		else
+			SetTimer(ID_TMR_SCAN_TASK, 3000, NULL);
+		break;
+	}
+
+	CExDialog::OnTimer(nIDEvent);
 }

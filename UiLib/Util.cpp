@@ -352,6 +352,22 @@ BOOL CUtil::GetFileSize(LPCTSTR  sfile, DWORD &flen)
 	return FALSE;
 }
 
+CString CUtil::FormatMessageFor(HRESULT hr)
+{
+	CString strMsg;
+	LPVOID pvMsgBuf = NULL;
+	LPCTSTR pszMsg = NULL;
+	if (FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+		NULL, (DWORD)hr, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&pvMsgBuf, 0, NULL))
+	{
+		pszMsg = (LPTSTR)pvMsgBuf;
+		// Do something with the error message.
+		//printf( "Windows error: 0X%.8X (%s)\n", a_hResult, a_pszMsg );
+		strMsg.Format(_T("0X%.8X (%s)"), hr, pszMsg);
+		LocalFree(pvMsgBuf);
+	}
+	return strMsg;
+}
 
 void Utf2Unc(const char  * bstr, WCHAR  * wstr, int lens, int lenw)
 {

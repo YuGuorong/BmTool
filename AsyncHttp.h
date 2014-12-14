@@ -15,6 +15,7 @@ public:
 	void* join();//等待当前线程结束
 	void detach();//不等待当前线程
 	void Reset();//让当前线程休眠给定时间，单位为毫秒
+	unsigned int threadID;
 
 protected:
 	virtual void * run(void *) = 0;//用于实现线程类的线程函数调用
@@ -24,7 +25,6 @@ protected:
 	bool started;
 	bool detached;
 	void * param;
-	unsigned int threadID;
 };
 
 #define MAX_RECV_LEN           100   // 每次接收最大字符串长度.
@@ -41,11 +41,14 @@ public:
 	void Close();
 	CStringA GetResponse();
 	BOOL Send(CStringA sdata);
+	INT Send(void * buf, int len);
 	INT Recv(void * buf, int len);
 	void GetRecvStatus(INT * p_ncur, INT * p_nTot);
-protected:
+public: //for display progressing
 	INT m_RecvTotLen;
 	INT m_CurRecvBytes;
+	INT m_SendTotLen;
+	INT m_curTxBytes;
 };
 
 
@@ -67,6 +70,7 @@ public:
 	INT GetBody();
 	void * m_pBody;
 	int    m_nBodyLen;
+	CDealSocket * m_pSocket;
 
 public:
 	void setOnFinish(void(*func)());
@@ -86,7 +90,6 @@ protected:
 	int       m_nProxyPort;      // 代理服务端口号.
 	CStringA  m_szProxyUser;     // 代理理服务器用户， 为空表示不需要登录
 	CStringA  m_szProxyPwd;      // 代理理服务器密码.
-	CDealSocket * m_pSocket;	
 	CWnd  * m_pMsgWnd;
 	INT (*onFinish)(void * parm, INT http_send_status);//完成后调用的函数. Status < 0 means fail ; return < 0 ,keep connection
 
@@ -105,7 +108,7 @@ class CHttpPost : public CAsyncHttp
 public:
 	CHttpPost(LPCTSTR szIP, LPCTSTR szUrl, CWnd * pmsgWnd , int port = 80, LPCTSTR shdr[] = NULL, int headerCount = 0);
 	~CHttpPost();
-	INT SendFile(LPCTSTR slclfname);
+	INT SendFile(LPCTSTR slclfname, void * param = NULL);
 	INT SendFile(const void * ptr, int len, LPCTSTR sztype=NULL);
 	virtual INT OnHttpHeaderSend();
 };

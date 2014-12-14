@@ -50,7 +50,7 @@ void MyTracex(const char * fmt, ...);
 #endif
 #endif
 
-//#include <vld.h> 
+#include <vld.h> 
 // VC6
 #if defined(_MSC_VER) && _MSC_VER == 1200
 
@@ -84,4 +84,6 @@ void SwitchBackMainDlg();
 #define CFG_EPUB2PDF_EXE     _T("epub2pdf.bat")
 #define CFG_RES_FOLDER       _T("res")
 #define CFG_OPENCN_FOLDER    _T("∞¬≈Ù ÈºÆ")
+#define CFG_MAX_TASK_LIMIT   5
+
 #endif
