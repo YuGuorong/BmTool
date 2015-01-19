@@ -109,10 +109,18 @@ INT CMetaDlg::ParseMetaItem(CString &strRawMeta )
 	m_nMaxHight = 0;
 	while( AfxExtractSubString(str, strRawMeta, count++, _T('\n')) )
 	{
+		BOOL buniq = FALSE;
 		int nSubIndex = -1;
 		if( str.IsEmpty() ) break;
 		INT style = META_READWRITE;
 		CMetaExtend *pext = NULL;
+		str = str.Trim();
+		if (str[0] == _T('*'))
+		{
+			str.Delete(0);
+			str = str.TrimLeft();
+			buniq = TRUE;
+		}
 		str.Replace(_T('£¨'), _T('('));
 		int istart = 0;
 		str.Remove(_T('\r'));
@@ -130,7 +138,7 @@ INT CMetaDlg::ParseMetaItem(CString &strRawMeta )
 		else if (str.Find(_T("Í¼Æ¬")) >= 0)
 		{
 			style = META_PICTURE;
-			m_nMaxHight += ITEM_LARG_HIGH;//
+			m_nMaxHight += ITEM_PICTURE_HIGH;//
 		}
 		else if (str.Find(_T("ÖÐÎÄ")) >= 0)
 		{
@@ -150,6 +158,7 @@ INT CMetaDlg::ParseMetaItem(CString &strRawMeta )
 			style =  META_COMBOBOX;
 		}
 		CMetaDataItem * pit =NewMetaItem(style, strCap,  str);	
+		pit->bUniq = buniq;
 		m_nMaxHight += ITEM_HIGHT;
 		if( m_nMaxCapLen < strCap.GetLength() ) m_nMaxCapLen = strCap.GetLength();
 		if( pext )
@@ -282,7 +291,8 @@ INT CMetaDlg::LoadMetaData(LPCTSTR szMetaFile)
 }
 
 BOOL CMetaDlg::OnInitDialog()
-{
+{ 
+	//SetWndStyle(0,RGB(209,247,252), RGB(228,254,253));
 	this->SetWndStyle(0, RGB(255,255,255), RGB(220,220,240));
 	CReaderView::OnInitDialog();
 	m_proj = ::GetPackProj();
@@ -301,7 +311,7 @@ BOOL CMetaDlg::OnInitDialog()
 	if(  LoadMetaData(strMetaDescFile) > 0 )
 	{
 		//LoadXmlMetaValues();
-		CRect r(0,0, 300,ITEM_HIGHT);
+		CRect r(0, 0, ITEM_WIDTH, ITEM_HIGHT);
 		r.MoveToXY(4,4);	
 		CMetaDataItem * pit = m_proj->m_pMeta;
 		while( pit )
@@ -311,6 +321,8 @@ BOOL CMetaDlg::OnInitDialog()
 		}
 	}
 	::SetCurrentDirectory(strCurDir);
+	//CScrollBar* pbar = GetScrollBarCtrl(SB_VERT);
+	//pbar->SetScrollRange(0, m_nMaxHight);
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
 }
@@ -462,6 +474,7 @@ void CMetaDlg::CreateTitle(PCWnd * pWnd , LPCTSTR szKey, CRect &rs)
 	str +=_T(" ");
     ((CStatic*)pWnd[0])->Create(str,WS_CHILD|WS_VISIBLE|SS_RIGHT|WS_BORDER|SS_CENTERIMAGE, r, this, IDC_STATIC);
 	pWnd[0]->SetFont(&m_ftCaption);
+	((CLink *)pWnd[0])->SetTxtColor(RGB(22, 130, 198));
 	rs.OffsetRect(r.Width(),0);
 }
 
@@ -473,7 +486,8 @@ void CMetaDlg::CreateItem( CMetaDataItem * pItem, LPCTSTR strV, CRect &rs  )
 	rc.bottom -= 40;
 	CRect r(rs); 
 	int left = r.left;
-	if (pItem->style & (META_PICTURE | META_MULTLINE)) r.bottom += ITEM_LARG_HIGH;
+	if (pItem->style & (META_MULTLINE)) r.bottom += ITEM_LARG_HIGH;
+	else if (pItem->style & META_PICTURE) r.bottom += ITEM_PICTURE_HIGH;
 	if( r.bottom >= rc.bottom - 2)  
 	{
 		r.MoveToXY(r.left + (m_nMaxCapLen + 1) * META_CAPTION_FOUNT_SIZE + r.Width() + 1, 4);
@@ -506,13 +520,15 @@ void CMetaDlg::CreateItem( CMetaDataItem * pItem, LPCTSTR strV, CRect &rs  )
 	}
 	else if(pItem->style & META_PICTURE )
 	{
-		pItem->pWnd[2] =(CWnd *)new CStatic;
-		((CStatic*)pItem->pWnd[2])->Create(_T(""),WS_CHILD|WS_VISIBLE|WS_BORDER|SS_USERITEM, r, this, IDC_STATIC); //frame border
+		pItem->pWnd[2] =(CWnd *)new CStatic;		
+		CRect rp(r);
+		rp.right = rp.left + rp.Height() * 210 / 297; 
+		((CStatic*)pItem->pWnd[2])->Create(_T(""),WS_CHILD|WS_VISIBLE|WS_BORDER|SS_USERITEM, rp, this, IDC_STATIC); //frame border
 		CLink * pbmp = new CLink;
-		r.InflateRect(-1,-1); 
+		rp.InflateRect(-1,-1); 
 		pItem->pWnd[1] = pbmp;
-		pbmp->Create(_T("static"), WS_CHILD|WS_VISIBLE|SS_BITMAP|SS_NOTIFY, r, this,  pItem->nCtrlID);
-		m_proj->LoadMetaImage(pItem, strV, r);		
+		pbmp->Create(_T("static"), WS_CHILD|WS_VISIBLE|SS_BITMAP|SS_NOTIFY, rp, this,  pItem->nCtrlID);
+		m_proj->LoadMetaImage(pItem, strV, rp);		
 		HCURSOR hCurHand  =  LoadCursor( NULL  , IDC_HAND ) ;
 		pbmp->SetLinkCursor(hCurHand);
 			

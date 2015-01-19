@@ -491,10 +491,12 @@ BOOL CResManDlg::ScanTask()
 			CAsyncHttp * phttp = (CAsyncHttp *)m_listTask.GetItemData(i);
 			if (phttp != NULL)
 			{
-				int per = (phttp->m_pSocket->m_curTxBytes *100 )/ phttp->m_pSocket->m_SendTotLen;
+				int per = (phttp->m_pSocket->m_curTxBytes )/ (phttp->m_pSocket->m_SendTotLen/100);
 				CString sprog;
 				sprog.Format(_T("%d%%"), per);
-				m_listRes.SetItemText(row, IDX_COL_NU_UPLOAD, sprog);
+				CString snow = m_listRes.GetItemText(row, IDX_COL_NU_UPLOAD);
+				if (snow.Compare(sprog) != 0 )
+					m_listRes.SetItemText(row, IDX_COL_NU_UPLOAD, sprog);
 			}
 		}
 	}

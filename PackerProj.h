@@ -127,6 +127,7 @@ public:
 	CString	 strValue;
 	CString  strDefVal;
 	DWORD    style;   /*在设置窗口显示 META_STYLE*/
+	BOOL     bUniq;
 	int		 nCtrlID;
 	PCWnd    pWnd[3];
 	CBitmap *pimg;
@@ -224,10 +225,12 @@ protected:
 	void SaveDirs(CString &sxml);
 	BOOL Res2Xml(CString &strResXml);
 	BOOL ZipRes(LPCTSTR szZipFile);
+	BOOL EncZip(HANDLE hzip, LPCTSTR szIn, LPCTSTR szZipName, BOOL bEnc);
+	UINT32 PreCountZipSize();
 
 	BOOL ParseXml();
 	BOOL UnzipProj();
-
+	int UnzipEncFile(HANDLE hz, void * pze, LPCTSTR sfile, BOOL bres = FALSE);
 	BOOL SaveProjToDb();
 	BOOL LoadMetaCol();
 };

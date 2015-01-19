@@ -24,6 +24,7 @@ public:
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 	CStringA m_strHttpData;
+	CString m_strUser;
 	void * m_pHttp;
 
 	DECLARE_MESSAGE_MAP()

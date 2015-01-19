@@ -12,6 +12,10 @@
 #define new DEBUG_NEW
 #endif
 
+void NewProcessWnd(int max, int min);
+void FreeProcessWnd();
+
+
 class CAboutDlg : public CExDialog
 {
 public:
@@ -26,6 +30,7 @@ public:
 	//{{AFX_VIRTUAL(CAboutDlg)
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
+	virtual BOOL OnInitDialog();
 	//}}AFX_VIRTUAL
 
 	// Implementation
@@ -48,6 +53,25 @@ void CAboutDlg::DoDataExchange(CDataExchange* pDX)
 	//}}AFX_DATA_MAP
 }
 
+BOOL CAboutDlg::OnInitDialog()
+{
+	BOOL ret = CExDialog::OnInitDialog();
+	CString str; str.LoadString(IDS_VERNDOR_NAME);
+	SetWindowText(str);
+	for (int i = 0; i < m_atxts.GetCount(); i++)
+	{
+		m_atxts[i]->GetWindowText(str);
+		if (str.Compare(_T("about")) == 0)
+		{
+			str.LoadString(IDS_VERNDOR_NAME);
+			CString sinfo;
+			sinfo.Format(_T("%s 版本：%s"), str, STR_VERSION);
+			m_atxts[i]->SetWindowText(sinfo);
+		}
+	}
+	return ret;
+}
+
 BEGIN_MESSAGE_MAP(CAboutDlg, CExDialog)
 	//{{AFX_MSG_MAP(CAboutDlg)
 	// No message handlers
@@ -67,6 +91,7 @@ CPackerProj * GetPackProj()
 // CDirPackgeDlg dialog
 
 CWnd * CreateHttpManageWnd(CWnd * pParent);
+
 
 CDirPackgeDlg::CDirPackgeDlg(CWnd* pParent /*=NULL*/)
 	: CeExDialog(CDirPackgeDlg::IDD, pParent,EX_STRETCH_BK|EX_FILL_BK)
@@ -118,6 +143,8 @@ BOOL CDirPackgeDlg::OnInitDialog()
 	m_Proj = new CPackerProj(this);
 	MyTracex("Proj created!\n");
 	CeExDialog::OnInitDialog();
+	CString str; str.LoadString(IDS_VERNDOR_NAME);
+	SetWindowText(str);
 	m_BmState = BMST_LOGIN | BMST_OFFLINE;
 
 	// Add "About..." menu item to system menu.
@@ -145,6 +172,8 @@ BOOL CDirPackgeDlg::OnInitDialog()
 	//  when the application's main window is not a dialog
 	SetIcon(m_hIcon, TRUE);			// Set big icon
 	SetIcon(m_hIcon, FALSE);		// Set small icon
+
+	NewProcessWnd(100, 0);
 
 	UINT btnids[][2] = { 
 		{IDC_BTN_LOGIN,  IDB_PNG_LOGIN  },
@@ -577,9 +606,13 @@ public:
 	CProgressWnd(CWnd* pParent = NULL);   // 标准构造函数
 	virtual ~CProgressWnd();
 	CProgressCtrl m_prog;
+	BOOL m_bCancel;
 
 	// 对话框数据
 	enum { IDD = IDD_PROGRESS };
+	void ProcMsg();
+	void SetInfo(LPCTSTR szInfo);
+	CLink m_sinfo;
 
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 支持
@@ -588,6 +621,8 @@ protected:
 	virtual void PreInitDialog();
 public:
 	afx_msg void OnDestroy();
+	afx_msg void OnBnClickedBtnCancel();
+	virtual BOOL OnInitDialog();
 };
 
 
@@ -598,7 +633,7 @@ IMPLEMENT_DYNAMIC(CProgressWnd, CDialogEx)
 CProgressWnd::CProgressWnd(CWnd* pParent /*=NULL*/)
 : CDialogEx(CProgressWnd::IDD, pParent)
 {
-
+	m_bCancel = FALSE;
 }
 
 CProgressWnd::~CProgressWnd()
@@ -611,15 +646,56 @@ void CProgressWnd::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_PROGRESS, m_prog);
 }
 
-
 BEGIN_MESSAGE_MAP(CProgressWnd, CDialogEx)
 	ON_WM_DESTROY()
+	ON_BN_CLICKED(IDC_BTN_CANCEL, &CProgressWnd::OnBnClickedBtnCancel)
 END_MESSAGE_MAP()
 
 
 // CProgressWnd 消息处理程序
 
 
+BOOL CProgressWnd::OnInitDialog()
+{
+	CDialogEx::OnInitDialog();
+
+	// TODO:  在此添加额外的初始化
+	///m_sinfo.SubclassDlgItem(IDC_ST_INFO, this);
+
+	return TRUE;  // return TRUE unless you set the focus to a control
+	// 异常:  OCX 属性页应返回 FALSE
+}
+
+void CProgressWnd::OnBnClickedBtnCancel()
+{
+	// TODO:  在此添加控件通知处理程序代码
+	this->ShowWindow(SW_HIDE);
+	this->CenterWindow(::AfxGetMainWnd());
+	m_bCancel = TRUE;
+}
+
+void CProgressWnd::SetInfo(LPCTSTR szInfo)
+{
+	if (szInfo)
+	{
+		CWnd * pwnd = GetDlgItem(IDC_ST_INFO);
+		pwnd->ShowWindow(SW_HIDE);
+		pwnd->SetWindowText(szInfo);
+		pwnd->ShowWindow(SW_SHOW);
+	}
+}
+
+void CProgressWnd::ProcMsg()
+{
+	MSG msg;
+	while (m_bCancel == FALSE && PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) 
+	{
+		if (msg.message == WM_QUIT)
+			break;
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
+	}
+}
 
 void CProgressWnd::PreInitDialog()
 {
@@ -634,21 +710,83 @@ void CProgressWnd::OnDestroy()
 	CDialogEx::OnDestroy();
 
 	// TODO:  在此处添加消息处理程序代码
+	FreeProcessWnd();
 }
 
 
-CWnd * NewProcess(int max, int min)
+CProgressWnd * g_progWnd = NULL;
+void FreeProcessWnd(void)
 {
-	CProgressWnd * pwnd = new CProgressWnd(::AfxGetMainWnd());
-	pwnd->Create(CProgressWnd::IDD, ::AfxGetMainWnd());
-	CRect r;
-	::AfxGetMainWnd()->GetWindowRect(r);
-	CRect rs;
-	pwnd->GetWindowRect(rs);
+	if (g_progWnd)
+	{
+		FreePtr(g_progWnd);		
+	}
+
+}
+
+void NewProcessWnd(int max, int min)
+{
+	if (g_progWnd == NULL)
+	{
+		g_progWnd = new CProgressWnd(::AfxGetMainWnd());
+		g_progWnd->Create(CProgressWnd::IDD, ::AfxGetMainWnd());
+		CRect r;
+		::AfxGetMainWnd()->GetWindowRect(r);
+		CRect rs;
+		g_progWnd->GetWindowRect(rs);
+	}
 	
-	pwnd->m_prog.SetRange32(min, max);
-	pwnd->m_prog.SetPos(min);
-	pwnd->ShowWindow(SW_HIDE);
-	return pwnd;
+	
+	g_progWnd->m_prog.SetRange32(min, max);
+	g_progWnd->m_prog.SetPos(min);
+	g_progWnd->ShowWindow(SW_HIDE);
+}
+
+void SetProgWndLimit(int max, int min)
+{
+	if (g_progWnd)
+	{
+		g_progWnd->m_prog.SetRange32(min, max);
+		if (min != -1 )
+			g_progWnd->m_prog.SetPos(min);
+		g_progWnd->ShowWindow(SW_SHOW);
+		g_progWnd->CenterWindow(::AfxGetMainWnd());
+		g_progWnd->ProcMsg();
+	}
+}
+
+BOOL OffsetPorgPos(int offset, LPCTSTR szinfo)
+{
+	if (g_progWnd)
+	{
+		g_progWnd->SetInfo(szinfo);
+		int cur = g_progWnd->m_prog.GetPos();
+		g_progWnd->m_prog.SetPos(cur+offset);
+		g_progWnd->ProcMsg();
+		return !g_progWnd->m_bCancel;
+	}
+	return FALSE;
+}
+
+BOOL SetCurProgPos(int cur, LPCTSTR szinfo)
+{
+	if (g_progWnd)
+	{
+		g_progWnd->SetInfo(szinfo);
+		g_progWnd->m_prog.SetPos(cur);
+		g_progWnd->ProcMsg();
+		return !g_progWnd->m_bCancel;
+	}
+	return FALSE;
+}
+
+void EndProgWnd()
+{
+	if (g_progWnd)
+	{
+		g_progWnd->ShowWindow(SW_HIDE);
+		g_progWnd->ProcMsg();
+		::AfxGetMainWnd()->UpdateWindow();
+	}
 }
 

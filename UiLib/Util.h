@@ -42,6 +42,8 @@ int atox(const char *str);
 
 void QA2W(LPCSTR  astr, CString &wstr);
 WCHAR* QA2W(LPCSTR astr);
+void QW2A(LPCTSTR wstr, CStringA &astr);
+
 typedef enum
 {
     RUN_NORMAL,

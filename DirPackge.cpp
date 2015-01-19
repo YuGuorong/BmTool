@@ -54,7 +54,6 @@ BOOL CDirPackgeDlgApp::InitInstance()
 
 	CWinApp::InitInstance();
 
-
 	AfxEnableControlContainer();
 
 	// Create the shell manager, in case the dialog contains

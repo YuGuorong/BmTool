@@ -4,6 +4,8 @@
 #include "libs.h"
 #include "resource.h"
 #include "expat\expat.h"
+#include "ServerModal.h"
+
 #pragma comment(lib, ".\\lib\\expat\\libexpat.lib" ) 
 
 CDigest::CDigest(CString &sfile, DIGEST_MODE mode )
@@ -469,28 +471,33 @@ CMetaDataItem *  CPackerProj::PrecheckContent()
 	CString str;
 	while (pit)
 	{
-		if (pit->style & META_READWRITE)
+		if (pit->bUniq)
 		{
-			pit->pWnd[1]->GetWindowText(str);
-			CString strt = str.Trim();
-			if (strt.IsEmpty())
+			if (pit->style & META_READWRITE)
 			{
-				pit->pWnd[1]->SetFocus();
-				return pit;
+				pit->pWnd[1]->GetWindowText(str);
+				CString strt = str.Trim();
+				if (strt.IsEmpty())
+				{
+					pit->pWnd[1]->SetFocus();
+					return pit;
+				}
 			}
-		}
-		else if (pit->style & META_COMBOBOX)
-		{
-			CComboBox * pbox = (CComboBox*)(pit->pWnd[1]);
-			int nsel = pbox->GetCurSel();
-			if ( nsel == -1 )
+			else if (pit->style & META_COMBOBOX)
 			{
-				pit->pWnd[1]->SetFocus();
-				return pit;
+				CComboBox * pbox = (CComboBox*)(pit->pWnd[1]);
+				int nsel = pbox->GetCurSel();
+				if (nsel == -1)
+				{
+					pit->pWnd[1]->SetFocus();
+					return pit;
+				}
 			}
-		}
-		else if (pit->style & META_PICTURE)
-		{
+			else if (pit->style & META_PICTURE)
+			{
+				if (pit->strValue.IsEmpty())
+					return pit;
+			}
 		}
 		pit = pit->pNext;
 	}
@@ -652,6 +659,54 @@ void CPackerProj::GenPreview(void * hhz)
 	spath.ReleaseBuffer();
 }
 
+UINT32 GetFileSize(LPCTSTR sf)
+{
+	CFileStatus status;
+	if (CFile::GetStatus(sf, status))
+	{
+		return status.m_size;
+	}
+	return 0;
+}
+
+UINT32 CPackerProj::PreCountZipSize()
+{
+	UINT32 tlen = 0;
+	tlen += m_nTargetFLen;
+	tlen += m_nTargetFLen;// PREVEW_SIZE
+	
+	tlen += GetFileSize(m_szCoverPath + _T("\\__cover.jpg"));
+	tlen += GetFileSize(m_szPathRes + _T("\\")CFG_META_FILE);
+	CResMan * pRes = m_pRes;
+	while(pRes)
+	{
+		tlen += pRes->m_fsize;
+		pRes = pRes->pNext;
+	}
+	return tlen;
+}
+//#define MEM_ENC
+BOOL CPackerProj::EncZip(HANDLE hzip, LPCTSTR szIn, LPCTSTR szZipName, BOOL bEnc)
+{
+	HZIP hz = (HZIP)hzip;
+#ifdef MEM_ENC
+	void * ptr = NULL;
+	int flen;
+	ptr = encode_file(szIn, flen);
+	ZRESULT ret = ZipAdd(hz, (LPCTSTR)szZipName, ptr, flen, ZIP_MEMORY);
+	free_enc(ptr);
+#else
+	CString szenc = m_szPathRes + _T(".s.tmp");
+	CStringA sin, senc;
+	QW2A(szIn, sin);
+	QW2A(szenc, senc);
+	Encrypt((LPCTSTR)(LPCSTR)sin, (LPCTSTR)(LPCSTR)senc, 0, 0);
+	ZRESULT ret = ZipAdd(hz, (LPCTSTR)szZipName, szenc.GetBuffer(), 0, ZIP_FILENAME);
+	szenc.ReleaseBuffer();
+#endif
+	return ret;
+}
+
 BOOL CPackerProj::ZipRes(LPCTSTR szZipFile)
 {
 	if (m_szTargetPath)
@@ -667,32 +722,37 @@ BOOL CPackerProj::ZipRes(LPCTSTR szZipFile)
 		try {
 			strZip.ReleaseBuffer();
 			CString spath = this->m_szTargetPath;
+			::SetProgWndLimit(PreCountZipSize(), 0);
+			CString sinfo; sinfo.Format(_T("保存书本:%s"), m_szTargetFileName);
+			if (!OffsetPorgPos(0, sinfo)) throw _T("用户中止");
 
-			ptr = encode_file(m_szTargetPath, flen);
-			ZRESULT ret = ZipAdd(hz, (LPCTSTR)m_szTargetFileName, ptr, flen, ZIP_MEMORY);
-			free_enc(ptr);
+			EncZip(hz, m_szTargetPath, m_szTargetFileName, TRUE);
+
+			sinfo.Format(_T("保存编目元数据")); 
+			if (!OffsetPorgPos(0, sinfo)) throw _T("用户中止");
 			spath = m_szPathRes + _T("\\")CFG_META_FILE;
-			if (ZipAdd(hz, CFG_META_FILE, spath.GetBuffer(spath.GetLength()), 0, ZIP_FILENAME) != ZR_OK)
+			if (ZipAdd(hz, CFG_META_FILE, spath.GetBuffer(), 0, ZIP_FILENAME) != ZR_OK)
 				throw _T("压缩编目文件失败！");
 			spath.ReleaseBuffer();
-			spath.ReleaseBuffer();
 
+			sinfo.Format(_T("保存封面")); 
+			if (!OffsetPorgPos(GetFileSize(m_szPathRes + _T("\\")CFG_META_FILE), sinfo)) throw _T("用户中止");
 			spath = m_szCoverPath;// m_szPathRes + _T("\\__cover.jpg");
-			ZipAdd(hz, _T("__cover.jpg"), spath.GetBuffer(spath.GetLength()), 0, ZIP_FILENAME);
+			ZipAdd(hz, _T("__cover.jpg"), spath.GetBuffer(), 0, ZIP_FILENAME);
 			spath.ReleaseBuffer();
 
+			sinfo.Format(_T("保存预览"));
+			if (!OffsetPorgPos(0, sinfo)) throw _T("用户中止");
 			GenPreview(hz);
 
 			CResMan * pRes = m_pRes;
-			USES_CONVERSION;
+			sinfo.Format(_T("保存附件资源")); 
+			if (!OffsetPorgPos(0, sinfo)) throw _T("用户中止");
 			while (pRes)
 			{
-				ptr = encode_file(pRes->m_sPath, flen);
-				ZRESULT ret = ZipAdd(hz, pRes->m_sfileName, ptr, flen, ZIP_MEMORY);
-				free_enc(ptr);
-
-				if (ret != ZR_OK)
-					throw _T("压缩资源文件失败！");
+				if (!OffsetPorgPos(pRes->m_fsize) ) throw _T("用户中止");
+				EncZip(hz, pRes->m_sPath, pRes->m_sfileName, TRUE);
+				if (ret != ZR_OK)		throw _T("压缩资源文件失败！");
 				pRes = pRes->pNext;
 			}
 		}
@@ -701,6 +761,7 @@ BOOL CPackerProj::ZipRes(LPCTSTR szZipFile)
 			ret = FALSE;
 		}
 		CloseZip(hz);
+		EndProgWnd();
 	}
 	return TRUE;
 }
@@ -720,7 +781,7 @@ int CPackerProj::Save()
 				strErr.Format(_T("请完整填写元数据内容！\r\n \"%s\" 为必填项"), strcap);
 				throw (LPCTSTR)strErr;
 			}
-			CFileDialog fdlg(FALSE, 0, _T("*.")PROJ_EXT, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
+			CFileDialog fdlg(FALSE, _T("*.") PROJ_EXT, NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
 				_T("编目工程文件|*.") PROJ_EXT _T("|所有文件|*.*||"), ::AfxGetMainWnd());
 			fdlg.m_ofn.lpstrInitialDir = g_pSet->m_strAppUserPath;
 			if (fdlg.DoModal() == IDOK)
@@ -772,7 +833,7 @@ int CPackerProj::Save()
 					of.Close();
 
 					CString spath = m_szProjPath + _T("\\");
-					spath += m_szProj + _T(".")PROJ_EXT;//_T(".zip");
+					spath += m_szProj;// +_T(".")PROJ_EXT;//_T(".zip");
 					if (ZipRes(spath) == FALSE) throw _T("压缩资源失败！");
 					m_szZipPath = spath;
 				}
@@ -1055,12 +1116,15 @@ int UnZipFile(HZIP hz, ZIPENTRYW *pze, LPCTSTR szFile )
 	return index;
 }
 
-int UnzipEncFile(HZIP hz, ZIPENTRYW * pze, LPCTSTR sfile, BOOL bres = FALSE)
+int CPackerProj::UnzipEncFile(HANDLE hzip, void * pz, LPCTSTR sfile, BOOL bres)
 {
+	HZIP hz = (HZIP)hzip;
+	ZIPENTRYW * pze = (ZIPENTRYW *)pz;
 	int index = -1;
 	ZRESULT zret = FindZipItem(hz, sfile, 0, &index, pze);
 	if (zret == ZR_OK)
 	{
+#ifdef DEC_MEM
 		int flen = pze->unc_size ;
 		char * pbuf = new char[flen];
 		zret = UnzipItem(hz, index, pbuf, flen , ZIP_MEMORY);//bres not using
@@ -1074,6 +1138,16 @@ int UnzipEncFile(HZIP hz, ZIPENTRYW * pze, LPCTSTR sfile, BOOL bres = FALSE)
 		else
 			index = -3;
 		delete pbuf;
+#else
+		CString szZip = m_szPathRes + _T(".z.tmp");
+		CStringA szip, sdec;
+		zret = UnzipItem(hz, index, szZip.GetBuffer(), 0, ZIP_FILENAME);//bres not using
+		szZip.ReleaseBuffer();
+		
+		QW2A(szZip, szip);
+		QW2A(sfile, sdec);
+		Decrypt((LPCTSTR)(LPCSTR)szip, (LPCTSTR)(LPCSTR)sdec, 0, 0);
+#endif
 	}
 	return index;
 }

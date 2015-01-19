@@ -222,3 +222,4 @@ int decode_file(LPCTSTR inpath, LPCTSTR outpath)
 	}
 	return flen;
 }
+

@@ -65,10 +65,13 @@ using namespace Gdiplus;
 
 // VS2005
 #else 
-
 #include <gdiplus.h>
 #pragma comment(lib, "gdiplus.lib")
 using namespace Gdiplus;
+#endif
+#define VENDOR_OPENCE   1  //奥鹏教育编目工具
+#define VENDOR_TEACHING 2  //上海中小学教材编著工具
+#define VENDOR_NAME VENDOR_OPENCE//VENDOR_TEACHING 
 
 void SwitchBackDlg(CWnd * pwndHide);
 void SwitchBackMainDlg();
@@ -83,7 +86,18 @@ void SwitchBackMainDlg();
 #define CFG_EPUB2PDF_INF_FILE _T("epub2pdf.properties")
 #define CFG_EPUB2PDF_EXE     _T("epub2pdf.bat")
 #define CFG_RES_FOLDER       _T("res")
-#define CFG_OPENCN_FOLDER    _T("奥鹏书籍")
 #define CFG_MAX_TASK_LIMIT   5
 
-#endif
+
+#define STR_VERSION     _T("1.0.1.7")
+
+#if VENDOR_NAME == VENDOR_OPENCE
+#define IDS_VERNDOR_NAME  IDSTR_VENDOR_OPENCN
+#define CFG_OPENCN_FOLDER     _T("奥鹏书籍")
+
+#elif VENDOR_NAME == VENDOR_TEACHING
+#define IDS_VERNDOR_NAME  IDSTR_VENDOR_TEACHING
+#define CFG_OPENCN_FOLDER     _T("教材编著书籍")//_T("奥鹏书籍")
+
+
+#endif 

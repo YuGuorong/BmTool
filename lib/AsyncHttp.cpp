@@ -527,14 +527,14 @@ INT CAsyncHttp::GetContentLen(CStringA &sheadr)
 	{
 		sscanf_s((LPCSTR)sheadr + ps + sizeof(szContLen), "%d", &len);
 	}
-	return -1;
+	return len;
 }
 
 INT CAsyncHttp::SendData()
 {
 	if (m_pSocket)
 	{
-		if (m_pBody == NULL || m_nBodyLen <= 0) return FALSE;
+		if (m_pBody == NULL || m_nBodyLen <= 0) return TRUE;
 		return m_pSocket->Send(m_pBody, m_nBodyLen);
 	}
 	return FALSE;
@@ -598,7 +598,8 @@ INT CAsyncHttp::GetBody()
 		m_pBody = m_pFile;
 		m_nBodyLen = len;
 	}
-	m_pFile[m_nBodyLen] = 0;
+	if ( m_pFile )
+		m_pFile[m_nBodyLen] = 0;
 	m_pBody = m_pFile;
 	return m_nBodyLen;
 }
@@ -710,8 +711,9 @@ INT CGetHttp::OnHttpHeaderSend()
 			len = GetContentLen(m_szRespHeader);
 			if (len > 0)
 			{
-				char * buf = new char[len + 1];				
+				BYTE * buf = new BYTE[len + 1];
 				int rxlen = m_pSocket->Recv(buf, len);
+				buf[rxlen] = 0;
 				if (!m_strLocalFile.IsEmpty())
 				{
 					CFile of;
@@ -721,13 +723,15 @@ INT CGetHttp::OnHttpHeaderSend()
 						of.Flush();
 						of.Close();
 						TRACE("HTTP Write %d %X bytes", rxlen, buf[len - 1]);
-					}					
+					}
+					delete buf;
 				}
-				delete buf;
+				else
+					m_pBody = m_pFile = buf;
 			}
 		}
 	}
-	return 0;
+	return len>0;
 }
 
 

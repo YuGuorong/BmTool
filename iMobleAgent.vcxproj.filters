@@ -213,6 +213,12 @@
     <ClInclude Include="lib\AsyncHttp.h">
       <Filter>libs</Filter>
     </ClInclude>
+    <ClInclude Include="lib\ServerModal.h">
+      <Filter>libs</Filter>
+    </ClInclude>
+    <ClInclude Include="strings.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">

@@ -392,8 +392,8 @@ void QUtf2Unc(LPCSTR  astr, CString &wstr)
 void QUnc2Utf(LPCWSTR wstr, AString &astr)
 {
     int slen = lstrlenW(wstr)+1;
-    char * psbuf = astr.GetBuffer(slen*4);
-    int ret = ::WideCharToMultiByte(CP_UTF8, 0, wstr, slen,psbuf, slen*4,0,0);
+    char * psbuf = astr.GetBuffer(slen*2);
+    int ret = ::WideCharToMultiByte(CP_UTF8, 0, wstr, slen,psbuf, slen*2,0,0);
     astr.ReleaseBuffer();
 }
 
@@ -411,6 +411,14 @@ void QA2W(LPCSTR  astr, CString &wstr)
     WCHAR * pwbuf = wstr.GetBuffer(slen);
     ::MultiByteToWideChar(CP_ACP,0,astr,slen, pwbuf, slen);
     wstr.ReleaseBuffer();
+}
+
+void QW2A(LPCTSTR wstr, CStringA &astr)
+{
+    int slen = lstrlenW(wstr)+1;
+    char * psbuf = astr.GetBuffer(slen*2);
+	int ret = ::WideCharToMultiByte(CP_ACP, 0, wstr, slen, psbuf, slen * 2, 0, 0);
+    astr.ReleaseBuffer();
 }
 
 CString ConvertXmlString(CString &str)
@@ -505,7 +513,8 @@ CSetting::CSetting()
 	m_strAppUserPath = CUtil::GetUserFolder();
 	m_strAppUserPath += _T("\\") CFG_OPENCN_FOLDER;
 	::CreateDirectory(m_strAppUserPath, NULL);
-	m_strHomePath = _wgetenv(_T("HOMEPATH"));
+	CString strHomedrv = _wgetenv(_T("HOMEDRIVE"));
+	m_strHomePath = strHomedrv + _wgetenv(_T("HOMEPATH"));
 }
 
 CSetting::~CSetting()

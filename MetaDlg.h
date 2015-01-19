@@ -7,8 +7,10 @@
 
 // CMetaDlg dialog
 #define ITEM_CAPTION_SIZE  120
+#define ITEM_WIDTH         300
 #define ITEM_HIGHT         28
-#define ITEM_LARG_HIGH     (64)
+#define ITEM_LARG_HIGH     (60-ITEM_HIGHT)
+#define ITEM_PICTURE_HIGH   (200-ITEM_HIGHT)
 
 class CMetaDlg : public CReaderView
 {

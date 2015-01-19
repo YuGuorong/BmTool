@@ -22,7 +22,7 @@ CEpubReaderDlg::CEpubReaderDlg(CWnd* pParent /*=NULL*/)
 {
 	m_hReadProc = INVALID_HANDLE_VALUE;
 	m_hwdReader = NULL;
-	m_nCurPage = 0;
+	m_nCurPage = -1;
 	m_vType = VIEW_EPUB;
 }
 

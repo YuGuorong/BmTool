@@ -138,6 +138,7 @@ LRESULT CLoginDlg::OnHttpFinishMsg(WPARAM wParam, LPARAM lParam)
 			proj->SetProjStatus(LOGIN_PROJ);
 		void LockSystem(BOOL block);
 		LockSystem(FALSE);
+		g_pSet->m_strUserName = m_strUser;
 	}
 	else
 	{
@@ -166,6 +167,7 @@ void CLoginDlg::OnBnClickedBtnLogin()
 
 	CString str, strUrl, strdata, strResp, strUser;
 	GetDlgItem(IDC_EDIT_USER)->GetWindowText(strUser);
+	m_strUser = strUser;
 	strUrl.Format(_T("/api/users/%s/sessions"), strUser);
 	GetDlgItem(IDC_EDIT_PWD)->GetWindowText(str);
 	strdata.Format(_T("{\"password\":\"%s\"}"), str);

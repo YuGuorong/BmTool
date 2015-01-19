@@ -256,7 +256,7 @@ void CLink::SetWhiteFontMode()
 		lf.lfCharSet = GB2312_CHARSET;
 		_tcscpy_s(lf.lfFaceName, LF_FACESIZE, _T("黑体"));	//华文彩云 ,宋体,华文行楷,黑体
 		m_lkFont.CreateFontIndirect(&lf);
-		SetTxtColor(RGB(255, 255, 255));
+		SetTxtColor(RGB(22, 130, 198));
 		//this->HighLight(TRUE);
 		this->SetFont(&m_lkFont, FALSE);
 	}

@@ -12,3 +12,9 @@ int enc_file(LPCTSTR inpath, LPCTSTR outpath);
 
 LPVOID  encode_file(LPCTSTR inPath, int & outLen);
 void free_enc(LPVOID penc);
+
+
+BOOL SetCurProgPos(int cur, LPCTSTR szinfo = NULL);
+void SetProgWndLimit(int max, int min = -1);
+void EndProgWnd();
+BOOL OffsetPorgPos(int offset, LPCTSTR szinfo = NULL);

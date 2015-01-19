@@ -68,6 +68,8 @@ view_type CBMDlg::ChangeView(view_type vtype)  //view_type
 			m_pViews[i]->ShowWindow(SW_HIDE);
 	}
 	m_cur_view = vtype;
+	m_proj->m_nCurPage = -1;
+	m_proj->m_nBookPageCount = -1;
 	UpdateInfoText();
 	return oldview;
 }
