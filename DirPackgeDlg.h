@@ -12,17 +12,14 @@
 #include "PackerProj.h"
 #include "ResManDlg.h"
 
-#define MAX_TAB_ITEM   8
+#define MAX_BTN_ITEM    5
+#define MAX_TAB_ITEM    8
 
 #define LOGIN_TAB   0
 #define BM_TAB      1
-#define IMPORT_TAB  2
-#define EXPORT_TAB  3 
-#define RES_EXP_TAB 4
-#define SETTING_TAB 5
-
-#define BTN_SAVE    6
-#define BTN_EXIT    7
+#define RES_EXP_TAB  2
+#define SETTING_TAB  3 
+#define BTN_EXIT 4
 
 typedef enum 
 {

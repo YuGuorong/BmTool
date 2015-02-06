@@ -7,6 +7,8 @@
 #include "DirPackgeDlg.h"
 #include "afxdialogex.h"
 #include "LoginStateDlg.h"
+#include "CovtMainDlg.h"
+
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -178,13 +180,10 @@ BOOL CDirPackgeDlg::OnInitDialog()
 	UINT btnids[][2] = { 
 		{IDC_BTN_LOGIN,  IDB_PNG_LOGIN  },
 		{IDC_BTN_NEWPRJ, IDB_PNG_NEWPRJ },
-		{IDC_BTN_OPEN,   IDB_PNG_OPENPRJ},
-		{IDC_BTN_EXPORT, IDB_PNG_EXPORT },
 		{IDC_BTN_EXPLORE,IDB_PNG_EXPLORE},
 		{IDC_BTN_SETTING,IDB_PNG_SETTING},
-		{IDC_BTN_SAVE,   IDB_PNG_SAVEPRJ},
 		{IDC_BTN_EXIT,   IDB_PNG_EXIT  } };
-	for(int i=0; i<MAX_TAB_ITEM; i++)
+	for (int i = 0; i<MAX_BTN_ITEM; i++)
 	{
 		m_cTabBtns[i] = new CGdipButton	;
 		m_cTabBtns[i]->SubclassDlgItem(btnids[i][0], this);
@@ -195,7 +194,7 @@ BOOL CDirPackgeDlg::OnInitDialog()
 	CRect rbt;
 	m_cTabBtns[0]->GetWindowRect(rbt);
 	rbt.MoveToXY(0,2);
-	for(int i=0; i<MAX_TAB_ITEM; i++)
+	for (int i = 0; i<MAX_BTN_ITEM; i++)
 	{
 		m_cTabBtns[i]->MoveWindow(rbt);
 		rbt.OffsetRect(rbt.Width()+1, 0);
@@ -203,12 +202,8 @@ BOOL CDirPackgeDlg::OnInitDialog()
 	MyTracex("Buttons beauty!\n");
 	
 	//CREATE_SUB_WND(m_pSubDlgs[LOGIN_TAB],   CLoginDlg, &m_frame);
-	CREATE_SUB_WND(m_pSubDlgs[BM_TAB],      CBMDlg,    &m_frame);
+	CREATE_SUB_WND(m_pSubDlgs[BM_TAB], CCovtMainDlg, &m_frame);
 	MyTracex("BM_TAB created!\n");
-	CREATE_SUB_WND(m_pSubDlgs[IMPORT_TAB],  CLoginDlg, &m_frame);
-	MyTracex("IMPORT_TAB created!\n");
-	CREATE_SUB_WND(m_pSubDlgs[EXPORT_TAB],  CLoginDlg, &m_frame);
-	MyTracex("EXPORT_TAB created!\n");
 	CREATE_SUB_WND(m_pSubDlgs[RES_EXP_TAB], CResManDlg, &m_frame);
 	MyTracex("RES_EXP_TAB created!\n");
 	CREATE_SUB_WND(m_pSubDlgs[SETTING_TAB], CSettingDlg, &m_frame);
@@ -380,19 +375,15 @@ void CDirPackgeDlg::SetWindowStatus(int proj_state)
 	if (proj_state & (LOGIN_PROJ|CLOSE_PROJ))
 	{
 		ben[BM_TAB] = TRUE;
-		ben[IMPORT_TAB] = TRUE;
 		ben[RES_EXP_TAB] = TRUE;
 	}
 	if (proj_state & (NEW_PROJ|OPEN_PROJ))
 	{
 		ben[BM_TAB] = TRUE;
-		ben[IMPORT_TAB] = TRUE;
 		ben[RES_EXP_TAB] = TRUE;
-		ben[BTN_SAVE] = TRUE;
-		
 	}
 
-	for (int i = 1; i < MAX_TAB_ITEM; i++)
+	for (int i = 1; i < MAX_BTN_ITEM; i++)
 	{
 		m_cTabBtns[i]->EnableButton(ben[i]);
 	}
@@ -439,7 +430,7 @@ void CDirPackgeDlg::OnSize(UINT nType, int cx, int cy)
 	m_pSubDlgs[RES_EXP_TAB]->MoveWindow(rc);
 
 	CRect r;
-	int tabid[] = {LOGIN_TAB,IMPORT_TAB, EXPORT_TAB, SETTING_TAB};
+	int tabid[] = {LOGIN_TAB, SETTING_TAB};
 	for(int i=0; i<sizeof(tabid)/sizeof(int); i++)
 	{
 		m_pSubDlgs[tabid[i]]->GetWindowRect(r);

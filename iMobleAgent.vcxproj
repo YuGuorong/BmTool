@@ -135,6 +135,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BMDlg.h" />
+    <ClInclude Include="CovtMainDlg.h" />
     <ClInclude Include="DirPackge.h" />
     <ClInclude Include="DirPackgeDlg.h" />
     <ClInclude Include="EpubReaderDlg.h" />
@@ -174,6 +175,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BMDlg.cpp" />
+    <ClCompile Include="CovtMainDlg.cpp" />
     <ClCompile Include="DirPackge.cpp" />
     <ClCompile Include="DirPackgeDlg.cpp" />
     <ClCompile Include="EpubReaderDlg.cpp" />
