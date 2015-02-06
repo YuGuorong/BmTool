@@ -245,6 +245,27 @@ void CLink::SetFontStyle(CFont * pfont, COLORREF clrTxt)
 	SetTxtColor( clrTxt );
 }
 
+void CLink::SetFontEx(int size, LPCTSTR sfont)
+{
+	if (m_lkFont.m_hObject)
+	{
+		m_lkFont.DeleteObject();
+	}
+	
+	{
+		LOGFONT lf;
+		memset(&lf, 0, sizeof(LOGFONT));
+		lf.lfHeight = size;
+		lf.lfWeight = FW_BOLD;//FW_NORMAL;
+		lf.lfCharSet = GB2312_CHARSET;
+		_tcscpy_s(lf.lfFaceName, LF_FACESIZE, sfont);	//华文彩云 ,宋体,华文行楷,黑体
+		m_lkFont.CreateFontIndirect(&lf);
+		//SetTxtColor(RGB(255, 255, 255));
+		//this->HighLight(TRUE);
+		this->SetFont(&m_lkFont, FALSE);
+	}
+}
+
 void CLink::SetWhiteFontMode()
 {
 	if (m_lkFont.m_hObject == NULL)

@@ -93,18 +93,20 @@ CDealSocket::CDealSocket()
 	// 套接字初始化.
 	WORD wVersionRequested = MAKEWORD(1, 1);
 	WSADATA wsaData;
+	m_curTxBytes = 0;
+	m_CurRecvBytes = 0;
 
 	// 初始化WinSock.
 	if (WSAStartup(wVersionRequested, &wsaData) != 0)
 	{
-		TRACE("WSAStartup\n");
+		//TRACE("WSAStartup\n");
 		return;
 	}
 
 	// 检查 WinSock 版本.
 	if (wsaData.wVersion != wVersionRequested)
 	{
-		TRACE("WinSock version not supported\n");
+		//TRACE("WinSock version not supported\n");
 		WSACleanup();
 		return;
 	}
@@ -134,7 +136,7 @@ CStringA CDealSocket::GetResponse()
 		szBufferA[iReturn] = 0;
 		strPlus += szBufferA;
 
-		TRACE(szBufferA);
+		//TRACE(szBufferA);
 
 		if (iReturn == SOCKET_ERROR)
 		{
@@ -144,7 +146,7 @@ CStringA CDealSocket::GetResponse()
 			break;
 		}
 		else if (iReturn<MAX_RECV_LEN){
-			TRACE("Finished receiving data\n");
+			//TRACE("Finished receiving data\n");
 			break;
 		}
 	}
@@ -184,20 +186,21 @@ INT CDealSocket::Send(void * buf, int len)
 INT CDealSocket::Recv(void * buf, int len)
 {
 	char * ptr = (char *)buf;
-	int m_CurRecvBytes = 0;
+	m_CurRecvBytes = 0;
 	int timeout = 4;
 	m_RecvTotLen = len;
 	while (m_CurRecvBytes < len)
 	{
 		int plen = (len - m_CurRecvBytes) > 4096 ? 4096 : (len - m_CurRecvBytes);
-		int rxb = recv(m_hSocket, ptr, plen, 0);
-		if (rxb == 0)
+		int rxb = 0;
+		rxb = recv(m_hSocket, ptr, plen, 0);
+		if (rxb <= 0)
 		{
 			if (--timeout == 0) return m_CurRecvBytes;
 		}
 		else
 		{
-			timeout = 4; TRACE("socked read timeout %d\r\n", m_CurRecvBytes);
+			timeout = 4; //TRACE("socked read timeout %d\r\n", m_CurRecvBytes);
 		}
 		m_CurRecvBytes += rxb;
 		ptr += rxb;
@@ -320,7 +323,7 @@ CAsyncHttp::CAsyncHttp() :Thread()
 	m_nBodyLen = 0;
 	onFinish = NULL;
 	m_pMsgWnd = g_pHttpResMan;
-	m_pFile = NULL;
+	m_pBuff = NULL;
 }
 
 CAsyncHttp::CAsyncHttp(LPCTSTR szIP, LPCTSTR szUrl, CWnd * pmsgWnd, int port )
@@ -334,8 +337,11 @@ CAsyncHttp::CAsyncHttp(LPCTSTR szIP, LPCTSTR szUrl, CWnd * pmsgWnd, int port )
 	m_pSocket = NULL;
 	m_pBody = NULL;
 	m_nBodyLen = 0;
+	m_nTotolLen = -1;
 	m_bProxyMode = FALSE;
-	m_pFile = NULL;
+	m_pBuff = NULL;
+	m_hFile = NULL;
+	m_hFileMap = NULL;
 	m_pMsgWnd = pmsgWnd == NULL ?  g_pHttpResMan : pmsgWnd ;
 }
 
@@ -343,10 +349,10 @@ CAsyncHttp::~CAsyncHttp()
 {
 	if (m_pSocket)
 		delete m_pSocket;
-	if (m_pFile != NULL)
+	if (m_pBuff != NULL)
 	{
-		delete m_pFile;
-		m_pFile = NULL;;
+		free(m_pBuff); //malloc different to new
+		m_pBuff = NULL;;
 	}
 	m_vstrHeaders.clear();
 }
@@ -389,7 +395,11 @@ void * CAsyncHttp::run(void * param)
 		{
 			if (( bret = OnHttpHeaderSend()) == TRUE)
 			{
-				bret = SendData();					
+				bret = SendData();		
+				if (bret > 0)
+				{
+					bret = OnHttpSend();
+				}
 			}
 		}
 
@@ -414,14 +424,15 @@ INT CAsyncHttp::Connect()
 
 INT CAsyncHttp::Disconnect()
 {
-	if (m_pSocket) m_pSocket->Close();
+	
 	stop();//thread	
+	if (m_pSocket) m_pSocket->Close();
 	return 1;
 }
 
 INT CAsyncHttp::ConnectHttp()
 {
-	TRACE("正在建立连接\n");
+	//TRACE("正在建立连接\n");
 	SOCKET hSocket = m_pSocket->GetConnect(m_hostIP, m_nport);
 	if (hSocket == INVALID_SOCKET)
 		return -1;
@@ -561,7 +572,9 @@ INT CAsyncHttp::GetChunckSize()
 			}
 		}
 		else if (ret == 0)
+		{
 			return 0; //socket closed
+		}
 		else
 		{	// if (!(ret == EINTR || ret == EWOULDBLOCK || ret == EAGAIN)
 			return -1;
@@ -569,12 +582,103 @@ INT CAsyncHttp::GetChunckSize()
 	}
 }
 
-INT CAsyncHttp::GetBody()
+void CAsyncHttp::CancelHttp()
+{
+	Disconnect();
+	
+	if (m_hFileMap)
+	{
+		UnmapViewOfFile(m_pBody);
+		CloseHandle(m_hFileMap);
+	}
+	if (m_hFile)
+	{
+		::CancelIo(m_hFile);
+		CloseHandle(m_hFile);
+	}
+	m_hFile = NULL;
+	m_hFileMap = NULL;
+
+}
+
+INT CAsyncHttp::GetBody(LPCTSTR szLocalFile)
+{
+	if (szLocalFile  == NULL )return GetBody();
+
+	if (m_pBuff != NULL) { free(m_pBuff); m_pBuff = NULL; }
+
+	if (m_szRespHeader.IsEmpty())
+		GetHttpHeader(m_szRespHeader);
+	m_hFile = CreateFile(szLocalFile, GENERIC_READ | GENERIC_WRITE, 0, 0,
+		CREATE_ALWAYS , FILE_ATTRIBUTE_NORMAL, NULL);
+	if (m_hFile == INVALID_HANDLE_VALUE)		return -1;
+
+	DWORD wb = 0;
+	INT len = GetContentLen(m_szRespHeader);
+	m_nTotolLen = len;
+	m_nBodyLen = 0;
+	if (len <= 0)
+	{
+		if (m_szRespHeader.Find("Transfer-Encoding: chunked") >= 0)
+		{
+			int nbuf_len = 16 * 1024;
+			BYTE* ptr = (BYTE*)malloc(nbuf_len);
+			while (1)
+			{
+				len = GetChunckSize();
+				if (len == 0) break;	
+				if (len > nbuf_len)
+				{
+					free(ptr);
+					ptr = (BYTE *)malloc(len + 16);
+					nbuf_len = len + 16;
+				}
+				if (ptr)
+				{
+					len = m_pSocket->Recv(ptr, len);
+					if (len == 0) break;
+					WriteFile(m_hFile, ptr, len, &wb, NULL);
+					m_nBodyLen += wb;
+				}
+				else
+					break;
+			}
+		}
+		else 
+			m_nBodyLen = -1;
+	}
+	else
+	{
+		m_hFileMap = CreateFileMapping(m_hFile, NULL, PAGE_READWRITE, 0, len, NULL);
+		if (m_hFileMap)
+		{
+			m_pBody = (BYTE *)MapViewOfFile(m_hFileMap, FILE_MAP_WRITE, 0, 0, len);// (BYTE*)malloc(len + 1);
+			len = m_pSocket->Recv(m_pBody, len);
+			m_nBodyLen = len;
+			UnmapViewOfFile(m_pBody);
+			CloseHandle(m_hFileMap);
+			m_hFileMap = NULL;
+		}
+	}
+
+	CloseHandle(m_hFile);
+	m_hFile = NULL;
+	
+	return m_nBodyLen;
+}
+
+INT CAsyncHttp::GetChunk(int len)
+{
+	return 0;
+}
+
+INT CAsyncHttp::GetBody( )
 {
 	if (m_szRespHeader.IsEmpty())
 		GetHttpHeader(m_szRespHeader);
 	INT len = GetContentLen(m_szRespHeader);
-	if (m_pFile == NULL) { delete m_pFile; m_pFile = NULL; }
+	if (m_pBuff != NULL) { free(m_pBuff); m_pBuff = NULL; }
+	m_nTotolLen = len;
 	m_nBodyLen = 0;
 	if (len <= 0)
 	{
@@ -583,26 +687,62 @@ INT CAsyncHttp::GetBody()
 			while (1)
 			{
 				len = GetChunckSize();
-				if (len == 0) break;				
-				m_pFile = (BYTE *)realloc(m_pFile, m_nBodyLen + len+1);
-				len = m_pSocket->Recv(m_pFile + m_nBodyLen, len);
 				if (len == 0) break;
-				m_nBodyLen += len;
+				BYTE * ptr = (BYTE *)realloc(m_pBuff, m_nBodyLen + len + 1);
+				if (ptr)
+				{
+					m_pBuff = ptr;
+					len = m_pSocket->Recv(m_pBuff + m_nBodyLen, len);
+					if (len == 0) break;
+					m_nBodyLen += len;
+				}
+				else
+					break;
 			}
 		}
 	}
 	else
 	{
-		m_pFile = new BYTE[len+1];
-		m_pSocket->Recv(m_pFile, len);
-		m_pBody = m_pFile;
+		m_pBuff = (BYTE*)malloc(len + 1);
+		m_pSocket->Recv(m_pBody, len);
 		m_nBodyLen = len;
 	}
-	if ( m_pFile )
-		m_pFile[m_nBodyLen] = 0;
-	m_pBody = m_pFile;
+	m_pBuff[m_nBodyLen] = 0;
+	m_pBody = m_pBuff;
 	return m_nBodyLen;
 }
+
+
+INT CAsyncHttp::ParseUrl(CString &url, CString &sIp, int &port)
+{
+	int p = url.Find(_T("://"), 0);
+	if (p < 0) p = 0;
+	int p2 = url.Find(_T('/'), p+3);
+	if (p2 < 3) return -1;
+	sIp = url.Mid(p+3, p2 - p-3);
+	url.Delete(0, p2);
+	p = sIp.Find(_T(':'));
+	if (p < 0)
+	{
+		port = 80;
+	}
+	else
+	{
+		port = _ttoi((LPCTSTR)sIp + p + 1);
+		sIp.Delete(p, sIp.GetLength() - p);
+	}
+	return p;
+}
+
+INT CAsyncHttp::ParseUrlFile(CString url, CString &sfile)
+{
+	sfile = url;
+	int p = url.ReverseFind(_T('//'));
+	if (p >= 0)
+		sfile.Delete(0, p + 1);
+	return 0;
+}
+
 //<====================CAsyncHttp class<============================<<<<<<<<<
 CHttpPost::~CHttpPost()
 {
@@ -625,8 +765,8 @@ INT CHttpPost::SendFile(LPCTSTR slclfname, void * param)
 	if (of.Open(slclfname, CFile::modeRead | CFile::shareDenyNone))
 	{
 		m_nBodyLen = of.GetLength();
-		m_pBody = new BYTE[m_nBodyLen];
-		m_pFile = (BYTE *)m_pBody;
+		m_pBuff = (BYTE *)malloc(m_nBodyLen);
+		m_pBody = m_pBody;
 		of.Read(m_pBody, m_nBodyLen);
 		of.Close();
 		CString strtype = CUtil::GetFileType(slclfname);
@@ -667,6 +807,21 @@ INT CHttpPost::OnHttpHeaderSend()
 	return 1;
 }
 
+INT CHttpPost::OnHttpSend()
+{
+	int len = GetHttpHeader(m_szRespHeader);
+	if (len > 0)
+	{
+		if (m_szRespHeader.Find(" 200 OK") >= 0)
+		{
+			len = GetBody();
+		}
+		else
+			return -5;
+	}
+	return len>0;
+}
+
 
 //<====================CHttpPost class<============================<<<<<<<<<
 INT OnHttpGetDone(void * param, int http_status)
@@ -701,35 +856,40 @@ void CGetHttp::GetFile()
 	Connect();
 }
 
-INT CGetHttp::OnHttpHeaderSend()
+void CGetHttp::GetFile(const void * ptr, int len, LPCTSTR sztype )
+{
+	CStringA stype;
+	if (sztype == NULL)
+		stype = "application/octet-stream";
+	else
+		QUnc2Utf(sztype, stype);
+	CStringA sheadr;
+	sheadr.Format("Content-Type: %s\r\n", stype);
+	AppendHeader(sheadr);
+	sheadr.Format("Content-Length: %d\r\n\r\n", len);
+	AppendHeader(sheadr);
+	m_pBuff = (BYTE *)malloc(len);
+	memcpy(m_pBuff, ptr, len);
+	m_pBody = (BYTE*)m_pBuff;
+	m_nBodyLen = len;
+	Connect();
+}
+
+
+INT CGetHttp::OnHttpSend()
 {
 	int len = GetHttpHeader(m_szRespHeader);
 	if (len > 0)
 	{
 		if (m_szRespHeader.Find(" 200 OK") >= 0)
 		{
-			len = GetContentLen(m_szRespHeader);
-			if (len > 0)
-			{
-				BYTE * buf = new BYTE[len + 1];
-				int rxlen = m_pSocket->Recv(buf, len);
-				buf[rxlen] = 0;
-				if (!m_strLocalFile.IsEmpty())
-				{
-					CFile of;
-					if (of.Open(m_strLocalFile, CFile::modeCreate | CFile::modeReadWrite))
-					{
-						of.Write(buf, rxlen);
-						of.Flush();
-						of.Close();
-						TRACE("HTTP Write %d %X bytes", rxlen, buf[len - 1]);
-					}
-					delete buf;
-				}
-				else
-					m_pBody = m_pFile = buf;
-			}
+			LPCTSTR szLclFile = NULL;
+			if(!m_strLocalFile.IsEmpty() && m_strLocalFile.GetLength() > 1 )
+				szLclFile = m_strLocalFile;
+			len = GetBody(szLclFile);
 		}
+		else
+			return -5;
 	}
 	return len>0;
 }

@@ -14,6 +14,7 @@
 #include "GdipButton.h"
 
 #define CREATE_SUB_WND(v, cls, parent)  { v = new cls(parent); v->Create(cls::IDD, parent);v->ShowWindow(SW_HIDE);}  
+#define CREATE_SUB_IDX_WND(v, cls, idx, parent)  { v = new cls(idx, parent); v->Create(cls::IDD, parent);v->ShowWindow(SW_HIDE);}  
 
 #define WM_SHOWTASK        (WM_USER + 901)
 
@@ -48,9 +49,12 @@ public:
 	INT m_WndDiameter;
     INT m_bTransprent;
 	INT m_ExStyle;
+	int m_bInit;
 	int m_pop_state;
 	virtual void OnOK(){};   //Avoid ENTER key to exit dialog
 	int m_TitleHight;
+	virtual void OnHttpObjProc(int idHttpObj, int stat);
+	CPtrArray m_ohttp;
 public:
     DECLARE_MESSAGE_MAP()
 public:
@@ -62,6 +66,7 @@ public:
     virtual BOOL PreTranslateMessage(MSG* pMsg);
 public:
 	afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
+	afx_msg LRESULT OnHttpFinishMsg(WPARAM wParam, LPARAM lParam);
 public:
     virtual BOOL OnInitDialog();
 public:

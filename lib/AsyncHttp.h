@@ -1,7 +1,9 @@
 #pragma once
 #include <vector>
 using namespace std;
+#ifndef WM_HTTP_DONE
 #define WM_HTTP_DONE  (WM_APP + 137)
+#endif /*WM_HTTP_DONE*/
 
 static unsigned int __stdcall threadFunction(void *);
 
@@ -57,27 +59,36 @@ class CAsyncHttp : public Thread
 protected:
 	CAsyncHttp();           
 	CAsyncHttp(LPCTSTR szIP, LPCTSTR szUrl ,CWnd * pmsgWnd, int port = 80);
+	INT GetChunk(int size);
+	HANDLE m_hFile;
+	HANDLE m_hFileMap;
 
 public:
 	CStringA  m_szHttpType;
 	CStringA  m_szRespHeader;    //
 	void SetProxy(LPCTSTR szProxyIp, int nProxyPort, LPCTSTR szUser = NULL, LPCTSTR pwd = NULL);
 	INT   Connect();
-	INT   Disconnect();
+	void  CancelHttp();
+	INT   Disconnect();	
 	void  AppendHeader(LPCWSTR szheader);
 	void  AppendHeader(LPCSTR szheader);
 	DWORD GetHttpHeader(CStringA &strResp);
+	INT GetBody(LPCTSTR szLocalFile );
 	INT GetBody();
 	void * m_pBody;
 	int    m_nBodyLen;
+	int    m_nTotolLen;
 	CDealSocket * m_pSocket;
 
 public:
+	static INT ParseUrl(CString &url, CString &sIp, int &port);
+	static INT ParseUrlFile(CString url, CString &sfile);
 	void setOnFinish(void(*func)());
 	virtual void * run(void *);
 	virtual INT SendData() ;
 	virtual ~CAsyncHttp();
-	virtual INT OnHttpHeaderSend() = 0;
+	virtual INT OnHttpHeaderSend() { return 1; };
+	virtual INT OnHttpSend() = 0;
 
 protected:
 	BOOL  SendHttpHeader();
@@ -96,7 +107,7 @@ protected:
 	INT ConnectHttp();
 	INT ConnectProxyHttp();
 	INT GetContentLen(CStringA &sheader);
-	BYTE * m_pFile;
+	BYTE * m_pBuff;
 
 	INT GetChunckSize();
 
@@ -109,19 +120,21 @@ public:
 	CHttpPost(LPCTSTR szIP, LPCTSTR szUrl, CWnd * pmsgWnd , int port = 80, LPCTSTR shdr[] = NULL, int headerCount = 0);
 	~CHttpPost();
 	INT SendFile(LPCTSTR slclfname, void * param = NULL);
-	INT SendFile(const void * ptr, int len, LPCTSTR sztype=NULL);
+	INT SendFile(const void * ptr, int len, LPCTSTR sztype=NULL);//ptr need keep contend till finish
 	virtual INT OnHttpHeaderSend();
+	virtual INT OnHttpSend();
 };
 
 class CGetHttp : public CAsyncHttp
 {
-	CString m_strLocalFile;
 public:
+	CString m_strLocalFile;
 	CGetHttp(LPCTSTR szIP, LPCTSTR szUrl, CWnd * pmsgWnd = NULL, int port = 80, LPCTSTR shdr[] = NULL, int headerCount = 0);
 	~CGetHttp();
 	void GetFile(LPCTSTR slclfname);
 	void GetFile();//buffer is m_pBody, length is m_nBodyLen;
-	virtual INT OnHttpHeaderSend();
+	void GetFile(const void * ptr, int len, LPCTSTR sztype = NULL);
+	virtual INT OnHttpSend();
 };
 
 

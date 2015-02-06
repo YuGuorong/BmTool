@@ -362,3 +362,105 @@ std::string md5(const std::string str)
 
 	return md5.hexdigest();
 }
+
+typedef struct {
+	ULONG i[2];                          /* number of _bits_ handled mod 2^64 */
+	ULONG buf[4];                                           /* scratch buffer */
+	unsigned char in[64];                                     /* input buffer */
+	unsigned char digest[16];            /* actual digest after MD5Final call */
+} MD5_CTX;
+#define MD5DIGESTLEN 16  
+
+#define PROTO_LIST(list)    list  
+/*
+* MTS: Each of these assumes MD5_CTX is locked against simultaneous use.
+*/
+typedef void(WINAPI* PMD5Init) PROTO_LIST((MD5_CTX *));
+typedef void(WINAPI* PMD5Update) PROTO_LIST((MD5_CTX *, const unsigned char *, unsigned int));
+typedef void(WINAPI* PMD5Final)PROTO_LIST((MD5_CTX *));
+
+class Ccommon
+{
+public:
+	Ccommon();
+	virtual ~Ccommon();
+	const char * md5(const char * str);
+	static const char * Hex2ASC(const BYTE *Hex, int Len);
+	PMD5Init MD5Init;
+	PMD5Update MD5Update;
+	PMD5Final MD5Final;
+
+};
+
+Ccommon::Ccommon()
+{
+
+}
+
+Ccommon::~Ccommon()
+{
+
+}
+
+const char * Ccommon::Hex2ASC(const BYTE *Hex, int Len)
+{
+	static char  ASC[4096 * 2];
+	int    i;
+
+	for (i = 0; i < Len; i++)
+	{
+		ASC[i * 2] = "0123456789abcdef"[Hex[i] >> 4];
+		ASC[i * 2 + 1] = "0123456789abcdef"[Hex[i] & 0x0F];
+	}
+	ASC[i * 2] = 0;
+	return ASC;
+}
+
+
+const char * Ccommon::md5(const char * str)
+{
+	MD5_CTX ctx;
+	const unsigned char * buf = reinterpret_cast<const unsigned char *>(str);
+	int len = strlen(str);
+	HINSTANCE hDLL;
+	if ((hDLL = LoadLibraryA("advapi32.dll")) > 0)
+	{
+
+		MD5Init = (PMD5Init)GetProcAddress(hDLL, "MD5Init");
+		MD5Update = (PMD5Update)GetProcAddress(hDLL, "MD5Update");
+		MD5Final = (PMD5Final)GetProcAddress(hDLL, "MD5Final");
+
+		MD5Init(&ctx);
+		MD5Update(&ctx, buf, len);
+		MD5Final(&ctx);
+	}
+	return Hex2ASC(ctx.digest, 16);
+}
+
+CStringA GenMd5(const void * buf, int len)
+{
+
+	MD5_CTX ctx;
+	PMD5Init MD5Init;
+	PMD5Update MD5Update;
+	PMD5Final MD5Final;
+
+	const unsigned char * inbuf = reinterpret_cast<const unsigned char *>(buf);
+	HINSTANCE hDLL;
+	if ((hDLL = LoadLibraryA("advapi32.dll")) > 0)
+	{
+		MD5Init = (PMD5Init)GetProcAddress(hDLL, "MD5Init");
+		MD5Update = (PMD5Update)GetProcAddress(hDLL, "MD5Update");
+		MD5Final = (PMD5Final)GetProcAddress(hDLL, "MD5Final");
+
+		MD5Init = (PMD5Init)GetProcAddress(hDLL, "MD5Init");
+		MD5Update = (PMD5Update)GetProcAddress(hDLL, "MD5Update");
+		MD5Final = (PMD5Final)GetProcAddress(hDLL, "MD5Final");
+
+		MD5Init(&ctx);
+		MD5Update(&ctx, inbuf, len);
+		MD5Final(&ctx);
+	}
+	CStringA smd5 = Ccommon::Hex2ASC(ctx.digest, 16);
+	return smd5;
+}

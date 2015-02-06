@@ -4,6 +4,7 @@
 #include "stdafx.h"
 #include "ExDialog.h"
 #include "..\\resource.h"		// Ö÷·ûºÅ
+#include "AsyncHttp.h"
 #define WND_RAND_SIZE 0
 CArray<CExDialog * , CExDialog *> g_popwnd;
 // CExDialog dialog
@@ -35,11 +36,13 @@ BEGIN_MESSAGE_MAP(CExDialog, CDialogEx)
 	ON_WM_CTLCOLOR()
 	ON_WM_PAINT()
 	ON_WM_SIZE()
+	ON_MESSAGE(WM_HTTP_DONE, &CExDialog::OnHttpFinishMsg)
 END_MESSAGE_MAP()
 
 CExDialog::CExDialog(UINT nIDTemplate,CWnd* pParent /*=NULL*/, INT ex_style)
     : CDialogEx(nIDTemplate, pParent)
 {
+	m_bInit = FALSE;
     m_pBkDC  = NULL;
 	m_pTitDC = NULL;
     m_bTransprent = 0;
@@ -87,6 +90,16 @@ void CExDialog::OnDestroy()
 	   if( ptxt ) delete ptxt;
 	}
 	m_atxts.RemoveAll();
+	for (int i = 0; i < m_ohttp.GetCount(); i++)
+	{
+		if (m_ohttp[i] != NULL)
+		{
+			CAsyncHttp * p = (CAsyncHttp *)m_ohttp[i];
+			p->stop();
+			delete p;
+			m_ohttp[i] = NULL;
+		}
+	}
     // TODO: Add your message handler code here
 }
 
@@ -332,7 +345,7 @@ BOOL CExDialog::OnInitDialog()
 	GetTitleBarHight(); 
 	CreatBkBmp();
 	SetTitleBar();
-    
+	m_bInit = TRUE;
     return TRUE;  // return TRUE unless you set the focus to a control
     // EXCEPTION: OCX Property Pages should return FALSE
 }
@@ -352,6 +365,38 @@ int CExDialog::SetWndStyle(int ndiamt, COLORREF crtl, COLORREF crbr)
 	m_WndDiameter = ndiamt;
 	m_crtl = crtl, m_crbr = crbr;
 	return or_diameter;
+}
+
+void CExDialog::OnHttpObjProc(int idHttpObj, int stat)
+{
+}
+
+LRESULT CExDialog::OnHttpFinishMsg(WPARAM wParam, LPARAM lParam)
+{
+	CAsyncHttp * pHttp = (CAsyncHttp*)wParam;
+	if (pHttp == NULL) return FALSE;
+	BOOL  stat = (BOOL)lParam;
+	if (stat == 0)
+	{
+		if (pHttp->m_szRespHeader.GetLength() > 0)
+		{
+			pHttp->GetBody();//Get error code
+		}
+	}
+	int i;
+	for (i = 0; i < m_ohttp.GetCount(); i++)
+	{
+		if (pHttp == m_ohttp[i])
+		{
+			OnHttpObjProc(i, stat);
+			break;
+		}
+	}
+	pHttp->stop();
+	delete pHttp;
+	if (i < m_ohttp.GetCount())
+		m_ohttp[i] = NULL;
+	return 0;
 }
 
 

@@ -8,6 +8,40 @@
 HGLOBAL CUtil::m_hG;
 LPCTSTR CUtil::m_szMimeType; //contend type
 
+CPMutex::CPMutex(const TCHAR* name)
+{
+	memset(m_cMutexName, 0, sizeof(m_cMutexName));
+	int min = _tcslen(name) > (sizeof(m_cMutexName) - 1) ? (sizeof(m_cMutexName) - 1) : _tcslen(name);
+	_tcsncpy_s(m_cMutexName, name, min);
+	m_pMutex = CreateMutex(NULL, false, m_cMutexName);
+}
+
+CPMutex::~CPMutex()
+{
+	CloseHandle(m_pMutex);
+}
+
+BOOL CPMutex::Lock()
+{
+	//?￥3a??′′?¨ê§°ü
+	if (NULL == m_pMutex)
+	{
+		return FALSE;
+	}
+
+	DWORD nRet = WaitForSingleObject(m_pMutex, INFINITE);
+	if (nRet != WAIT_OBJECT_0)
+	{
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+BOOL CPMutex::UnLock()
+{
+	return ReleaseMutex(m_pMutex);
+}
 CUtil::CUtil(void)
 {
 	HRSRC hr = ::FindResource(NULL, MAKEINTRESOURCE(IDR_MIME_TYPE), _T("MIME"));
@@ -37,7 +71,6 @@ void CUtil::GetCurPath(CString &strPath)
 CString CUtil::GetUserFolder()
 {
 	CString strUserFolder;
-	TCHAR szPath[MAX_PATH];
 	PIDLIST_ABSOLUTE  pidl;
 	SHGetSpecialFolderLocation(::AfxGetMainWnd()->GetSafeHwnd(), CSIDL_MYDOCUMENTS, &pidl);
 	SHGetPathFromIDList(pidl, strUserFolder.GetBuffer(MAX_PATH));
@@ -104,7 +137,7 @@ CString CUtil::GetFileType(LPCTSTR szFile)
 		return CString(TEXT("application/octet-stream"));
 }
 
-HANDLE CUtil::RunProc(LPCTSTR strcmd, LPCTSTR strparam, LPCTSTR strPath, BOOL bsync )
+HANDLE CUtil::RunProc(LPCTSTR strcmd, LPCTSTR strparam, LPCTSTR strPath, BOOL bsync ,BOOL bfhide )
 {
 	SHELLEXECUTEINFO ShExecInfo = {0};
 	ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
@@ -114,12 +147,66 @@ HANDLE CUtil::RunProc(LPCTSTR strcmd, LPCTSTR strparam, LPCTSTR strPath, BOOL bs
 	ShExecInfo.lpFile = strcmd;            
 	ShExecInfo.lpParameters = strparam;    
 	ShExecInfo.lpDirectory = strPath;
-	ShExecInfo.nShow = bsync ? SW_HIDE : SW_SHOW;
+	ShExecInfo.nShow = bsync ? SW_SHOW : SW_SHOW; //SW_HIDE
+	if (bfhide)
+		ShExecInfo.nShow = SW_HIDE;
 	ShExecInfo.hInstApp = NULL;      
 	ShellExecuteEx(&ShExecInfo);
 	if ( bsync )
 		WaitForSingleObject(ShExecInfo.hProcess,INFINITE);
 	return ShExecInfo.hProcess;
+}
+
+
+
+int RunCmd(LPCTSTR scmd, CString &sresult, LPCTSTR sdir, BOOL bshow)
+{
+	SECURITY_ATTRIBUTES sa;
+	HANDLE hRead, hWrite;
+	sa.nLength = sizeof(SECURITY_ATTRIBUTES);
+	sa.lpSecurityDescriptor = NULL;
+	sa.bInheritHandle = TRUE;
+	if (!CreatePipe(&hRead, &hWrite, &sa, 0))
+	{
+		return FALSE;
+	}
+	TCHAR command[1024];    //长达1K的命令行，够用了吧  
+	_tcscpy_s(command, 1024, _T("Cmd.exe /C "));
+	_tcscat_s(command, 1024, scmd);
+	STARTUPINFO si;
+	PROCESS_INFORMATION pi;
+	si.cb = sizeof(STARTUPINFO);
+	GetStartupInfo(&si);
+	si.hStdError = hWrite;            //把创建进程的标准错误输出重定向到管道输入  
+	si.hStdOutput = hWrite;           //把创建进程的标准输出重定向到管道输入  
+	si.wShowWindow = bshow? SW_SHOW : SW_HIDE;
+	si.dwFlags = STARTF_USESHOWWINDOW | STARTF_USESTDHANDLES;
+	//关键步骤，CreateProcess函数参数意义请查阅MSDN  
+	if (!CreateProcess(NULL, command, NULL, NULL, TRUE, NULL, NULL, sdir, &si, &pi))
+	{
+		CloseHandle(hWrite);
+		CloseHandle(hRead);
+		return FALSE;
+	}
+	CloseHandle(hWrite);
+	char buffer[4096] = { 0 };          //用4K的空间来存储输出的内容，只要不是显示文件内容，一般情况下是够用了。  
+	DWORD bytesRead;
+	//if (WaitForInputIdle(pi.hProcess, INFINITE) == 0)
+	{
+		while (true)
+		{
+			BOOL bret = ReadFile(hRead, buffer, 4095, &bytesRead, NULL);
+			buffer[bytesRead] = 0;
+			if (bret == false)
+				break;
+			CString str;
+			QUtf2Unc(buffer, str);
+			sresult += str;
+		}
+		//buffer中就是执行的结果，可以保存到文本，也可以直接输出  		
+	}
+	CloseHandle(hRead);
+	return TRUE;
 }
 
 HANDLE CUtil::FindProcessByName(LPCTSTR szFileName, BOOL bKill, INT exit_code)
@@ -286,6 +373,7 @@ int CUtil::Asc2File(LPCTSTR sfilename,  CStringA &sa)
 	return 0;
 }
 
+
 HICON CUtil::GetFileIcon(LPCTSTR sfilename)
 {
 	HICON hIcon = ExtractIcon(AfxGetInstanceHandle(), sfilename, 0);
@@ -380,6 +468,25 @@ void Unc2Utf(LPCTSTR   wstr, char  * bstr, int lenw, int lens)
     int ret = ::WideCharToMultiByte(CP_UTF8, 0, wstr, -1,bstr, lens,0,0);
 }
 
+CString qUtf2Unc(LPCSTR astr)
+{
+	CString wstr;
+    int slen = lstrlenA(astr)+1;
+    WCHAR * pwbuf = wstr.GetBuffer(slen);
+    ::MultiByteToWideChar(CP_UTF8,0,astr,slen, pwbuf, slen);
+    wstr.ReleaseBuffer();
+	return wstr;
+}
+
+CStringA qUnc2Utf(LPCWSTR wstr)
+{
+	AString astr;
+	int slen = lstrlenW(wstr)+1;
+    char * psbuf = astr.GetBuffer(slen*4);
+    int ret = ::WideCharToMultiByte(CP_UTF8, 0, wstr, slen,psbuf, slen*4,0,0);
+    astr.ReleaseBuffer();
+	return astr;
+}
 
 void QUtf2Unc(LPCSTR  astr, CString &wstr)
 {
@@ -392,8 +499,8 @@ void QUtf2Unc(LPCSTR  astr, CString &wstr)
 void QUnc2Utf(LPCWSTR wstr, AString &astr)
 {
     int slen = lstrlenW(wstr)+1;
-    char * psbuf = astr.GetBuffer(slen*2);
-    int ret = ::WideCharToMultiByte(CP_UTF8, 0, wstr, slen,psbuf, slen*2,0,0);
+    char * psbuf = astr.GetBuffer(slen*4);
+    int ret = ::WideCharToMultiByte(CP_UTF8, 0, wstr, slen,psbuf, slen*4,0,0);
     astr.ReleaseBuffer();
 }
 
@@ -552,6 +659,32 @@ void CSetting::Save()
 CSetting * g_pSet = NULL;
 
 #include "libs.h"
+#include "XZip\XUnzip.h"
+void UnzipFile(CString &sin )
+{
+	CString sPath;
+	sPath = CUtil::GetFilePath(sin);
+	if (!sPath.IsEmpty())
+		::SetCurrentDirectory(sPath);
+	TCHAR * sbuf = sin.GetBuffer();
+	HZIP hz = OpenZip(sbuf, 0, ZIP_FILENAME);
+	sin.ReleaseBuffer();
+	if (hz == NULL)
+	{
+		return ;
+	}
+	ZIPENTRYW ze; GetZipItem(hz, -1, &ze);
+	int numitems = ze.index;
+	for (int i = 0; i < numitems; i++)
+	{
+		GetZipItem(hz, i, &ze);
+		UnzipItem(hz, i, ze.name, 0, ZIP_FILENAME);		
+	}
+	CloseZip(hz);
+
+	if (!sPath.IsEmpty())
+		::SetCurrentDirectory(g_pSet->strCurPath);
+}
 void ParseCommandLine(CCommandLineInfo& rCmdInfo)
 {
 	for (int i = 1; i < __argc; i++)
@@ -572,6 +705,15 @@ void ParseCommandLine(CCommandLineInfo& rCmdInfo)
 			}
 			exit(0);
 		}
+		if (pszParam.CompareNoCase(_T("-uzip")) == 0)
+		{
+			if ((i < __argc - 1) && __targv[i + 1]!= NULL )
+			{
+				CString strin = __targv[i + 1];
+				UnzipFile(strin);
+			}
+            exit(0);
+        }
 	}
 }
 

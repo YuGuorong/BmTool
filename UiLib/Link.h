@@ -78,6 +78,7 @@ public:
     void SetToolTipText(CString str);
     void SetLinkCursor(HCURSOR hCursor);
     void SetDefaultCursor();
+	void SetFontEx(int size = 16, LPCTSTR sfont = _T("ËÎÌו"));
 	CFont m_lkFont;
 
     //{{AFX_VIRTUAL(CLink)

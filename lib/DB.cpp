@@ -139,12 +139,11 @@ int execSQL(const char* sql)
     {
         char* zErrMsg = 0;
         int ret = sqlite3_exec(g_DbApp,sql,0,0,&zErrMsg);
-		if( ret != SQLITE_OK )
-			MyTracex("exec SQL error ");
-		else
-			MyTracex("SQL:");
-        MyTracex(("%s"), (sql));
-        MyTracex("\n");
+		if (ret != SQLITE_OK)
+		{
+			MyTracex("exec SQL(%s) error\n%s\n", (sql), zErrMsg);
+			sqlite3_free(zErrMsg);
+		}
         return ret;
     }
     return -1;

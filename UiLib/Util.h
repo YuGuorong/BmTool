@@ -1,4 +1,19 @@
 #pragma once
+
+class CPMutex
+{
+public:	/* 默认创建匿名的互斥 */
+	CPMutex(const TCHAR* name = NULL);
+	~CPMutex();
+
+	BOOL Lock();
+	BOOL UnLock();
+private:
+	void* m_pMutex;
+	TCHAR m_cMutexName[30];
+};
+
+
 class CUtil
 {
 public:
@@ -11,7 +26,7 @@ public:
 	static CString GetFileType(LPCTSTR szFile);
 	static BOOL GetFileMemiType(LPCTSTR szExt, CString &stype);
 	static HANDLE FindProcessByName(LPCTSTR szFileName, BOOL bKill = FALSE, INT exit_code = 0);
-	static HANDLE CUtil::RunProc(LPCTSTR strcmd, LPCTSTR strparam, LPCTSTR strPath, BOOL bsync = TRUE);
+	static HANDLE CUtil::RunProc(LPCTSTR strcmd, LPCTSTR strparam, LPCTSTR strPath, BOOL bsync = TRUE, BOOL forcehide = TRUE);
 	static CSize GetBitmapSize(CBitmap &bmp);
 	static void DrawGradientFill(CDC * pdc, CRect &r, COLORREF clt, COLORREF cbt, int mode=GRADIENT_FILL_RECT_H);
 	static CStringA File2Asc(LPCTSTR sfilename);
@@ -26,6 +41,7 @@ public:
 	static LPCTSTR m_szMimeType; //contend type
 };
 
+int RunCmd(LPCTSTR scmd, CString &sresult, LPCTSTR sdir =NULL, BOOL bshow =FALSE);
 #define  AString   CStringA
 
 typedef  CArray<CStringA, CStringA> AStringArray;

@@ -101,9 +101,9 @@ INT GetJsonString(CString &sjson, LPCTSTR skey, CString &sval)
 	return 0;
 }
 
-//#ifdef DEBUG
-//#define DEBUG_LOGIN 
-//#endif
+#ifdef DEBUG
+#define DEBUG_LOGIN 
+#endif
 //192.168.1.61  fixopen.xicp.net
 LRESULT CLoginDlg::OnHttpFinishMsg(WPARAM wParam, LPARAM lParam)
 {
