@@ -153,16 +153,16 @@ CStringA CDealSocket::GetResponse()
 	return strPlus;
 }
 
-BOOL CDealSocket::Send(CStringA sdata)
+INT CDealSocket::Send(CStringA sdata)
 {
 	int iLen = sdata.GetLength();
 	if (send(m_hSocket, sdata, iLen, 0) == SOCKET_ERROR)
 	{
 		closesocket(m_hSocket);
 		TRACE("发送请求失败!\n");
-		return FALSE;
+		return ERR_SOCKET_SENT_FAIL;
 	}
-	return TRUE;
+	return SOK;
 }
 
 INT CDealSocket::Send(void * buf, int len)
@@ -349,11 +349,13 @@ CAsyncHttp::~CAsyncHttp()
 {
 	if (m_pSocket)
 		delete m_pSocket;
+	CloseFile();
 	if (m_pBuff != NULL)
 	{
 		free(m_pBuff); //malloc different to new
 		m_pBuff = NULL;;
 	}
+
 	m_vstrHeaders.clear();
 }
 
@@ -380,7 +382,7 @@ void * CAsyncHttp::run(void * param)
 {
 	if (m_pSocket == NULL)
 		m_pSocket = new CDealSocket();
-	int bret = 0;
+	int bret = SOK;
 	if (m_bProxyMode)
 	{
 		bret = ConnectProxyHttp();
@@ -389,23 +391,20 @@ void * CAsyncHttp::run(void * param)
 	{
 		bret = ConnectHttp();
 	}
-	if (bret > 0)
+	if (bret >= 0)
 	{
-		if ((bret = SendHttpHeader()) == TRUE)
+		if ((bret = SendHttpHeader()) >= 0)
 		{
-			if (( bret = OnHttpHeaderSend()) == TRUE)
+			if ((bret = OnHttpHeaderSend()) >= 0)
 			{
 				bret = SendData();		
-				if (bret > 0)
-				{
-					bret = OnHttpSend();
-				}
 			}
 		}
-
-		if (onFinish  && onFinish(param, bret) < 0 )
-			return NULL;	
 	}
+	bret = OnHttpSend(bret);
+
+	if (onFinish  && onFinish(param, bret) < 0 )
+		return NULL;	
 
 	if (m_pMsgWnd && m_pMsgWnd->GetSafeHwnd() &&
 		PostMessage(m_pMsgWnd->GetSafeHwnd(), WM_HTTP_DONE, (WPARAM)this, bret) )
@@ -416,18 +415,33 @@ void * CAsyncHttp::run(void * param)
 	return NULL;
 }
 
-INT CAsyncHttp::Connect()
+void CAsyncHttp::Connect()
 {
 	start(this->param);
-	return 1;
 }
 
-INT CAsyncHttp::Disconnect()
+void CAsyncHttp::CloseFile() 
 {
-	
-	stop();//thread	
 	if (m_pSocket) m_pSocket->Close();
-	return 1;
+	if (m_hFile && m_hFile != INVALID_HANDLE_VALUE)
+	{
+		CloseHandle(m_hFile);
+		m_hFile = NULL;
+	}
+	if (m_hFileMap && m_hFileMap != INVALID_HANDLE_VALUE)
+	{
+		if (m_pBuff)
+			UnmapViewOfFile(m_pBuff);
+		m_pBuff = NULL;
+		CloseHandle(m_hFileMap);
+		m_hFileMap = NULL;
+	}
+}
+
+void CAsyncHttp::Disconnect()
+{
+	stop();//thread	
+	CloseFile();
 }
 
 INT CAsyncHttp::ConnectHttp()
@@ -435,8 +449,8 @@ INT CAsyncHttp::ConnectHttp()
 	//TRACE("正在建立连接\n");
 	SOCKET hSocket = m_pSocket->GetConnect(m_hostIP, m_nport);
 	if (hSocket == INVALID_SOCKET)
-		return -1;
-	return 1;
+		return ERR_CREATE_SOCKET;
+	return SOK;
 }
 
 INT CAsyncHttp::ConnectProxyHttp()
@@ -446,7 +460,7 @@ INT CAsyncHttp::ConnectProxyHttp()
 	if (hSocket == INVALID_SOCKET)
 	{
 		TRACE("连接http服务器失败！\n");
-		return -1;
+		return ERR_HTTP_CONNETCT_SERVER;
 	}
 	sTemp.Format("CONNECT %s:%d HTTP/1.1\r\nUser-Agent:"\
 		"HttpApp/0.1\r\n\r\n", m_szProxyIp, m_nProxyPort);
@@ -455,17 +469,17 @@ INT CAsyncHttp::ConnectProxyHttp()
 	{
 		m_pSocket->Close();
 		TRACE("连接代理失败\n");
-		return -2;
+		return ERR_HTTP_CONNETCT_PROXY;
 	}
 
 	int nLen = GetHttpHeader(m_szRespHeader);
-	if (m_szRespHeader.Find("200 Connection established") < 0)
+	if (nLen >=0 && m_szRespHeader.Find("200 Connection established") < 0)
 	{
 		m_pSocket->Close();
-		return -3;
+		return ERR_HTTP_CONNETCT_PROXY;
 	}
 	TRACE("代理连接完成\n");
-	return 1;
+	return SOK;
 }
 
 
@@ -491,7 +505,7 @@ DWORD CAsyncHttp::GetHttpHeader(CStringA &strResp)
 			return 0; //socket closed
 		else 
 		{	// if (!(ret == EINTR || ret == EWOULDBLOCK || ret == EAGAIN)
-			return -1;
+			return ERR_SOCKET_RECV_FAIL;
 		}
 	}
 }
@@ -508,7 +522,7 @@ void  CAsyncHttp::AppendHeader(LPCSTR szheader)
 	m_vstrHeaders.insert(m_vstrHeaders.end(), szheader);
 }
 
-BOOL CAsyncHttp::SendHttpHeader()
+INT CAsyncHttp::SendHttpHeader()
 {
 	CStringA sheadr;
 	sheadr.Format("%s %s HTTP/1.1\r\n", m_szHttpType, m_url);
@@ -545,10 +559,10 @@ INT CAsyncHttp::SendData()
 {
 	if (m_pSocket)
 	{
-		if (m_pBody == NULL || m_nBodyLen <= 0) return TRUE;
+		if (m_pBody == NULL || m_nBodyLen <= 0) return SOK;
 		return m_pSocket->Send(m_pBody, m_nBodyLen);
 	}
-	return FALSE;
+	return ERR_SENT_DATA;
 }
 
 
@@ -577,7 +591,7 @@ INT CAsyncHttp::GetChunckSize()
 		}
 		else
 		{	// if (!(ret == EINTR || ret == EWOULDBLOCK || ret == EAGAIN)
-			return -1;
+			return ERR_GET_CHUNK_SIZE;
 		}
 	}
 }
@@ -645,7 +659,7 @@ INT CAsyncHttp::GetBody(LPCTSTR szLocalFile)
 			}
 		}
 		else 
-			m_nBodyLen = -1;
+			m_nBodyLen = ERR_HTTP_HEADER_FAIL;
 	}
 	else
 	{
@@ -701,6 +715,8 @@ INT CAsyncHttp::GetBody( )
 					break;
 			}
 		}
+		else
+			return ERR_GET_CHUNK_SIZE;
 	}
 	else
 	{
@@ -765,27 +781,37 @@ CHttpPost::CHttpPost(LPCTSTR szIP, LPCTSTR szUrl, CWnd * pmsgWnd, int port, LPCT
 
 INT CHttpPost::SendFile(LPCTSTR slclfname, void * param)
 {
-	m_strLocalFile = slclfname;
-	CFile of;
-	if (of.Open(slclfname, CFile::modeRead | CFile::shareDenyNone))
+	m_strLocalFile = slclfname;	
+	m_hFile = CreateFile(slclfname, GENERIC_READ, FILE_SHARE_READ, 0,
+		OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (m_hFile == INVALID_HANDLE_VALUE)		return ERR_FILE_OPEN ;
+	m_nBodyLen = ::GetFileSize(m_hFile, NULL);
+	m_hFileMap = CreateFileMapping(m_hFile, NULL, PAGE_READONLY, 0, m_nBodyLen, NULL);
+	if (m_hFileMap == INVALID_HANDLE_VALUE) 
 	{
-		m_nBodyLen = of.GetLength();
-		m_pBuff = (BYTE *)malloc(m_nBodyLen);
-		m_pBody = m_pBody;
-		of.Read(m_pBody, m_nBodyLen);
-		of.Close();
-		CString strtype = CUtil::GetFileType(slclfname);
-		CStringA stype; QUnc2Utf(strtype, stype);
-		CStringA sheadr;
-		sheadr.Format("Content-Type: %s\r\n", stype);
-		AppendHeader(sheadr);
-		sheadr.Format("Content-Length: %d\r\n\r\n", m_nBodyLen);
-		AppendHeader(sheadr);
-		if (param != NULL)
-			this->param = param;
-		Connect();
+		CloseHandle(m_hFile);
+		return ERR_CREATE_MAPPING;
 	}
-	return 0;
+	m_pBuff = (BYTE *)MapViewOfFile(m_hFileMap, FILE_MAP_READ, 0, 0, m_nBodyLen);// (BYTE*)malloc(len + 1);
+	if (m_pBuff == NULL)
+	{
+		CloseHandle(m_hFileMap);
+		CloseHandle(m_hFile);
+		return ERR_MAPPING_FAIL;
+	}
+	m_pBody = m_pBuff;
+	CString strtype = CUtil::GetFileType(slclfname);
+	CStringA stype; QUnc2Utf(strtype, stype);
+	CStringA sheadr;
+	sheadr.Format("Content-Type: %s\r\n", stype);
+	AppendHeader(sheadr);
+	sheadr.Format("Content-Length: %d\r\n\r\n", m_nBodyLen);
+	AppendHeader(sheadr);
+	if (param != NULL)
+		this->param = param;
+	Connect();
+	 
+	return SOK;
 }
 
 INT CHttpPost::SendFile(const void * ptr, int len, LPCTSTR sztype)
@@ -803,7 +829,7 @@ INT CHttpPost::SendFile(const void * ptr, int len, LPCTSTR sztype)
 	m_pBody = (BYTE*)ptr;
 	m_nBodyLen = len;
 	Connect();
-	return 0;
+	return SOK;
 }
 
 
@@ -812,8 +838,10 @@ INT CHttpPost::OnHttpHeaderSend()
 	return 1;
 }
 
-INT CHttpPost::OnHttpSend()
+INT CHttpPost::OnHttpSend(int stat)
 {
+	CloseFile();
+	if (stat <  0) return stat;
 	int len = GetHttpHeader(m_szRespHeader);
 	if (len > 0)
 	{
@@ -822,9 +850,11 @@ INT CHttpPost::OnHttpSend()
 			len = GetBody();
 		}
 		else
-			return -5;
+			return ERR_HTTP_HEADER_FAIL;
 	}
-	return len>0;
+	else
+		return ERR_GET_HEADER;
+	return len;
 }
 
 
@@ -881,22 +911,25 @@ void CGetHttp::GetFile(const void * ptr, int len, LPCTSTR sztype )
 }
 
 
-INT CGetHttp::OnHttpSend()
+INT CGetHttp::OnHttpSend(int stat)
 {
+	if (stat <  0) return stat;
 	int len = GetHttpHeader(m_szRespHeader);
 	if (len > 0)
 	{
 		if (m_szRespHeader.Find(" 200 OK") >= 0)
 		{
 			LPCTSTR szLclFile = NULL;
-			if(!m_strLocalFile.IsEmpty() && m_strLocalFile.GetLength() > 1 )
+			if (!m_strLocalFile.IsEmpty() && m_strLocalFile.GetLength() > 1)
 				szLclFile = m_strLocalFile;
 			len = GetBody(szLclFile);
 		}
 		else
-			return -5;
+			return ERR_HTTP_HEADER_FAIL;
 	}
-	return len>0;
+	else
+		return ERR_GET_HEADER;
+	return len;
 }
 
 

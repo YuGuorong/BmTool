@@ -579,15 +579,15 @@ BOOL CCovtMainDlg::OnInitDialog()
 
 	char * pbuf = new char[255 * 8];
 	int ip = 0, is = 255, im = 64;
-	m_db_items.BookId = (char *)pbuf[ip];
-	m_db_items.BookName = (char *)pbuf[ip += 64];
-	m_db_items.BookPath = (char *)pbuf[ip += 255];
-	m_db_items.tmCreate = (char *)pbuf[ip += 255];
-	m_db_items.tmModify = (char *)pbuf[ip += 31];
-	m_db_items.tmUpload = (char *)pbuf[ip += 31];
-	m_db_items.BookState = (char *)pbuf[ip += 31];
-	m_db_items.author = (char *)pbuf[ip += 31];
-	m_db_items.description = (char *)pbuf[ip += 64];
+	m_db_items.BookId = (char *)&pbuf[ip];
+	m_db_items.BookName = (char *)&pbuf[ip += 64];
+	m_db_items.BookPath = (char *)&pbuf[ip += 256];
+	m_db_items.tmCreate = (char *)&pbuf[ip += 256];
+	m_db_items.tmModify = (char *)&pbuf[ip += 32];
+	m_db_items.tmUpload = (char *)&pbuf[ip += 32];
+	m_db_items.BookState = (char *)&pbuf[ip += 32];
+	m_db_items.author = (char *)&pbuf[ip += 32];
+	m_db_items.description = (char *)&pbuf[ip += 64];
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
@@ -650,12 +650,12 @@ int CCovtMainDlg::AddTaskToDb(CString &szip)
 	char sql[64 * 1024];
 	CTime tm(CTime::GetCurrentTime());
 	CString strtm = tm.Format(TIME_FMT);
-
+	CString suid = CUtil::GenGuidString();
 
 
 	Unc2Utf(g_pSet->m_strUserName, m_db_items.author, -1, 255);
 	Unc2Utf(szip, m_db_items.BookPath, -1, 255);
-	strcpy_s(m_db_items.BookId, 64, m_szUuid);
+	Unc2Utf(suid, m_db_items.BookId, -1, 64);
 	Unc2Utf(strtm, m_db_items.tmCreate, -1, 31);
 	Unc2Utf(strtm, m_db_items.tmModify, -1, 31);
 	Unc2Utf(szip, m_db_items.BookName, -1, 255);
@@ -724,6 +724,7 @@ int CCovtMainDlg::ConvertBook(CString &sbook)
 	CloseZip(m_hz);
 	::SetCurrentDirectory(g_pSet->strCurPath);
 	DelTree(m_strTmpDir);
+	AddTaskToDb(strZip);
 	return 0;
 }
 

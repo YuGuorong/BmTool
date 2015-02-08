@@ -7,6 +7,30 @@ using namespace std;
 
 static unsigned int __stdcall threadFunction(void *);
 
+enum
+{
+	ERR_BASE = -500,
+	ERR_HTTP_CONNETCT_SERVER ,
+	ERR_HTTP_CONNETCT_PROXY,
+	ERR_CREATE_SOCKET,
+	ERR_SOCKET_RECV_FAIL,
+	ERR_SOCKET_SENT_FAIL,
+
+	ERR_SENT_DATA,
+	ERR_GET_BODY,
+	ERR_GET_HEADER,
+	ERR_HTTP_HEADER_FAIL,
+	ERR_GET_CHUNK_SIZE,
+
+	ERR_THREAD_FAIL,
+
+
+	ERR_FILE_OPEN,
+	ERR_CREATE_MAPPING,
+	ERR_MAPPING_FAIL,
+	SOK =0
+};
+
 class Thread {
 	friend unsigned int __stdcall threadFunction(void *);
 public:
@@ -42,7 +66,7 @@ public:
 	SOCKET  m_hSocket;
 	void Close();
 	CStringA GetResponse();
-	BOOL Send(CStringA sdata);
+	INT Send(CStringA sdata);
 	INT Send(void * buf, int len);
 	INT Recv(void * buf, int len);
 	void GetRecvStatus(INT * p_ncur, INT * p_nTot);
@@ -60,6 +84,7 @@ protected:
 	CAsyncHttp();           
 	CAsyncHttp(LPCTSTR szIP, LPCTSTR szUrl ,CWnd * pmsgWnd, int port = 80);
 	INT GetChunk(int size);
+	void CloseFile();
 	HANDLE m_hFile;
 	HANDLE m_hFileMap;
 
@@ -67,9 +92,9 @@ public:
 	CStringA  m_szHttpType;
 	CStringA  m_szRespHeader;    //
 	void SetProxy(LPCTSTR szProxyIp, int nProxyPort, LPCTSTR szUser = NULL, LPCTSTR pwd = NULL);
-	INT   Connect();
+	void   Connect();
 	void  CancelHttp();
-	INT   Disconnect();	
+	void  Disconnect();	
 	void  AppendHeader(LPCWSTR szheader);
 	void  AppendHeader(LPCSTR szheader);
 	DWORD GetHttpHeader(CStringA &strResp);
@@ -87,11 +112,11 @@ public:
 	virtual void * run(void *);
 	virtual INT SendData() ;
 	virtual ~CAsyncHttp();
-	virtual INT OnHttpHeaderSend() { return 1; };
-	virtual INT OnHttpSend() = 0;
+	virtual INT OnHttpHeaderSend() { return SOK; };
+	virtual INT OnHttpSend(INT) = 0;
 
 protected:
-	BOOL  SendHttpHeader();
+	INT  SendHttpHeader();
 	vector<CStringA> m_vstrHeaders;  //
 	CStringA  m_hostIP;
 	int       m_nport;
@@ -122,7 +147,7 @@ public:
 	INT SendFile(LPCTSTR slclfname, void * param = NULL);
 	INT SendFile(const void * ptr, int len, LPCTSTR sztype=NULL);//ptr need keep contend till finish
 	virtual INT OnHttpHeaderSend();
-	virtual INT OnHttpSend();
+	virtual INT OnHttpSend(INT stat);
 };
 
 class CGetHttp : public CAsyncHttp
@@ -134,7 +159,7 @@ public:
 	void GetFile(LPCTSTR slclfname);
 	void GetFile();//buffer is m_pBody, length is m_nBodyLen;
 	void GetFile(const void * ptr, int len, LPCTSTR sztype = NULL);
-	virtual INT OnHttpSend();
+	virtual INT OnHttpSend(int stat);
 };
 
 

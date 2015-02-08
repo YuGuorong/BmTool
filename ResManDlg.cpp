@@ -226,7 +226,7 @@ void CResManDlg::OnShowWindow(BOOL bShow, UINT nStatus)
 
 	if (bShow)
 	{
-		LoadBookResList();
+		//LoadBookResList();
 	}
 }
 
@@ -341,6 +341,7 @@ void CResManDlg::OnBnClickedBtnUpload()
 void CResManDlg::OnBnClickedBtnLocal()
 {
 	//LoadBookResList(); 
+	LoadBooks();
 }
 
 void CResManDlg::OnBnClickedBtnResupload()
