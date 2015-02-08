@@ -41,10 +41,17 @@ public:
 	static LPCTSTR m_szMimeType; //contend type
 };
 
+BOOL DelTree(LPCTSTR lpszPath);
+void UnzipFile(CString &sin, CStringArray * sFiles = NULL); //sdir is output parameter, indicate what folder exact to
 int RunCmd(LPCTSTR scmd, CString &sresult, LPCTSTR sdir =NULL, BOOL bshow =FALSE);
 #define  AString   CStringA
 
 typedef  CArray<CStringA, CStringA> AStringArray;
+
+CStringA qUnc2Utf(LPCWSTR wstr);
+
+CString qUtf2Unc(LPCSTR astr);
+
 //Utf-8 to Wide char(unicode), not use too much stack 
 void Unc2Utf(LPCTSTR   wstr, char  * bstr, int lenw, int lens);
 //Wide char(unicode) to Utf-8 , not use too much stack
@@ -77,6 +84,7 @@ public:
 	CString strCurPath;
 	CString m_strAppUserPath;
 	CString m_strUserName;
+	CString m_strUserId;
 	CString m_strPassword;
 	CString m_strServerIP;
 	INT     m_nPort;
@@ -86,6 +94,8 @@ public:
 	CString m_strProxyUser;
 	CString m_strProxyPwd;
 	CString m_strHomePath;
+	CString m_strSrcDir;
+	CString m_strDstDir;
 
 public :
 	int operator=(int id){ return 0;};
@@ -105,4 +115,7 @@ void HttpPost(LPCTSTR szServer, int nPort, LPCTSTR url, void * postdata, int dle
 BOOL HttpPostEx(LPCTSTR szServer, int nPort, LPCTSTR url, LPCTSTR szCookies[], int nheaders, int ncookies,\
 	void * postdata, int dlen, CString &strResponse);
 void ReplaceXmlItem(LPCTSTR szKey, CString &strval, CString &szXml);
-CString ConvertXmlString(CString &strval);
+CString ConvtXmlChars(CString &strval);
+void ReplaceXmlItem(LPCSTR szKey, CStringA &strval, CStringA &szXml);
+CStringA ConvtXmlChars(CStringA &str);
+CStringA ConvtXmlChars(LPCSTR str);

@@ -17,7 +17,7 @@ class CLoginDlg : public CExDialog
 public:
 	CLoginDlg(CWnd* pParent = NULL);   // standard constructor
 	virtual ~CLoginDlg();
-
+	virtual void OnHttpObjProc(int idHttpObj, int stat);
 // Dialog Data
 	enum { IDD = IDD_LOGINDLG };
 	CSkinBtn * m_pbtns;
@@ -25,7 +25,6 @@ protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 	CStringA m_strHttpData;
 	CString m_strUser;
-	void * m_pHttp;
 
 	DECLARE_MESSAGE_MAP()
 public:

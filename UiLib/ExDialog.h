@@ -18,7 +18,12 @@
 
 #define WM_SHOWTASK        (WM_USER + 901)
 
-
+void NewProcessWnd(int max, int min);
+void FreeProcessWnd();
+void SetProgWndLimit(int max, int min);
+BOOL OffsetPorgPos(int offset, LPCTSTR szinfo);
+BOOL SetCurProgPos(int cur, LPCTSTR szinfo);
+void EndProgWnd();
 
 // CExDialog dialog
 typedef  CLink * LP_LINK;

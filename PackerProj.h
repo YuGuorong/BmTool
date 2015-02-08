@@ -52,6 +52,7 @@ public:
 
 	DIGEST_MODE m_mode;
 	CString m_sDigest;
+	int   m_len;
 public:
 	void CalDigest(LPVOID ptr, int len, DIGEST_MODE mode = MODE_MD5);
 	CDigest(CString &sfile, DIGEST_MODE mode = MODE_MD5);

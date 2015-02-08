@@ -11,9 +11,11 @@
 CDigest::CDigest(CString &sfile, DIGEST_MODE mode )
 {
 	CFile of;
+	m_len = 0;
 	if (of.Open(sfile, CFile::modeRead | CFile::shareDenyNone))
 	{
 		UINT32 flen = (UINT32)of.GetLength();
+		m_len = flen;
 		CHAR * ptr = new CHAR[flen];
 		CalDigest(ptr, flen, mode);
 	}
@@ -529,7 +531,7 @@ void CPackerProj::SaveMeta(CString &sxml)
 		CString strpos = _T("!&");
 		strpos += pit->strKey;
 		strpos.TrimRight();
-		sxml.Replace(strpos, ConvertXmlString(strval));
+		sxml.Replace(strpos, ConvtXmlChars(strval));
 		pit = pit->pNext;
 	}
 }
@@ -543,10 +545,10 @@ BOOL CPackerProj::Res2Xml(CString &strResXml)
 	{
 		CString strxml = strResTemp;
 		strxml.Replace(_T("!&id"), pRes->m_strResId);
-		strxml.Replace(_T("!&src"), ConvertXmlString(pRes->m_sfileName));
-		strxml.Replace(_T("!&srctype"), ConvertXmlString(pRes->m_sformat));
+		strxml.Replace(_T("!&src"), ConvtXmlChars(pRes->m_sfileName));
+		strxml.Replace(_T("!&srctype"), ConvtXmlChars(pRes->m_sformat));
 		strxml.Replace(_T("!&digestMethod"), pRes->m_digest.GetModeString());
-		strxml.Replace(_T("!&digest"), ConvertXmlString(pRes->m_digest.m_sDigest));
+		strxml.Replace(_T("!&digest"), ConvtXmlChars(pRes->m_digest.m_sDigest));
 		strpage.Format(_T("%d"), pRes->m_relation);
 		strxml.Replace(_T("!&relation"), strpage);
 		strResXml += strxml;
@@ -573,7 +575,7 @@ void CPackerProj::SaveDirToXml(HTREEITEM hit, CString &sxml, int sublevel)
 	for (int i = 0; i < sublevel; i++)
 		str += _T("\t");
 	sxml += str;
-	str.Format(_T("\t<direntry name=\"%s\" pageNo=\"%d\">\r\n"), ConvertXmlString(sdir), npg);
+	str.Format(_T("\t<direntry name=\"%s\" pageNo=\"%d\">\r\n"), ConvtXmlChars(sdir), npg);
 	sxml += str;
 }
 
@@ -802,8 +804,8 @@ int CPackerProj::Save()
 				sXml = CUtil::File2Unc(strTempXmlFile);
 				if (sXml[0] == 0xFFFE || sXml[0] == 0xFEFF) sXml.Delete(0, 1);
 				if (sXml.IsEmpty())  throw _T("保存模板文件打开失败！");
-				sXml.Replace(_T("!&Target"), ConvertXmlString(m_szTargetFileName));
-				sXml.Replace(_T("!&id"), ConvertXmlString(m_strUuid));// this->m_strLoginUser);
+				sXml.Replace(_T("!&Target"), ConvtXmlChars(m_szTargetFileName));
+				sXml.Replace(_T("!&id"), ConvtXmlChars(m_strUuid));// this->m_strLoginUser);
 				sXml.Replace(_T("!&ProjCreateTime"), m_strTmCreateProj);
 				sXml.Replace(_T("!&ProjModifyTime"), m_strTmModifyProj);
 				sXml.Replace(_T("!&srcCreateTime"), m_strTmCreateSrc);

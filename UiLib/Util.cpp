@@ -528,7 +528,39 @@ void QW2A(LPCTSTR wstr, CStringA &astr)
     astr.ReleaseBuffer();
 }
 
-CString ConvertXmlString(CString &str)
+CStringA ConvtXmlChars(LPCSTR str)
+{
+	CStringA strval = str;
+	strval.Replace(("&"), ("&amp;"));
+	strval.Replace(("<"), ("&lt;"));
+	strval.Replace((">"), ("&gt;"));
+	strval.Replace(("\'"), ("&apos;"));
+	strval.Replace(("\""), ("&quot;"));
+	return strval;
+}
+
+CStringA ConvtXmlChars(CStringA &str)
+{
+	CStringA strval = str;
+	strval.Replace(("&"), ("&amp;"));
+	strval.Replace(("<"), ("&lt;"));
+	strval.Replace((">"), ("&gt;"));
+	strval.Replace(("\'"),("&apos;"));
+	strval.Replace(("\""),("&quot;"));
+	return strval;
+}
+
+void ReplaceXmlItem(LPCSTR szKey, CStringA &strval, CStringA &szXml)
+{
+	strval.Replace(("&"),  ("&amp;"));
+	strval.Replace(("<"),  ("&lt;"));
+	strval.Replace((">"),  ("&gt;"));
+	strval.Replace(("\'"), ("&apos;"));
+	strval.Replace(("\""), ("&quot;"));
+	szXml.Replace(szKey, (LPCSTR)strval);
+}
+
+CString ConvtXmlChars(CString &str)
 {
 	CString strval = str;
 	strval.Replace(_T("&"), _T("&amp;"));
@@ -641,6 +673,9 @@ void CSetting::Load()
 	m_strProxyIP = pApp->GetProfileString(_T("AppSettings"), _T("ProxyIp"), _T(""));
 	m_strProxyPwd = pApp->GetProfileString(_T("AppSettings"), _T("ProxyPwd"), _T(""));
 	m_strProxyUser = pApp->GetProfileString(_T("AppSettings"), _T("ProxyUser"), _T(""));
+
+	m_strSrcDir = pApp->GetProfileString(_T("AppSettings"), _T("SourceDir"), _T(""));
+	m_strDstDir = pApp->GetProfileString(_T("AppSettings"), _T("DestanceDir"), _T(""));
 }
 
 void CSetting::Save()
@@ -654,18 +689,21 @@ void CSetting::Save()
 	pApp->WriteProfileString(_T("AppSettings"), _T("ProxyIp"), m_strProxyIP);
 	pApp->WriteProfileString(_T("AppSettings"), _T("ProxyPwd"), m_strProxyPwd);
 	pApp->WriteProfileString(_T("AppSettings"), _T("ProxyUser"), m_strProxyUser);
+
+	pApp->WriteProfileString(_T("AppSettings"), _T("SourceDir"), m_strSrcDir);
+	pApp->WriteProfileString(_T("AppSettings"), _T("DestanceDir"), m_strDstDir);
+
 }
 
 CSetting * g_pSet = NULL;
 
 #include "libs.h"
 #include "XZip\XUnzip.h"
-void UnzipFile(CString &sin )
+void UnzipFile(CString &sin, CStringArray * pFiles)
 {
-	CString sPath;
-	sPath = CUtil::GetFilePath(sin);
-	if (!sPath.IsEmpty())
-		::SetCurrentDirectory(sPath);
+	//TCHAR scdir[MAX_PATH];
+	//GetCurrentDirectory(MAX_PATH, scdir);
+
 	TCHAR * sbuf = sin.GetBuffer();
 	HZIP hz = OpenZip(sbuf, 0, ZIP_FILENAME);
 	sin.ReleaseBuffer();
@@ -679,12 +717,35 @@ void UnzipFile(CString &sin )
 	{
 		GetZipItem(hz, i, &ze);
 		UnzipItem(hz, i, ze.name, 0, ZIP_FILENAME);		
+		if (pFiles) pFiles->Add(ze.name);
 	}
 	CloseZip(hz);
 
-	if (!sPath.IsEmpty())
-		::SetCurrentDirectory(g_pSet->strCurPath);
+	//::SetCurrentDirectory(scdir);
 }
+
+BOOL DelTree(LPCTSTR lpszPath)
+{
+	CString sd = lpszPath;
+	int sl = sd.GetLength();
+	sd.GetBufferSetLength(sl + 8);
+	sd.SetAt(sl+1, '\0');
+	sd.SetAt(sl, '\0');
+
+	SHFILEOPSTRUCT shfileop;
+	shfileop.hwnd = NULL;
+	shfileop.wFunc = FO_DELETE;
+	shfileop.fFlags = FOF_SILENT | FOF_NOCONFIRMATION;
+	shfileop.pFrom = sd;
+	shfileop.pTo = _T("");
+	shfileop.lpszProgressTitle = _T("");
+	shfileop.fAnyOperationsAborted = TRUE;
+	int nOK = SHFileOperation(&shfileop);
+	if (nOK)
+		nOK = GetLastError();
+	return nOK == 0;
+}
+
 void ParseCommandLine(CCommandLineInfo& rCmdInfo)
 {
 	for (int i = 1; i < __argc; i++)
@@ -710,7 +771,7 @@ void ParseCommandLine(CCommandLineInfo& rCmdInfo)
 			if ((i < __argc - 1) && __targv[i + 1]!= NULL )
 			{
 				CString strin = __targv[i + 1];
-				UnzipFile(strin);
+				UnzipFile(strin );
 			}
             exit(0);
         }

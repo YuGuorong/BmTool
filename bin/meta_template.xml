@@ -1,23 +1,23 @@
-﻿<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <resource id="" version="1.0">
     <!-- meta 元素可以有多个，以下这些属性可以分开设置，属性可剪裁 -->
-        <meta uuid=!&entry  caption=!&title   author=!&contributor 
-		keywords=!&subject_keywork tag="" />
+        <meta uuid="!&entry"  caption="!&title"  author="!&contributor"
+		keywords="!&subject_keywork" tag="" />
         
     <!--BEGIN: 北京资源网专用-->
         <scheme id="" caption="">
 			<section id="" caption=""/>
         </scheme>
         <school id="" caption=""/>
-        <edition id="" caption=!&textbook_release/>
+        <edition id="" caption="!&textbook_release"/>
         <book id="" caption="" />
         <schoolYear id="" caption="" beginDate="" endDate=""/>
         <!-- 所属图书的目录项-->
         <bookCatalog>                
             !&dirs
         </bookCatalog>
-        <targetUser id="" value=!&audience/>
-        <resourceKind id=!&learning_resource_type value=""/>
+        <targetUser id="" value="!&audience"/>
+        <resourceKind id="!&learning_resource_type" value=""/>
     <!--END: 北京资源网专用-->
               
 
@@ -28,7 +28,7 @@
         
     <!-- 如果学科是树形结构，可以多级嵌套-->
         <subject>
-            <item id="" caption=!&subject_volume>
+            <item id="" caption="!&subject_volume">
 				<item id="" caption=""/>
             </item>
         </subject>
@@ -40,17 +40,17 @@
             </item>
         </classific>
 
-        <scope id="" value=!&courseclass/>
-        <press id="" caption=!&press />
+        <scope id="" value="!&courseclass"/>
+        <press id="" caption="!&press"/>
 
 	<!--版权相关-->
-        <copyrights owner=!&copyright provider=!&release/>                
+        <copyrights owner="!&copyright" provider="!&release"/>                
 
     <!-- meta 元素可以有多个，以下这些属性可以分开设置，属性可剪裁 -->
-        <meta isbn=!&isbn publishDate=!&date pageCount=!&pages wordCount=!&size 
-                language=!&language
-                bookPrice=!&bookprice ebookPrice=!&price salePrice=""
-                publishString=!&meta-meta_data/>
+        <meta isbn="!&isbn" publishDate="!&date" pageCount="!&pages" wordCount="!&size"
+                language="!&language"
+                bookPrice="!&bookprice" ebookPrice="!&price" salePrice=""
+                publishString="!&meta-meta_data"/>
 
 
     <!--一下属性可作为数据交换用-->
@@ -66,7 +66,8 @@
         <comment id="">!&decription </comment>
 
         <files>
-                !&files
+			!&cover
+            !&files
         </files>
 
     <!--操作者定义，可根据需要剪裁-->

@@ -6,6 +6,12 @@
 #include "DirPackge.h"
 #include "DirPackgeDlg.h"
 
+#include <Dbghelp.h>
+using namespace std;
+
+#pragma auto_inline (off)
+#pragma comment( lib, "DbgHelp" )
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -29,6 +35,19 @@ CDirPackgeDlgApp::CDirPackgeDlgApp()
 	// Place all significant initialization in InitInstance
 }
 
+LONG WINAPI MyUnhandledExceptionFilter( struct _EXCEPTION_POINTERS* ExceptionInfo 	)
+{
+	HANDLE lhDumpFile = CreateFile(_T("CrashDump.dmp"), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+
+	MINIDUMP_EXCEPTION_INFORMATION loExceptionInfo;
+	loExceptionInfo.ExceptionPointers = ExceptionInfo;
+	loExceptionInfo.ThreadId = GetCurrentThreadId();
+	loExceptionInfo.ClientPointers = TRUE;
+	MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), lhDumpFile, MiniDumpNormal, &loExceptionInfo, NULL, NULL);
+	CloseHandle(lhDumpFile);
+
+	return EXCEPTION_EXECUTE_HANDLER;
+}
 
 // The one and only CDirPackgeDlgApp object
 
@@ -42,6 +61,8 @@ BOOL CDirPackgeDlgApp::InitInstance()
 {
 	SetRegistryKey(_T("Local AppWizard-Generated Applications\\DirPackger"));
 	if( BaseAppInit() < 0 ) return FALSE;
+	SetUnhandledExceptionFilter(MyUnhandledExceptionFilter);
+
 	// InitCommonControlsEx() is required on Windows XP if an application
 	// manifest specifies use of ComCtl32.dll version 6 or later to enable
 	// visual styles.  Otherwise, any window creation will fail.

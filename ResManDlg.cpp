@@ -340,7 +340,7 @@ void CResManDlg::OnBnClickedBtnUpload()
 
 void CResManDlg::OnBnClickedBtnLocal()
 {
-	LoadBookResList(); 
+	//LoadBookResList(); 
 }
 
 void CResManDlg::OnBnClickedBtnResupload()

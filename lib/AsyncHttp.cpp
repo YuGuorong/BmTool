@@ -677,11 +677,12 @@ INT CAsyncHttp::GetBody( )
 	if (m_szRespHeader.IsEmpty())
 		GetHttpHeader(m_szRespHeader);
 	INT len = GetContentLen(m_szRespHeader);
-	if (m_pBuff != NULL) { free(m_pBuff); m_pBuff = NULL; }
+	
 	m_nTotolLen = len;
 	m_nBodyLen = 0;
-	if (len <= 0)
+	if (len <= 0 )
 	{
+		if (m_pBuff != NULL) { free(m_pBuff); m_pBuff = NULL; }
 		if (m_szRespHeader.Find("Transfer-Encoding: chunked") >= 0)
 		{
 			while (1)
@@ -703,7 +704,11 @@ INT CAsyncHttp::GetBody( )
 	}
 	else
 	{
-		m_pBuff = (BYTE*)malloc(len + 1);
+		if (m_pBuff == NULL|| m_nBodyLen < len + 1)
+		{
+			if (m_pBuff != NULL) { free(m_pBuff); m_pBuff = NULL; }
+			m_pBuff = (BYTE*)malloc(len + 1);
+		}
 		m_pSocket->Recv(m_pBody, len);
 		m_nBodyLen = len;
 	}

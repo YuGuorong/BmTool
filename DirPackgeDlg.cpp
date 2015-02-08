@@ -14,8 +14,6 @@
 #define new DEBUG_NEW
 #endif
 
-void NewProcessWnd(int max, int min);
-void FreeProcessWnd();
 
 
 class CAboutDlg : public CExDialog
@@ -105,10 +103,9 @@ CDirPackgeDlg::CDirPackgeDlg(CWnd* pParent /*=NULL*/)
 	m_Proj = NULL;
 	m_LogDlgIdx = 0;
 	for (int i = 0; i < MAX_TAB_ITEM; i++)
-	{
 		m_pSubDlgs[i] = NULL;
+	for (int i = 0; i < MAX_BTN_ITEM; i++)
 		m_cTabBtns[i] = NULL;
-	}
 	m_pHttpWnd = NULL;
 }
 
@@ -201,7 +198,11 @@ BOOL CDirPackgeDlg::OnInitDialog()
 	}
 	MyTracex("Buttons beauty!\n");
 	
-	//CREATE_SUB_WND(m_pSubDlgs[LOGIN_TAB],   CLoginDlg, &m_frame);
+	CREATE_SUB_WND(m_plogDlgs[0], CLoginDlg, &m_frame);
+	CREATE_SUB_WND(m_plogDlgs[1], CLoginStateDlg, &m_frame);
+	m_pSubDlgs[LOGIN_TAB] = m_plogDlgs[m_LogDlgIdx];
+	MyTracex("LOGIN_TAB created!\n");
+
 	CREATE_SUB_WND(m_pSubDlgs[BM_TAB], CCovtMainDlg, &m_frame);
 	MyTracex("BM_TAB created!\n");
 	CREATE_SUB_WND(m_pSubDlgs[RES_EXP_TAB], CResManDlg, &m_frame);
@@ -209,18 +210,14 @@ BOOL CDirPackgeDlg::OnInitDialog()
 	CREATE_SUB_WND(m_pSubDlgs[SETTING_TAB], CSettingDlg, &m_frame);
 	MyTracex("SETTING_TAB created!\n");
 
-	CREATE_SUB_WND(m_plogDlgs[0], CLoginDlg, &m_frame);
-	CREATE_SUB_WND(m_plogDlgs[1], CLoginStateDlg, &m_frame);
-	MyTracex("LOGIN_TAB created!\n");
-	m_pSubDlgs[LOGIN_TAB] = m_plogDlgs[m_LogDlgIdx];
 
 	ShowWindow(SW_SHOWMAXIMIZED); 
 	SwitchDlg(LOGIN_TAB);
 
 	m_Proj->m_pMetaWnd = m_pSubDlgs[BM_TAB];
-	((CBMDlg*)m_pSubDlgs[BM_TAB])->m_proj = (m_Proj);
+	//((CBMDlg*)m_pSubDlgs[BM_TAB])->m_proj = (m_Proj);
 	
-	m_Proj->SetProjStatus(NONE_PROJ);
+	//m_Proj->SetProjStatus(NONE_PROJ);
 	MyTracex("Init done!\n");
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
@@ -328,13 +325,14 @@ void CDirPackgeDlg::LockMainWnd(BOOL block)
 	int state = m_Proj->m_ProjState;
 	if (block)
 	{
-		m_LogDlgIdx = 0;
 		tab = LOGIN_TAB;
+		m_LogDlgIdx = 0;
 		state |= LOCKED;
 		m_plogDlgs[1]->GetDlgItem(ID_BTN_OK)->EnableWindow(FALSE);
 	}
 	else
 	{
+		tab = BM_TAB;
 		m_LogDlgIdx = 1;
 		CString strinfo;
 		CString strLogTm = m_Proj->m_tmLogin.Format(TIME_FMT);
@@ -342,7 +340,6 @@ void CDirPackgeDlg::LockMainWnd(BOOL block)
 			m_Proj->m_strLoginUser, strLogTm);
 		((CLoginStateDlg*)m_plogDlgs[1])->SetLoginStatuText(strinfo);
 		m_plogDlgs[1]->GetDlgItem(ID_BTN_OK)->EnableWindow(TRUE);
-		tab = BM_TAB;
 	}
 	m_pSubDlgs[LOGIN_TAB] = m_plogDlgs[m_LogDlgIdx];
 	SwitchDlg(tab);
@@ -351,7 +348,7 @@ void CDirPackgeDlg::LockMainWnd(BOOL block)
 
 void CDirPackgeDlg::SetWindowStatus(int proj_state)
 {
-	BOOL ben[MAX_TAB_ITEM];
+	BOOL ben[MAX_BTN_ITEM];
 	memset(ben, 0, sizeof(ben));
 	ben[SETTING_TAB] = TRUE;
 	ben[BTN_EXIT] = TRUE;
@@ -360,7 +357,7 @@ void CDirPackgeDlg::SetWindowStatus(int proj_state)
 	{
 		m_LogDlgIdx = 0;
 		m_pSubDlgs[LOGIN_TAB] = m_plogDlgs[m_LogDlgIdx];
-		for (int i = 1; i < MAX_TAB_ITEM; i++)
+		for (int i = 1; i < MAX_BTN_ITEM; i++)
 		{
 			m_cTabBtns[i]->EnableButton(ben[i]);
 		}
@@ -426,11 +423,10 @@ void CDirPackgeDlg::OnSize(UINT nType, int cx, int cy)
 	rc.InflateRect(-1,-1);
 	m_frame.MoveWindow(rc);
 	rc.OffsetRect(-rc.left,-rc.top);
-	m_pSubDlgs[BM_TAB]->MoveWindow(rc);
 	m_pSubDlgs[RES_EXP_TAB]->MoveWindow(rc);
 
 	CRect r;
-	int tabid[] = {LOGIN_TAB, SETTING_TAB};
+	int tabid[] = { BM_TAB, LOGIN_TAB, SETTING_TAB };
 	for(int i=0; i<sizeof(tabid)/sizeof(int); i++)
 	{
 		m_pSubDlgs[tabid[i]]->GetWindowRect(r);
@@ -449,7 +445,7 @@ void CDirPackgeDlg::OnSize(UINT nType, int cx, int cy)
 
 void CDirPackgeDlg::OnDestroy()
 {
-	for(int i=0 ;i<MAX_TAB_ITEM; i++)
+	for (int i = RES_EXP_TAB; i<MAX_TAB_ITEM; i++)
 	{
 		if( m_pSubDlgs[i] && ::IsWindow(m_pSubDlgs[i]->GetSafeHwnd() ) )
 		{
@@ -457,11 +453,18 @@ void CDirPackgeDlg::OnDestroy()
 			delete m_pSubDlgs[i];
 			m_pSubDlgs[i] = NULL;
 		}
-		delete m_cTabBtns[i];
 	}
 
-	m_plogDlgs[1 - m_LogDlgIdx]->DestroyWindow();
-	delete m_plogDlgs[1 - m_LogDlgIdx];
+	for (int i = 0; i < MAX_BTN_ITEM; i++)
+	{ 
+		FreePtr(m_cTabBtns[i]);
+	}
+
+	m_plogDlgs[0]->DestroyWindow();
+	m_plogDlgs[1]->DestroyWindow();
+	FreePtr(m_plogDlgs[0]);
+	FreePtr(m_plogDlgs[1]);
+	m_pSubDlgs[LOGIN_TAB] = NULL;
 
 	if (m_pHttpWnd) FreePtr(m_pHttpWnd);
 
@@ -775,9 +778,10 @@ void EndProgWnd()
 {
 	if (g_progWnd)
 	{
+		
 		g_progWnd->ShowWindow(SW_HIDE);
-		g_progWnd->ProcMsg();
-		::AfxGetMainWnd()->UpdateWindow();
+		//g_progWnd->ProcMsg();
+		//::AfxGetMainWnd()->UpdateWindow();
 	}
 }
 

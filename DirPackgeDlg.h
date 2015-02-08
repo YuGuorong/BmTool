@@ -12,14 +12,26 @@
 #include "PackerProj.h"
 #include "ResManDlg.h"
 
-#define MAX_BTN_ITEM    5
-#define MAX_TAB_ITEM    8
 
-#define LOGIN_TAB   0
-#define BM_TAB      1
-#define RES_EXP_TAB  2
-#define SETTING_TAB  3 
-#define BTN_EXIT 4
+#define LOGIN_TAB         0
+
+#define BM_TAB            1
+#define RES_EXP_TAB       2
+#define SETTING_TAB       3 
+#define LOGIN_STATE_TAB   4
+
+#define MAX_TAB_ITEM      4
+
+enum
+{
+	BTN_LOGIN,
+	BTN_MAIN,
+	BTN_RES_EXP,
+	BTN_SETTING,
+	BTN_EXIT,
+	MAX_BTN_ITEM
+};
+
 
 typedef enum 
 {
@@ -65,7 +77,7 @@ protected:
 protected:
 	HICON m_hIcon;
 	UINT m_BmState;
-	CGdipButton	*m_cTabBtns[MAX_TAB_ITEM];
+	CGdipButton	*m_cTabBtns[MAX_BTN_ITEM];
 	// Generated message map functions
 	virtual BOOL OnInitDialog();
 	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
