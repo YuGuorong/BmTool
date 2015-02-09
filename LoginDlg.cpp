@@ -97,7 +97,7 @@ INT GetJsonString(CString &sjson, LPCTSTR skey, CString &sval)
 }
 
 #ifdef DEBUG
-#define DEBUG_LOGIN 
+//#define DEBUG_LOGIN 
 #endif
 //192.168.1.61  fixopen.xicp.net
 void CLoginDlg::OnHttpObjProc(int idHttpObj, int stat)

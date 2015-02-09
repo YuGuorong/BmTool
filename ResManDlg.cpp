@@ -226,7 +226,8 @@ void CResManDlg::OnShowWindow(BOOL bShow, UINT nStatus)
 
 	if (bShow)
 	{
-		LoadBookResList();
+		//LoadBookResList();
+			LoadBooks();
 	}
 }
 

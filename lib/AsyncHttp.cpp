@@ -712,7 +712,7 @@ INT CAsyncHttp::GetBody( )
 		m_pSocket->Recv(m_pBody, len);
 		m_nBodyLen = len;
 	}
-	m_pBuff[m_nBodyLen] = 0;
+	if (m_pBuff ) m_pBuff[m_nBodyLen] = 0;
 	m_pBody = m_pBuff;
 	return m_nBodyLen;
 }
@@ -771,7 +771,7 @@ INT CHttpPost::SendFile(LPCTSTR slclfname, void * param)
 	{
 		m_nBodyLen = of.GetLength();
 		m_pBuff = (BYTE *)malloc(m_nBodyLen);
-		m_pBody = m_pBody;
+		m_pBody = m_pBuff;
 		of.Read(m_pBody, m_nBodyLen);
 		of.Close();
 		CString strtype = CUtil::GetFileType(slclfname);

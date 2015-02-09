@@ -218,6 +218,7 @@ BOOL CDirPackgeDlg::OnInitDialog()
 	//((CBMDlg*)m_pSubDlgs[BM_TAB])->m_proj = (m_Proj);
 	
 	//m_Proj->SetProjStatus(NONE_PROJ);
+	SetWindowStatus(NONE_PROJ | LOCKED);
 	MyTracex("Init done!\n");
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
@@ -525,18 +526,7 @@ void CDirPackgeDlg::OnBnClickedBtnLogin()
 
 void CDirPackgeDlg::OnBnClickedBtnNewprj()
 {
-	if (m_Proj)
-	{
-		if (m_Proj->m_bProjModified)
-		{
-			if (MessageBox(_T("工程已被修改，新建会清除现有数据！确认要新建吗？"), _T("新建工程"), MB_YESNO) == IDNO)
-				return;
-		}
-		if (!m_Proj->m_szTargetPath.IsEmpty())
-		{
-			m_Proj->DestoryProj();
-		}
-	}
+	SwitchDlg(BM_TAB);
 }
 
 
