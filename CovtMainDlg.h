@@ -21,7 +21,7 @@ public:
 
 class CCovtMainDlg;
 typedef int (CCovtMainDlg::*pfnDelegate)(int);
-#define CFG_ORIG_PREF   _T("__orig_")
+#define CFG_ORIG_PREF   _T("__old_meta.xml")
 #define CFG_PREVW_FLV   _T("__preview.flv")
 #include <map>
 
@@ -96,4 +96,5 @@ public:
 	CString m_strTmpDir;
 	afx_msg void OnBnClickedBtnSrcDir();
 	afx_msg void OnBnClickedBtnDstDir();
+	afx_msg void OnTimer(UINT_PTR nIDEvent);
 };

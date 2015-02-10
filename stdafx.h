@@ -93,7 +93,7 @@ void SwitchBackMainDlg();
 
 #if VENDOR_NAME == VENDOR_OPENCE
 #define IDS_VERNDOR_NAME  IDSTR_VENDOR_OPENCN
-#define CFG_OPENCN_FOLDER     _T("奥鹏书籍")
+#define CFG_OPENCN_FOLDER    _T("北京教育资源网")  // _T("奥鹏书籍")
 
 #elif VENDOR_NAME == VENDOR_TEACHING
 #define IDS_VERNDOR_NAME  IDSTR_VENDOR_TEACHING

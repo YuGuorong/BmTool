@@ -9,6 +9,9 @@
 #include "PackerProj.h"
 
 
+#ifdef DEBUG
+#define DEBUG_LOGIN 
+#endif
 // CLoginDlg dialog
 
 IMPLEMENT_DYNAMIC(CLoginDlg, CExDialog)
@@ -61,7 +64,9 @@ BOOL CLoginDlg::OnInitDialog()
 	m_pbtns = new CSkinBtn();
 	m_pbtns->SubclassDlgItem(IDC_BTN_LOGIN, this);
 	m_pbtns->SetImage(IDB_BITMAP_SLIVE_BTN, 102, 26);
+#ifdef DEBUG_LOGIN 
 	GetDlgItem(IDC_EDIT_PWD)->SetWindowText(_T("admin"));
+#endif
 	// TODO:  Add extra initialization here
 	m_ohttp.SetSize(1);
 	return TRUE;  // return TRUE unless you set the focus to a control
@@ -96,9 +101,6 @@ INT GetJsonString(CString &sjson, LPCTSTR skey, CString &sval)
 	return 0;
 }
 
-#ifdef DEBUG
-//#define DEBUG_LOGIN 
-#endif
 //192.168.1.61  fixopen.xicp.net
 void CLoginDlg::OnHttpObjProc(int idHttpObj, int stat)
 {

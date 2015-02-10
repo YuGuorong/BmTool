@@ -220,6 +220,7 @@ BOOL CDirPackgeDlg::OnInitDialog()
 	//m_Proj->SetProjStatus(NONE_PROJ);
 	SetWindowStatus(NONE_PROJ | LOCKED);
 	MyTracex("Init done!\n");
+	SetWindowText(CFG_OPENCN_FOLDER);
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
 

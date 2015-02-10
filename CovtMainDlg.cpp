@@ -126,8 +126,7 @@ static void XMLCALL ParseXmlRoot(void *userData, const char *name, const char **
 	}
 	else if (strcmp(name, "textbook") == 0  )
 	{
-		pdlg->m_sXmlStrings.Empty(); 
-		pdlg->m_pProjDir->DeleteAllItems();
+		pdlg->m_sXmlStrings.Empty(); 		
 		XML_SetElementHandler(parser, ParseXmlDir, endXmlDir);
 	}
 	else if (strcmp(name, "annotation") == 0)
@@ -172,14 +171,15 @@ static void XMLCALL parsedata(void *userData, const XML_Char *s, int len)//Combi
 	}
 }
 
-int RemoveSpecFile(CStringArray& sfiles, CString sf)
+int FindSpecFile(CStringArray& sfiles, CString sf, BOOL bRemove)
 {
 	for (int i = 0; i < sfiles.GetCount(); i++)
 	{
 		if (sfiles[i].Compare(sf) == 0)
 		{
-			sfiles.RemoveAt(i);
-			return 0;
+			if (bRemove)
+				sfiles.RemoveAt(i);
+			return i;
 		}
 	}
 	return -1;
@@ -197,26 +197,37 @@ CString SplidFileName(CString &sf, CString &sext)
 int CCovtMainDlg::AddCover(CStringA &sxmlCover, CStringA &asfile, CStringArray &sfiles)
 {/* !&cover*/	
 	CString strF;
+	CString strCover = CFG_COVER_FILE;
 	if (asfile.IsEmpty() || asfile.GetLength() <= 1)
 	{
-		srand(time(NULL));
-		INT nr = rand() % 30;
-		asfile.Format("%d.jpg", nr);
-		CString ss;
-		strF.Format(_T("%d.jpg"), nr);
-		ss = g_pSet->strCurPath + _T("covers\\") + strF;
-		CopyFile(ss, strF, FALSE);
+		CStringArray sfind;
+		if (FindFile(_T("cover.*"), sfind))
+		{
+			strF = sfind[0];
+			strCover = _T("__") + strF;
+			FindSpecFile(sfiles, strF, true);
+		}
+		else
+		{
+			srand(time(NULL));
+			INT nr = rand() % 30;
+			asfile.Format("%d.jpg", nr);
+			CString ss;
+			strF.Format(_T("%d.jpg"), nr);
+			ss = g_pSet->strCurPath + _T("covers\\") + strF;
+			CopyFile(ss, strF, FALSE);
+		}
 	}
 	else
 	{
 		strF = qUtf2Unc(asfile);
-		RemoveSpecFile(sfiles, strF);
+		FindSpecFile(sfiles, strF, true);
 	}
 
 	CDigest  d(strF);	
-	char * ptmp = "<item type=\"cover\" id=\"\" caption=\"cover\" size=\"%d\" hashType=\"%S\" hashValue=\"%S\" file=\"%s\"  preview=""/>";
-	sxmlCover.Format(ptmp, d.m_len, d.GetModeString(), d.m_sDigest, ConvtXmlChars(asfile));
-	ZipAdd(m_hz, strF, strF.GetBuffer(), 0, ZIP_FILENAME);
+	char * ptmp = "<item type=\"cover\" id=\"\" caption=\"cover\" size=\"%d\" hashType=\"%S\" hashValue=\"%S\" file=\"%S\"  preview=\"\"/>";
+	sxmlCover.Format(ptmp, d.m_len, d.GetModeString(), d.m_sDigest, ConvtXmlChars(strCover));
+	ZipAdd(m_hz, strCover, strF.GetBuffer(), 0, ZIP_FILENAME);
 	strF.ReleaseBuffer();
 	//ramdom assign a cover from picturs
 	//add file to package rename to __cover.???
@@ -232,23 +243,24 @@ int CCovtMainDlg::Addfile(CStringA &sxml, CStringArray &files)
 	hashType="sha1" hashValue="经过hashType指定的算法，HASH后的值" file="" preview=""/>
 	<item type="" id="" caption="" size="" hashType="sha1" hashValue="经过hashType指定的算法，HASH后的值" file="" preview=""/>
 	*/
-	CStringA sxml_files;
-	CStringA sn, sext;
+	CStringA asxml_files;
+	CStringA asn, asext;
 	for (int i = 0; i < files.GetCount(); i++)
 	{
-		CStringA sEnc;
-		CDigest  d(files[i]);
-		CStringA st = qUnc2Utf(CUtil::GetFileType(files[i]));
-		CStringA sf = qUnc2Utf(CUtil::GetFileName(files[i]));
-		int p = sf.ReverseFind('\.');
+		CString sfi = files[i];
+		CStringA asEnc;
+		CDigest  d(sfi);
+		CString sf = CUtil::GetFileName(sfi);
+		CStringA ast = qUnc2Utf(CUtil::GetFileType(sfi));
+		int p = sfi.ReverseFind(_T('\.'));
 		CString sprevw =_T("");
 		if (p >= 0)
 		{
 			int l = sf.GetLength();
 			l -= p;
-			sn = sf.Left(p);
-			sext = sf.Right( l -1);
-			if (!sext.IsEmpty() && sext.CompareNoCase("pdf") == 0)
+			asn = qUnc2Utf(sf.Left(p));
+			asext = qUnc2Utf(sf.Right( l -1));
+			if (!asext.IsEmpty() && asext.CompareNoCase("pdf") == 0)
 			{
 				CString spath = m_strTmpDir + _T("\\")CFG_PREVIEW_FILE;
 				CString sparm;
@@ -261,29 +273,32 @@ int CCovtMainDlg::Addfile(CStringA &sxml, CStringArray &files)
 				ZipAdd(m_hz, CFG_PREVIEW_FILE, spath.GetBuffer(spath.GetLength()), 0, ZIP_FILENAME);
 				spath.ReleaseBuffer();
 				sprevw = CFG_PREVIEW_FILE;
-
-				sEnc = files[i] + _T(".s.tmp");
-				CStringA sin, senc;
-				sin = files[i];
-				senc = sEnc;
-				Encrypt((LPCTSTR)(LPCSTR)sin, (LPCTSTR)(LPCSTR)senc, 0, 0);
+#if 0
+				CStringA asin;
+				QW2A(sfi, asin);
+				sfi += _T(".s.tmp");
+				asEnc =asin + (".s.tmp");			
+				Encrypt((LPCTSTR)(LPCSTR)asin, (LPCTSTR)(LPCSTR)asEnc, 0, 0);
+#endif
+				QUnc2Utf(sfi, asEnc);
 
 			}
 		}
 		else
 		{
-			sn = sf;
+			QUnc2Utf(sf,asn);
+			asEnc = asn;
 		}
 
 		char * ptmp = "<item type=\"%s\" id=\"%d\" caption=\"%s\" size=\"%d\" hashType=\"md5\" hashValue=\"%S\" file=\"%s\"  preview=\"%S\"/>\r\n";
 		CStringA s;
-		s.Format(ptmp, st, i, ConvtXmlChars(sn), d.m_len, d.m_sDigest, ConvtXmlChars(sf), sprevw);
-		sxml_files += s;
-		if (sEnc.IsEmpty()) sEnc = files[i];
-		ZipAdd(m_hz, files[i], sEnc.GetBuffer(), 0, ZIP_FILENAME);
-		sEnc.ReleaseBuffer();
+		s.Format(ptmp, ast, i, ConvtXmlChars(asn), d.m_len, d.m_sDigest, ConvtXmlChars( qUnc2Utf(sf)), sprevw);
+		asxml_files += s;
+		if (asEnc.IsEmpty()) asEnc = files[i];
+		ZipAdd(m_hz, files[i], sfi.GetBuffer(), 0, ZIP_FILENAME);
+		sfi.ReleaseBuffer();
 	}
-	sxml.Replace("!&files", sxml_files);
+	sxml.Replace("!&files", asxml_files);
 	return 0;
 }
 
@@ -354,6 +369,7 @@ int CCovtMainDlg::AddMetaInfo(CStringA &sxml)
 	return 0;
 }
 
+
 int CCovtMainDlg::ParseXmlMeta(CStringArray &sfiles)
 {
 	CFile of;
@@ -361,13 +377,11 @@ int CCovtMainDlg::ParseXmlMeta(CStringArray &sfiles)
 	if (of.Open(sxmlf, CFile::modeRead | CFile::shareDenyNone) == FALSE) return -1;
 	CStringA stemplate;
 	int flen = of.GetLength();
-	of.Read(stemplate.GetBuffer(flen+1), flen);
+	of.Read(stemplate.GetBuffer(flen), flen);
 	of.Close();
 	stemplate.ReleaseBuffer();
-	stemplate.SetAt(flen, '\0');
 
-	MyTracex("xml meta data list:\n");
-	CStringA subject_volume, grades, scover;
+	CStringA  grades, scover, assubject;
 	for (multimap<CStringA, CStringA>::iterator it = m_mapMetaVal.begin(); it != m_mapMetaVal.end(); it++)
 	{
 		CString s; QUtf2Unc(it->second, s);	MyTracex("%s :", it->first );	TRACE(_T("%s\n"), s);
@@ -378,12 +392,18 @@ int CCovtMainDlg::ParseXmlMeta(CStringArray &sfiles)
 		}
 		else if (it->first.Compare("contributor") == 0)
 		{
-			int p = it->second.Find("\nFN:");
-			if (p < 0) continue;
-			it->second.Delete(0, p + 4);
-			int p2 = it->second.Find("\n");
-			if (p2 < 0) p2 = it->second.GetLength();
-			it->second.Delete(p2, it->second.GetLength() - p2);
+			const char * ps = strstr(it->second, "\nFN:");			
+			if (ps == NULL) continue;
+			it->second.Delete(0, ps - it->second + 4);
+			const char * px = strchr(it->second, '\r');
+			if (px == NULL)px = strchr(it->second, '\n');
+			if (px )
+			{
+				INT p2 = px - it->second;
+				it->second.Delete(p2, it->second.GetLength() - p2);
+			}
+			CString su = qUtf2Unc((LPCSTR)it->second);
+			TRACE("%s\n",su);
 		}
 		else  if (it->first.Compare("learning_resource_type") == 0)
 		{
@@ -397,19 +417,37 @@ int CCovtMainDlg::ParseXmlMeta(CStringArray &sfiles)
 			if (c == 3) c = 0;
 			it->second.Format(("%d"), c);
 		}
-		else if (it->first.Compare("subject") == 0)
-		{
-			subject_volume = it->second + subject_volume;
-			continue;
-		}
 		else if (it->first.Compare("m_szUuid") == 0)
 		{
 			m_szUuid = it->second;
 		}
+		else if (it->first.Compare("subject") == 0)
+		{
+			assubject = it->second;
+		}
 		else if (it->first.Compare("volume") == 0)
 		{
-			subject_volume = subject_volume + it->second;
-			continue;
+			CString svol = qUtf2Unc(it->second);
+			if (svol.Compare(_T("全册")) == 0)
+			{
+				it->second = "0";
+			}
+			else if (svol.Compare(_T("上册")) == 0)
+			{
+				it->second = "1";
+			}
+			else if (svol.Compare(_T("下册")) == 0)
+			{			
+				it->second = "2";
+			}			 
+			else 
+			{
+				if( MessageBox(_T("不可解析的\"volume\"值，是否继续？\n 选“是”默认为全册，“否”则取消这次转换"), _T("解析包错误"), MB_YESNO) == IDNO )
+				{
+					return -1;
+				}
+				it->second = "0";
+			}
 		}
 		else if (it->first.Compare("price") == 0) //replace "!&bookprice" and "!&price" both
 		{
@@ -422,12 +460,16 @@ int CCovtMainDlg::ParseXmlMeta(CStringArray &sfiles)
 			int ngrade = 0; 
 			ngrade = atoi(it->second);
 			if (ngrade <= 0 || ngrade > 13)
+			{
+				/*if (MessageBox(_T("不可解析的\"grade_level\"值，是否继续？\n 选“是”默认为全册，“否”则取消这次转换"), _T("解析包错误"), MB_YESNO) == IDNO)
+					return  -1;*/
 				continue;
+			}
 			LPCWSTR sgrades_tmp[] = {	{_T( "学前" )}, {_T( "一年级" )}, {_T( "二年级" )}, {_T( "三年级" )}, {_T( "四年级" )},
 										{_T( "五年级" )}, {_T( "六年级" )}, {_T( "初一" )}, {_T( "初二" )},
 										{_T( "初三" )},{_T( "高一" )}, {_T( "高二" )}, {_T( "高三" )} };
 			stmp.Replace("!&grade_level", it->second);
-			CStringA sc = qUnc2Utf(sgrades_tmp[ngrade]);
+			CStringA sc = qUnc2Utf(sgrades_tmp[ngrade-1]);
 			stmp.Replace("!&grade_caption", sc);
 			grades += stmp;
 			continue;
@@ -442,9 +484,9 @@ int CCovtMainDlg::ParseXmlMeta(CStringArray &sfiles)
 		AddCover(scover, snull, sfiles);
 	}
 
-	stemplate.Replace("!&subject_volume", ConvtXmlChars(subject_volume));
 	stemplate.Replace("!&cover",scover);
 	stemplate.Replace("!&grades", grades);
+	stemplate.Replace("!&subject_caption", assubject);
 
 	Addfile(stemplate, sfiles);
 	CStringA  sdir;  //save directory information
@@ -469,9 +511,6 @@ int CCovtMainDlg::ParseXmlField(CString &sbook)
 	if (of.Open(sbook, CFile::modeRead | CFile::shareDenyNone) == FALSE)
 		return FALSE;
 	char buf[BUFSIZ];
-
-	m_mapMultiVal.clear();
-	m_mapMetaVal.clear();
 	
 	int done;
 	XML_SetUserData(parser, this);
@@ -555,6 +594,7 @@ BEGIN_MESSAGE_MAP(CCovtMainDlg, CExDialog)
 	ON_WM_DESTROY()
 	ON_BN_CLICKED(IDC_BTN_SRC_DIR, &CCovtMainDlg::OnBnClickedBtnSrcDir)
 	ON_BN_CLICKED(IDC_BTN_DST_DIR, &CCovtMainDlg::OnBnClickedBtnDstDir)
+	ON_WM_TIMER()
 END_MESSAGE_MAP()
 
 
@@ -582,7 +622,7 @@ BOOL CCovtMainDlg::OnInitDialog()
 	m_strSrcDir = g_pSet->m_strSrcDir;
 	m_strDstDir = g_pSet->m_strDstDir;
 	UpdateData(0);
-	m_pDeleGate = new CDelegate(this);
+	
 	NewProcessWnd(100, 0);
 
 	char * pbuf = new char[255 * 8];
@@ -596,6 +636,8 @@ BOOL CCovtMainDlg::OnInitDialog()
 	m_db_items.BookState = (char *)&pbuf[ip += 32];
 	m_db_items.author = (char *)&pbuf[ip += 32];
 	m_db_items.description = (char *)&pbuf[ip += 64];
+
+	m_pbtns[0]->SetWindowText(_T("转 换"));
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
@@ -692,69 +734,69 @@ int CCovtMainDlg::ConvertBook(CString &sbook)
 	::SetCurrentDirectory(m_strTmpDir);
 	UnzipFile(sbook, &sfiles);
 	
-	CString strZip = m_strDstDir + _T("\\") + CUtil::GetFileName(sbook);
-	TCHAR * pzip = strZip.GetBuffer(strZip.GetLength());
-	m_hz = CreateZip(pzip, 0, ZIP_FILENAME);
-	
 	CStringArray sfind;
-	if (FindFile(_T("*.flv"), sfind))
-	{
-		MoveFile(sfind[0], CFG_PREVW_FLV);
-		RemoveSpecFile(sfiles, sfind[0]);
-		//sfiles.Add(CFG_PREVW_FLV);
-		CString ssrc = m_strTmpDir + _T("\\") CFG_PREVW_FLV;
-		ZipAdd(m_hz, CFG_PREVW_FLV, ssrc.GetBuffer(), 0, ZIP_FILENAME);
-		ssrc.ReleaseBuffer();
-	}
 	if (FindFile(_T("*.xml"), sfind))
 	{
-		CString sitem;
-		const TCHAR spre[] = { CFG_ORIG_PREF };
-		if (memcmp(sfind[0], spre, sizeof(spre)) != 0)
+		CString sfxml = CFG_ORIG_PREF ;
+		MoveFile(sfind[0], sfxml);
+		FindSpecFile(sfiles, sfind[0], true);
+
+		if (FindFile(_T("*.flv"), sfind))
 		{
-			sitem = CFG_ORIG_PREF + sfind[0];
-			MoveFile(sfind[0], sitem);
-			RemoveSpecFile(sfiles, sfind[0]);
-			sfiles.Add(sitem);
-		}
-		else
-		{
-			sitem = sfind[0];
+			MoveFile(sfind[0], CFG_PREVW_FLV);
+			FindSpecFile(sfiles, sfind[0], true);
+			sfiles.Add(CFG_PREVW_FLV);
 		}
 
-		ParseXmlField(sitem);
+		CString strZip = m_strDstDir + _T("\\") + CUtil::GetFileName(sbook);
+		TCHAR * pzip = strZip.GetBuffer(strZip.GetLength());
+		m_hz = CreateZip(pzip, 0, ZIP_FILENAME);
+		m_pProjDir->DeleteAllItems();
+		m_mapMultiVal.clear();
+		m_mapMetaVal.clear();
+
+		ParseXmlField(sfxml);
 		ParseXmlMeta(sfiles);
 
-		//ZipAdd(m_hz, sitem, sitem.GetBuffer(), 0, ZIP_FILENAME);
-		sitem.ReleaseBuffer();
+		ZipAdd(m_hz, sfxml, sfxml.GetBuffer(), 0, ZIP_FILENAME);
+		sfxml.ReleaseBuffer();
+
+		CloseZip(m_hz);
+		AddTaskToDb(strZip);
 	}
-	
-	CloseZip(m_hz);
 	::SetCurrentDirectory(g_pSet->strCurPath);
 	DelTree(m_strTmpDir);
-	AddTaskToDb(strZip);
 	return 0;
 }
 
 void CCovtMainDlg::OnBnClickedBtnOk()
 {
-	m_pfnAsynRun = &CCovtMainDlg::AsyncConvertDir;
-	m_pfnDone = &CCovtMainDlg::OnConvertDone;
-	UpdateData();
-	g_pSet->m_strSrcDir = this->m_strSrcDir;
-	g_pSet->m_strDstDir = m_strDstDir;
-	g_pSet->Save();
-	m_pDeleGate->start(this);
-	ProcMsg();
+	CString str;
+	m_pbtns[0]->GetWindowText(str);
+	if (str.Compare(_T("转 换")) == 0)
+	{
+		m_pfnAsynRun = &CCovtMainDlg::AsyncConvertDir;
+		m_pfnDone = &CCovtMainDlg::OnConvertDone;
+		UpdateData();
+		g_pSet->m_strSrcDir = this->m_strSrcDir;
+		g_pSet->m_strDstDir = m_strDstDir;
+		g_pSet->Save();
+		if (m_pDeleGate == NULL)
+			m_pDeleGate = new CDelegate(this);
+		m_pDeleGate->start(this);
+		m_pbtns[0]->SetWindowText(_T("转换中..."));
+		ProcMsg();
+	}
+	else
+	{
+		SetTimer(0x0111, 50, NULL)	;
+	}
 }
 
 
 int CCovtMainDlg::OnConvertDone(int param)
 {
 	SetTimer(0x111,50, NULL);
-	m_bCancel = TRUE;
-	EndProgWnd();
-	m_pDeleGate->stop();
 	return 0;
 }
 
@@ -823,4 +865,25 @@ void CCovtMainDlg::OnBnClickedBtnDstDir()
 		m_strDstDir = fd.GetFolderPath();
 		UpdateData(FALSE);
 	}
+}
+
+
+void CCovtMainDlg::OnTimer(UINT_PTR nIDEvent)
+{
+	// TODO:  在此添加消息处理程序代码和/或调用默认值
+	if (nIDEvent == 0x111)
+	{
+		KillTimer(0x111);
+		m_bCancel = TRUE;
+		EndProgWnd();
+		if (m_pDeleGate)
+		{
+			m_pDeleGate->stop();
+			delete m_pDeleGate;
+			m_pDeleGate = NULL;
+		}
+		m_pbtns[0]->SetWindowText(_T("转 换"));
+	}
+
+	CExDialog::OnTimer(nIDEvent);
 }
