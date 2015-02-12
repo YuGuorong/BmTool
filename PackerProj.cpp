@@ -18,6 +18,7 @@ CDigest::CDigest(CString &sfile, DIGEST_MODE mode )
 		m_len = flen;
 		CHAR * ptr = new CHAR[flen];
 		CalDigest(ptr, flen, mode);
+		delete ptr;
 	}
 }
 

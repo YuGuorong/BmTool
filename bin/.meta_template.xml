@@ -28,17 +28,11 @@
         
     <!-- 如果学科是树形结构，可以多级嵌套-->
         <subject>
-            <item id="" caption="!&subject">
-				<item id="" caption=""/>
+            <item id="" caption="!&subject_caption">
             </item>
         </subject>
 
     <!-- 如果分类是树形结构，可以多级嵌套-->
-        <classific>
-            <item id="" caption="">
-                <item id="" caption=""/>
-            </item>
-        </classific>
 
         <scope id="" value="!&courseclass"/>
         <press id="" caption="!&press"/>
@@ -59,15 +53,15 @@
 
     <!--以下属性作为大段文本出现，在系统设计中，可能会将该属性作为一个单据的记录出现，故可能存在ID，在某些系统中，如果没有ID，可以省略。-->
         <preface id=""></preface>
-        <summary id=""></summary>
+        <summary id="">!&description</summary>
         <authBrief id=""></authBrief>
         <digest id=""></digest>
         <recommend id=""></recommend>
-        <comment id="">!&description </comment>
+        <comment id=""></comment>
 
         <files>
 			!&cover
-            !&files
+!&files
         </files>
 
     <!--操作者定义，可根据需要剪裁-->

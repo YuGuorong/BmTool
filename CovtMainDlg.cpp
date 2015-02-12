@@ -171,7 +171,7 @@ static void XMLCALL parsedata(void *userData, const XML_Char *s, int len)//Combi
 	}
 }
 
-int FindSpecFile(CStringArray& sfiles, CString sf, BOOL bRemove)
+int FindSpecFile(CStringArray& sfiles, CString &sf, BOOL bRemove)
 {
 	for (int i = 0; i < sfiles.GetCount(); i++)
 	{
@@ -244,6 +244,8 @@ int CCovtMainDlg::Addfile(CStringA &sxml, CStringArray &files)
 	<item type="" id="" caption="" size="" hashType="sha1" hashValue="经过hashType指定的算法，HASH后的值" file="" preview=""/>
 	*/
 	CStringA asxml_files;
+	CStringArray syulan;
+	FindFile(_T("yulan*.Pdf"), syulan);
 	CStringA asn, asext;
 	for (int i = 0; i < files.GetCount(); i++)
 	{
@@ -260,19 +262,22 @@ int CCovtMainDlg::Addfile(CStringA &sxml, CStringArray &files)
 			l -= p;
 			asn = qUnc2Utf(sf.Left(p));
 			asext = qUnc2Utf(sf.Right( l -1));
-			if (!asext.IsEmpty() && asext.CompareNoCase("pdf") == 0)
+			if ((!asext.IsEmpty() && asext.CompareNoCase("pdf") == 0) )
 			{
-				CString spath = m_strTmpDir + _T("\\")CFG_PREVIEW_FILE;
-				CString sparm;
-				sparm.Format(_T("-p %d-%d \""),m_nMin, m_nMax);
-				sparm += files[i];
+				if (syulan.GetCount() ==0  || syulan[0].Compare(sfi) == 0)
+				{
+					CString spath = m_strTmpDir + _T("\\")CFG_PREVIEW_FILE;
+					CString sparm;
+					sparm.Format(_T("-p %d-%d \""),m_nMin, m_nMax);
+					sparm += files[i];
 				
-				CString sexe = g_pSet->strCurPath + CFG_PDF2SWF_EXE;
-				sparm += _T("\" -o \"") + spath +_T("\"");
-				::CUtil::RunProc(sexe, sparm, m_strTmpDir);
-				ZipAdd(m_hz, CFG_PREVIEW_FILE, spath.GetBuffer(spath.GetLength()), 0, ZIP_FILENAME);
-				spath.ReleaseBuffer();
-				sprevw = CFG_PREVIEW_FILE;
+					CString sexe = g_pSet->strCurPath + CFG_PDF2SWF_EXE;
+					sparm += _T("\" -o \"") + spath +_T("\"");
+					::CUtil::RunProc(sexe, sparm, m_strTmpDir);
+					ZipAdd(m_hz, CFG_PREVIEW_FILE, spath.GetBuffer(spath.GetLength()), 0, ZIP_FILENAME);
+					spath.ReleaseBuffer();
+					sprevw = CFG_PREVIEW_FILE;
+				}
 #if 0
 				CStringA asin;
 				QW2A(sfi, asin);
@@ -290,7 +295,7 @@ int CCovtMainDlg::Addfile(CStringA &sxml, CStringArray &files)
 			asEnc = asn;
 		}
 
-		char * ptmp = "<item type=\"%s\" id=\"%d\" caption=\"%s\" size=\"%d\" hashType=\"md5\" hashValue=\"%S\" file=\"%s\"  preview=\"%S\"/>\r\n";
+		char * ptmp = "\t\t\t<item type=\"%s\" id=\"%d\" caption=\"%s\" size=\"%d\" hashType=\"md5\" hashValue=\"%S\" file=\"%s\"  preview=\"%S\"/>\r\n";
 		CStringA s;
 		s.Format(ptmp, ast, i, ConvtXmlChars(asn), d.m_len, d.m_sDigest, ConvtXmlChars( qUnc2Utf(sf)), sprevw);
 		asxml_files += s;
@@ -381,7 +386,7 @@ int CCovtMainDlg::ParseXmlMeta(CStringArray &sfiles)
 	of.Close();
 	stemplate.ReleaseBuffer();
 
-	CStringA  grades, scover, assubject;
+	CStringA  grades, scover, assubject, asterm = "0";
 	for (multimap<CStringA, CStringA>::iterator it = m_mapMetaVal.begin(); it != m_mapMetaVal.end(); it++)
 	{
 		CString s; QUtf2Unc(it->second, s);	MyTracex("%s :", it->first );	TRACE(_T("%s\n"), s);
@@ -421,33 +426,37 @@ int CCovtMainDlg::ParseXmlMeta(CStringArray &sfiles)
 		{
 			m_szUuid = it->second;
 		}
+		else if (it->first.Compare("textbook_release") == 0)
+		{
+			it->second.Trim();
+			if (it->second.IsEmpty() || it->second.GetLength() <= 0)
+			{
+				it->second = qUnc2Utf(_T("北京版"));
+			}
+		}
 		else if (it->first.Compare("subject") == 0)
 		{
 			assubject = it->second;
+			continue;
 		}
 		else if (it->first.Compare("volume") == 0)
 		{
 			CString svol = qUtf2Unc(it->second);
+			svol.Trim();
 			if (svol.Compare(_T("全册")) == 0)
 			{
-				it->second = "0";
+				asterm = "0";
 			}
 			else if (svol.Compare(_T("上册")) == 0)
 			{
-				it->second = "1";
+				asterm = "1";
 			}
 			else if (svol.Compare(_T("下册")) == 0)
 			{			
-				it->second = "2";
-			}			 
-			else 
-			{
-				if( MessageBox(_T("不可解析的\"volume\"值，是否继续？\n 选“是”默认为全册，“否”则取消这次转换"), _T("解析包错误"), MB_YESNO) == IDNO )
-				{
-					return -1;
-				}
-				it->second = "0";
+				asterm = "2";
 			}
+			continue;
+			
 		}
 		else if (it->first.Compare("price") == 0) //replace "!&bookprice" and "!&price" both
 		{
@@ -456,7 +465,7 @@ int CCovtMainDlg::ParseXmlMeta(CStringArray &sfiles)
 		else if (it->first.Compare("grade_level") == 0)
 		{
 			CStringA scap;
-			CStringA stmp = "<item id = \"\" value = \"!&grade_level\" caption=\"!&grade_caption\" term=\"0\"/>";
+			CStringA stmp = "<item id = \"\" value = \"!&grade_level\" caption=\"!&grade_caption\" term=\"!&term\"/>";
 			int ngrade = 0; 
 			ngrade = atoi(it->second);
 			if (ngrade <= 0 || ngrade > 13)
@@ -468,9 +477,12 @@ int CCovtMainDlg::ParseXmlMeta(CStringArray &sfiles)
 			LPCWSTR sgrades_tmp[] = {	{_T( "学前" )}, {_T( "一年级" )}, {_T( "二年级" )}, {_T( "三年级" )}, {_T( "四年级" )},
 										{_T( "五年级" )}, {_T( "六年级" )}, {_T( "初一" )}, {_T( "初二" )},
 										{_T( "初三" )},{_T( "高一" )}, {_T( "高二" )}, {_T( "高三" )} };
+			ngrade--;
+			it->second.Format("%02d", ngrade);
 			stmp.Replace("!&grade_level", it->second);
-			CStringA sc = qUnc2Utf(sgrades_tmp[ngrade-1]);
-			stmp.Replace("!&grade_caption", sc);
+			CStringA sc = qUnc2Utf(sgrades_tmp[ngrade]);
+			stmp.Replace("!&grade_caption", sc); 
+			
 			grades += stmp;
 			continue;
 		}
@@ -483,7 +495,7 @@ int CCovtMainDlg::ParseXmlMeta(CStringArray &sfiles)
 		CStringA snull;
 		AddCover(scover, snull, sfiles);
 	}
-
+	grades.Replace("!&term", asterm);
 	stemplate.Replace("!&cover",scover);
 	stemplate.Replace("!&grades", grades);
 	stemplate.Replace("!&subject_caption", assubject);
@@ -505,11 +517,12 @@ int CCovtMainDlg::ParseXmlMeta(CStringArray &sfiles)
 
 int CCovtMainDlg::ParseXmlField(CString &sbook)
 {
+	INT ret = 0;
 	XML_Parser parser = XML_ParserCreate(NULL);
 	m_ptrUserData = parser;
 	CFile of;
 	if (of.Open(sbook, CFile::modeRead | CFile::shareDenyNone) == FALSE)
-		return FALSE;
+		return -3;
 	char buf[BUFSIZ];
 	
 	int done;
@@ -523,13 +536,14 @@ int CCovtMainDlg::ParseXmlField(CString &sbook)
 			MyTracex("%s at line %""u\n",
 				XML_ErrorString(XML_GetErrorCode(parser)),
 				XML_GetCurrentLineNumber(parser));
-			return 1;
+			ret = -1; 
+			break;
 		}
 	} while (!done);
 	of.Close();
 	XML_ParserFree(parser);
 
-	return 0;
+	return ret;
 }
 
 
@@ -682,13 +696,18 @@ INT CCovtMainDlg::ListZips()
 
 int CCovtMainDlg::AsyncConvertDir(int param)
 {
-	m_strTmpDir = g_pSet->strCurPath + _T("_tmp");
+	CString strTmpRoot = g_pSet->strCurPath + _T("_tmp\\");
+	CreateDirectory(strTmpRoot, NULL);
 	ListZips();
 	SetCurProgPos(0, _T("正在转换..."));
 	SetProgWndLimit(m_strSrcPacks.GetSize(), 0);
 	for (int i = 0; i < m_strSrcPacks.GetSize(); i++)
 	{
 		SetCurProgPos(i, NULL);
+		CString sf = CUtil::GetFileName(m_strSrcPacks[i]);
+		int p = sf.ReverseFind(_T('.'));
+		if (p)  sf.Delete(p, sf.GetLength() - p);
+		m_strTmpDir = strTmpRoot + sf;
 		ConvertBook(m_strSrcPacks[i]);
 	}
 	
@@ -755,14 +774,22 @@ int CCovtMainDlg::ConvertBook(CString &sbook)
 		m_mapMultiVal.clear();
 		m_mapMetaVal.clear();
 
-		ParseXmlField(sfxml);
-		ParseXmlMeta(sfiles);
+		if (ParseXmlField(sfxml) >= 0)
+		{
+			if (ParseXmlMeta(sfiles) >= 0)
+			{
+				ZipAdd(m_hz, sfxml, sfxml.GetBuffer(), 0, ZIP_FILENAME);
+				sfxml.ReleaseBuffer();
 
-		ZipAdd(m_hz, sfxml, sfxml.GetBuffer(), 0, ZIP_FILENAME);
-		sfxml.ReleaseBuffer();
-
-		CloseZip(m_hz);
-		AddTaskToDb(strZip);
+				CloseZip(m_hz);
+				AddTaskToDb(strZip);
+				m_hz = NULL;
+			}
+		}
+		if ( m_hz != NULL)
+		{
+			CloseZip(m_hz);
+		}
 	}
 	::SetCurrentDirectory(g_pSet->strCurPath);
 	DelTree(m_strTmpDir);

@@ -447,7 +447,7 @@ void CDirPackgeDlg::OnSize(UINT nType, int cx, int cy)
 
 void CDirPackgeDlg::OnDestroy()
 {
-	for (int i = RES_EXP_TAB; i<MAX_TAB_ITEM; i++)
+	for (int i = BM_TAB; i<MAX_TAB_ITEM; i++)
 	{
 		if( m_pSubDlgs[i] && ::IsWindow(m_pSubDlgs[i]->GetSafeHwnd() ) )
 		{

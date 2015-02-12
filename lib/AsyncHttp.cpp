@@ -398,7 +398,8 @@ void * CAsyncHttp::run(void * param)
 				bret = SendData();		
 				if (bret > 0)
 				{
-					bret = OnHttpSend();
+					int  il = OnHttpSend();
+					bret = (il < 0) ? -500 : il;
 				}
 			}
 		}
