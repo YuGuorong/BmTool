@@ -5,6 +5,8 @@
 #include "ResManDlg.h"
 #include "afxdialogex.h"
 #include "AsyncHttp.h"
+#include <shlwapi.h>
+#pragma comment(lib,"Shlwapi.lib")
 
 // CResManDlg 对话框
 static const INT btnids[] = { IDC_BTN_LOCAL, IDC_BTN_RESUPLOAD, IDC_BTN_ADD,
@@ -131,7 +133,7 @@ BOOL CResManDlg::OnInitDialog()
 		m_listTask.SetColumnWidth(i, book_colum_w[i]);
 	}
 
-	LoadBooks();
+	LoadBooks(TRUE);
 	SetTimer(ID_TMR_SCAN_TASK, 5000, NULL);
 	
 	return TRUE;  // return TRUE unless you set the focus to a control
@@ -148,28 +150,45 @@ static int cb_Show_Record(void * param, int argc, char ** argv, char ** aszColNa
 		LVIS_SELECTED | LVIF_IMAGE, LVIS_SELECTED | LVIF_IMAGE, 0, 0); //BookName; /* 2*/
 
 	CString strsize = GetReadableSize((UINT32)(atoi(argv[4])) );
-	plist->SetItemText(row, IDX_COL_BOOK_SIZE, strsize);  //BookSize; /*4*/
+	CString sf; QUtf2Unc(argv[3], sf);
+	if (PathFileExists(sf))
+	{
+		plist->SetItemText(row, IDX_COL_BOOK_SIZE, strsize);  //BookSize; /*4*/
+		QUtf2Unc(argv[8], str); plist->SetItemText(row, IDX_COL_ST_UPLOAD, str);//BookState; /* 8*/
+	}
+	else
+	{
+		plist->SetItemText(row, IDX_COL_ST_UPLOAD, _T("文件已删除"));  //BookSize; /*4*/
+		plist->SetItemText(row, IDX_COL_BOOK_SIZE, _T("0"));  //BookSize; /*4*/
+	}
 	QUtf2Unc(argv[5], str);	plist->SetItemText(row, IDX_COL_TM_CREATE, str);//tmCreate;   /* 5 */
-	QUtf2Unc(argv[8], str); plist->SetItemText(row, IDX_COL_ST_UPLOAD, str);//BookState; /* 8*/
-	QUtf2Unc(argv[3], str); plist->SetItemText(row, IDX_COL_BOOK_PATH, str);//BookPath; /*3*/
+	plist->SetItemText(row, IDX_COL_BOOK_PATH, sf);//BookPath; /*3*/
 	QUtf2Unc(argv[1], str); plist->SetItemText(row, IDX_COL_BOOK_ID, str);//ID; /*1*/
 	plist->SetItemText(row, IDX_COL_NU_UPLOAD, _T("..."));  //BookSize; /*4*/
+	plist->SetItemData(row, 0);
 	return 0;
 }
 
-void CResManDlg::LoadBooks()
+void CResManDlg::LoadBooks(BOOL bInit)
 {
 	m_CurResType = TYPE_BOOKS_RES;
-	m_listRes.DeleteAllItems();
-	while (m_listRes.DeleteColumn(0)){};
-	m_nBookResIdCol = sizeof(colum_w) / sizeof(int) - 1;
-	for (int i = 0; i<sizeof(szColumns) / sizeof(LPCTSTR); i++)
+	if (bInit) 
 	{
-		m_listRes.InsertColumn(i, szColumns[i], LVCFMT_CENTER);
-		m_listRes.SetColumnWidth(i, colum_w[i]);
+		m_listRes.DeleteAllItems();
+		while (m_listRes.DeleteColumn(0)){};
+		m_nBookResIdCol = sizeof(colum_w) / sizeof(int) - 1;
+		for (int i = 0; i < sizeof(szColumns) / sizeof(LPCTSTR); i++)
+		{
+			m_listRes.InsertColumn(i, szColumns[i], LVCFMT_CENTER);
+			m_listRes.SetColumnWidth(i, colum_w[i]);
+		}
+		m_sTimeLast = _T("1970-01-01");
 	}
 	char *pErrMsg;
-	CString str = _T("SELECT * FROM books WHERE BookState<>\'删除\' ORDER BY BookState ");
+	//CString str = _T("SELECT * FROM books WHERE BookState<>\'删除\' ORDER BY BookState ");
+	CString str;
+	str.Format(_T("SELECT * FROM books WHERE tmCreate >\'%s\' ORDER BY tmCreate "), m_sTimeLast);
+
 	AString sql_show;
 	QUnc2Utf(str, sql_show);
 	execSQL(sql_show, cb_Show_Record, &m_listRes, &pErrMsg);
@@ -181,6 +200,8 @@ void CResManDlg::LoadBooks()
 		stritem = m_listRes.GetItemText(i, IDX_COL_BOOK_ID);
 		m_mapBookid_listIdx.insert(m_mapBookid_listIdx.end(), make_pair(stritem, i));
 	}
+	if (m_listRes.GetItemCount())
+		m_sTimeLast = m_listRes.GetItemText(m_listRes.GetItemCount()-1, IDX_COL_TM_CREATE);
 }
 
 void CResManDlg::LoadBookResList()
@@ -227,7 +248,7 @@ void CResManDlg::OnShowWindow(BOOL bShow, UINT nStatus)
 	if (bShow)
 	{
 		//LoadBookResList();
-			LoadBooks();
+			LoadBooks(FALSE);
 	}
 }
 
@@ -304,9 +325,12 @@ BOOL CResManDlg::CheckTask(LPCTSTR bookid, BOOL bremove)
 			if (bremove)
 			{
 				CAsyncHttp* phttp = (CAsyncHttp*)m_listTask.GetItemData(row);
-				phttp->Disconnect();
-				m_listTask.DeleteItem(row);
-				delete phttp;
+				if (phttp)
+				{
+					phttp->Disconnect();
+					m_listTask.DeleteItem(row);
+					delete phttp;
+				}
 			}
 			return   TRUE;
 		}
@@ -319,7 +343,6 @@ void CResManDlg::OnBnClickedBtnUpload()
 	if (m_CurResType == TYPE_LOCAL_RES)
 	{
 		MessageBox(_T("请选择上传资源"),_T("没选择上传资源"));
-		LoadBooks();
 	}
 	else
 	{
@@ -347,7 +370,6 @@ void CResManDlg::OnBnClickedBtnLocal()
 void CResManDlg::OnBnClickedBtnResupload()
 {
 	// TODO:  在此添加控件通知处理程序代码
-	LoadBooks();
 }
 
 

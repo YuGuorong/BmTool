@@ -106,6 +106,9 @@
     <None Include="res\DirPackge.ico">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="res\DirPackgex.ico">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">

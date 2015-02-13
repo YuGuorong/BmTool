@@ -30,10 +30,11 @@ protected:
 	CListCtrl  m_listRes;
 	CPackerProj  * m_proj;
 	INT			m_nBookResIdCol;
+	CString   m_sTimeLast;
 
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV Ö§³Ö
-	void LoadBooks();
+	void LoadBooks(BOOL binit);
 	void LoadBookResList();
 	void * UploadBook(LPCTSTR book);
 	BOOL CheckTask(LPCTSTR bookid, BOOL bremove = FALSE);

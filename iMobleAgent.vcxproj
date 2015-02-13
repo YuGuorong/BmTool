@@ -112,6 +112,7 @@
     <None Include="ReadMe.txt" />
     <None Include="res\DirPackge.ico" />
     <None Include="res\DirPackge.rc2" />
+    <None Include="res\DirPackgex.ico" />
     <None Include="res\introduce.bmp" />
     <None Include="res\skin\bk.bmp" />
     <None Include="res\skin\btn.png" />

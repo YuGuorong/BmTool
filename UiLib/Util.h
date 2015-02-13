@@ -1,5 +1,8 @@
 #pragma once
 
+#define KByte    *1024
+#define MByte    *1024*1024
+
 class CPMutex
 {
 public:	/* 默认创建匿名的互斥 */
@@ -24,6 +27,7 @@ public:
 	static CString GetFilePath(CString &strFile);
 	static CString GetFileName(CString &strFile);
 	static CString GetFileType(LPCTSTR szFile);
+	static int GetFileExt(CString &Sfile, CString &sext);
 	static BOOL GetFileMemiType(LPCTSTR szExt, CString &stype);
 	static HANDLE FindProcessByName(LPCTSTR szFileName, BOOL bKill = FALSE, INT exit_code = 0);
 	static HANDLE CUtil::RunProc(LPCTSTR strcmd, LPCTSTR strparam, LPCTSTR strPath, BOOL bsync = TRUE, BOOL forcehide = TRUE);
@@ -43,6 +47,7 @@ public:
 
 BOOL DelTree(LPCTSTR lpszPath);
 void UnzipFile(CString &sin, CStringArray * sFiles = NULL); //sdir is output parameter, indicate what folder exact to
+BOOL UnzipLimitFile(CString &sin, CStringArray * pFiles, int max_size, LPCTSTR sext = NULL);
 int RunCmd(LPCTSTR scmd, CString &sresult, LPCTSTR sdir =NULL, BOOL bshow =FALSE);
 #define  AString   CStringA
 

@@ -24,9 +24,27 @@ typedef int (CCovtMainDlg::*pfnDelegate)(int);
 #define CFG_ORIG_PREF   _T("__old_meta.xml")
 #define CFG_PREVW_FLV   _T("__preview.flv")
 #include <map>
+#include "afxwin.h"
+#include "afxcmn.h"
 
 
 using namespace std;
+
+enum
+{
+	CVT_ERR_BASE = -500,
+	CVT_ERR_HUGE_FLV,
+	CVT_ERR_NO_XML,
+	CVT_ERR_PARSE_XML,
+	CVT_ERR_OPEN_XML,
+	CVT_ERR_OPEN_TEMPLATE,
+	CVT_ERR_CREATE_META_FILE,
+	CVT_ERR_SECTION_VOLUME,
+	CVT_ERR_SECTION_GRADE,
+	CVT_ERR_SECTION_AUTHOR,
+	CVT_ERR,
+	CVT_OK = 0
+};
 
 class CCovtMainDlg : public CExDialog
 {
@@ -66,6 +84,13 @@ public:
 	int AddMetaInfo(CStringA &sxml);
 	int AddTaskToDb(CString &szip);
 
+	CString m_slog;
+	void SetCurProgPos(int cp, LPCTSTR  sinf);
+	void SetProgWndLimit(int max, int min=0);
+	void SetProgInfo(LPCSTR strInfo);
+	void AddLog(LPCTSTR slog);
+	void Logs(LPCTSTR fmt, ...);
+
 	void CCovtMainDlg::SaveDirToXml(HTREEITEM hit, CStringA &sxml, int sublevel);
 	void CCovtMainDlg::SaveDirs(CStringA &sxml);
 	
@@ -80,6 +105,7 @@ protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 	void EnableProxy(BOOL benProxy);
 	CLCheckBox m_ProxyBox;
+	int CheckLastTaskBroken(CString & stasklog_f);
 
 	DECLARE_MESSAGE_MAP()
 public:
@@ -97,4 +123,7 @@ public:
 	afx_msg void OnBnClickedBtnSrcDir();
 	afx_msg void OnBnClickedBtnDstDir();
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
+	CEdit m_oLog;
+	CProgressCtrl m_oProg;
+	CLink m_oInf;
 };
