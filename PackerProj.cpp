@@ -662,24 +662,14 @@ void CPackerProj::GenPreview(void * hhz)
 	spath.ReleaseBuffer();
 }
 
-UINT32 GetFileSize(LPCTSTR sf)
-{
-	CFileStatus status;
-	if (CFile::GetStatus(sf, status))
-	{
-		return status.m_size;
-	}
-	return 0;
-}
-
 UINT32 CPackerProj::PreCountZipSize()
 {
 	UINT32 tlen = 0;
 	tlen += m_nTargetFLen;
 	tlen += m_nTargetFLen;// PREVEW_SIZE
 	
-	tlen += GetFileSize(m_szCoverPath + _T("\\__cover.jpg"));
-	tlen += GetFileSize(m_szPathRes + _T("\\")CFG_META_FILE);
+	tlen += CUtil::GetFileSize(m_szCoverPath + _T("\\__cover.jpg"));
+	tlen += CUtil::GetFileSize(m_szPathRes + _T("\\")CFG_META_FILE);
 	CResMan * pRes = m_pRes;
 	while(pRes)
 	{
@@ -739,7 +729,7 @@ BOOL CPackerProj::ZipRes(LPCTSTR szZipFile)
 			spath.ReleaseBuffer();
 
 			sinfo.Format(_T("保存封面")); 
-			if (!OffsetPorgPos(GetFileSize(m_szPathRes + _T("\\")CFG_META_FILE), sinfo)) throw _T("用户中止");
+			if (!OffsetPorgPos(CUtil::GetFileSize(m_szPathRes + _T("\\")CFG_META_FILE), sinfo)) throw _T("用户中止");
 			spath = m_szCoverPath;// m_szPathRes + _T("\\__cover.jpg");
 			ZipAdd(hz, _T("__cover.jpg"), spath.GetBuffer(), 0, ZIP_FILENAME);
 			spath.ReleaseBuffer();

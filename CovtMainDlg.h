@@ -34,6 +34,7 @@ enum
 {
 	CVT_ERR_BASE = -500,
 	CVT_ERR_HUGE_FLV,
+	CVT_ERR_HUGE_SWF,
 	CVT_ERR_NO_XML,
 	CVT_ERR_PARSE_XML,
 	CVT_ERR_OPEN_XML,
@@ -106,6 +107,7 @@ protected:
 	void EnableProxy(BOOL benProxy);
 	CLCheckBox m_ProxyBox;
 	int CheckLastTaskBroken(CString & stasklog_f);
+	int m_nClassType;
 
 	DECLARE_MESSAGE_MAP()
 public:

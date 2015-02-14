@@ -127,8 +127,19 @@ int CUtil::GetFileExt(CString &Sfile, CString &sext)
 	int pt = Sfile.ReverseFind('.');
 	if (pt > 0 && (ps < pt))
 	{
-		sext = Sfile.Right(Sfile.GetLength() - pt); 
+		sext = Sfile.Right(Sfile.GetLength() - pt -1); 
 		return 1;
+	}
+	return 0;
+}
+
+
+DWORD CUtil::GetFileSize(LPCTSTR sfile)
+{
+	CFileStatus status;
+	if (CFile::GetStatus(sfile, status))
+	{
+		return status.m_size;
 	}
 	return 0;
 }
@@ -750,6 +761,7 @@ BOOL UnzipLimitFile(CString &sin, CStringArray * pFiles, int max_size, LPCTSTR s
 	CString sext;
 	for (int i = 0; i < numitems; i++)
 	{
+		GetZipItem(hz, i, &ze);
 		if (ze.unc_size >= max_size)
 		{
 			CString s(ze.name);

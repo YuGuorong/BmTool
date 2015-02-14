@@ -248,25 +248,21 @@ int CCovtMainDlg::Addfile(CStringA &sxml, CStringArray &files)
 	CStringA asxml_files;
 	CStringArray syulan;
 	FindFile(_T("yulan*.Pdf"), syulan);
+	CString sprevw ;
 	
-	CStringA asn, asext;
 	for (int i = 0; i < files.GetCount(); i++)
 	{
 		CString sfi = files[i];
-		CStringA asEnc;
 		CDigest  d(sfi);
 		CString sf = CUtil::GetFileName(sfi);
-		CStringA ast = qUnc2Utf(CUtil::GetFileType(sfi));
-		int p = sfi.ReverseFind(_T('\.'));
-		CString sprevw =_T("");
+		int p = sf.ReverseFind(_T('.'));
+		CString snm = p<0? sf : sf.Left(p);
+		CString sext = sfi.Right(sfi.GetLength() - p - 1);
+		CString sft = CUtil::GetFileType(sfi);
 		if (p >= 0)
 		{
-			int l = sf.GetLength();
-			l -= p;
-			asn = qUnc2Utf(sf.Left(p));
-			asext = qUnc2Utf(sf.Right( l -1));
 			//already create preview? pdf ?
-			if (sprevw.GetLength()<2  && (!asext.IsEmpty() && asext.CompareNoCase("pdf") == 0))
+			if (sprevw.GetLength()<2 && (!sext.IsEmpty() && sext.CompareNoCase(_T("pdf")) == 0))
 			{ //convert yulan_*.pdf , other wise covert first pdf
 				if (syulan.GetCount() ==0  || syulan[0].Compare(sfi) == 0)
 				{
@@ -274,46 +270,53 @@ int CCovtMainDlg::Addfile(CStringA &sxml, CStringArray &files)
 					CString spath = m_strTmpDir + _T("\\")CFG_PREVIEW_FILE;
 					CString sparm;
 					sparm.Format(_T("-p %d-%d \""),m_nMin, m_nMax);
-					sparm += files[i];
+					sparm += sfi;
 				
 					CString sexe = g_pSet->strCurPath + CFG_PDF2SWF_EXE;
 					sparm += _T("\" -o \"") + spath +_T("\"");
 					::CUtil::RunProc(sexe, sparm, m_strTmpDir);
 					Logs(_T("\r\n    打包:\"preview\"..."));
+
+					if (CUtil::GetFileSize(spath) > 10 MByte)
+						return CVT_ERR_HUGE_SWF;
+
 					ZipAdd(m_hz, CFG_PREVIEW_FILE, spath.GetBuffer(spath.GetLength()), 0, ZIP_FILENAME);
 					Logs(_T("done"));
 					spath.ReleaseBuffer();
 					sprevw = CFG_PREVIEW_FILE;
-					
+					if (syulan.GetCount())
+					{
+						continue;
+						ZipAdd(m_hz, snm, sfi.GetBuffer(sfi.GetLength()), 0, ZIP_FILENAME);
+						sfi.ReleaseBuffer();
+					}
 				}
-#if 0
-				CStringA asin;
+			}
+#if 1
+			if (( m_nClassType == 2 || m_nClassType == 1 ) && (!sext.IsEmpty()) && 
+				( sext.CompareNoCase(_T("pdf")) == 0 || sext.CompareNoCase(_T("epub")) == 0  ) )
+			{
+				CStringA asin, asEnc;
 				QW2A(sfi, asin);
 				sfi += _T(".s.tmp");
-				asEnc =asin + (".s.tmp");			
+				asEnc = asin + (".s.tmp");
 				Encrypt((LPCTSTR)(LPCSTR)asin, (LPCTSTR)(LPCSTR)asEnc, 0, 0);
-#endif
-				QUnc2Utf(sfi, asEnc);
-
 			}
-		}
-		else
-		{
-			QUnc2Utf(sf,asn);
-			asEnc = asn;
+#endif
 		}
 
-		char * ptmp = "\t\t\t<item type=\"%s\" id=\"%d\" caption=\"%s\" size=\"%d\" hashType=\"md5\" hashValue=\"%S\" file=\"%s\"  preview=\"!&preview\"/>\r\n";
+		char * ptmp = "\t\t\t<item type=\"%S\" id=\"%d\" caption=\"%s\" size=\"%d\" hashType=\"md5\" hashValue=\"%S\" file=\"%s\"  preview=\"!&preview\"/>\r\n";
 		CStringA s;
-		s.Format(ptmp, ast, i, ConvtXmlChars(asn), d.m_len, d.m_sDigest, ConvtXmlChars( qUnc2Utf(sf)), sprevw);
+		s.Format(ptmp, sft, i, ConvtXmlChars(qUnc2Utf(snm)), d.m_len, d.m_sDigest, ConvtXmlChars(qUnc2Utf(sf)));
 		asxml_files += s;
-		if (asEnc.IsEmpty()) asEnc = files[i];
 		
 		Logs(_T("\r\n    打包:%s..."), files[i]);
-		ZipAdd(m_hz, files[i], sfi.GetBuffer(), 0, ZIP_FILENAME);
+		ZipAdd(m_hz, sf, sfi.GetBuffer(), 0, ZIP_FILENAME);
 		Logs(_T("done"));
 		sfi.ReleaseBuffer();
 	}
+	if (!sprevw.IsEmpty())
+		asxml_files.Replace("!&preview", qUnc2Utf(sprevw));
 	sxml.Replace("!&files", asxml_files);
 	return 0;
 }
@@ -421,6 +424,7 @@ int CCovtMainDlg::ParseXmlMeta(CStringArray &sfiles)
 		else  if (it->first.Compare("learning_resource_type") == 0)
 		{
 			it->second.Delete(2, it->second.GetLength()-2);
+			m_nClassType = atoi( it->second);
 		}
 		else if (it->first.Compare("audience") == 0)
 		{
@@ -482,7 +486,6 @@ int CCovtMainDlg::ParseXmlMeta(CStringArray &sfiles)
 			ngrade = atoi(it->second);
 			if (ngrade <= 0 || ngrade > 13)
 			{
-
 				Logs(_T("\r\n--->不可解析的\"grade_level\": %d [1-13]!!\r\n"), ngrade);
 				return CVT_ERR_SECTION_GRADE;
 			}
@@ -512,7 +515,9 @@ int CCovtMainDlg::ParseXmlMeta(CStringArray &sfiles)
 	stemplate.Replace("!&grades", grades);
 	stemplate.Replace("!&subject_caption", assubject);
 
-	Addfile(stemplate, sfiles);
+	int ret = Addfile(stemplate, sfiles);
+	if (ret < 0) return ret;
+
 	CStringA  sdir;  //save directory information
 	SaveDirs(sdir);
 	stemplate.Replace(("!&dirs"), sdir);
@@ -730,16 +735,10 @@ LPCTSTR GetErrorString(int v)
 
 int CCovtMainDlg::CheckLastTaskBroken(CString & stasklog_f )
 {
-	CString slist;
-	CFile  of;
-	if (of.Open(stasklog_f, CFile::modeRead | CFile::shareDenyNone) == FALSE) return 0;
-	int fl = of.GetLength();
-	of.Read(slist.GetBuffer(fl + 1), fl);
-	of.Close();
-	slist.ReleaseBuffer();
-	int count = 0;
 	CString str;
-	while (AfxExtractSubString(str, slist, count++, _T('\n')))
+	CStdioFile   of;
+	if (of.Open(stasklog_f, CFile::modeRead | CFile::shareDenyNone) == FALSE) return 0;
+	while (of.ReadString(str))
 	{
 		if (str.IsEmpty()) continue;
 		for (int i = 0; i < m_strSrcPacks.GetCount(); i++)
@@ -750,17 +749,20 @@ int CCovtMainDlg::CheckLastTaskBroken(CString & stasklog_f )
 				break;
 			}
 		}
+		str.Empty();
 	}
 	return 1;
 }
 
-void MarkTaskDone(CString &stasklog_f, CString stask)
+void MarkTaskDone(CString &stasklog_f, CString &stask)
 {
-	CFile  of;
-	if (of.Open(stasklog_f, CFile::modeReadWrite) == FALSE) return ;
+	CStdioFile  of;
+	if (of.Open(stasklog_f, CFile::modeWrite) == FALSE)
+		if (of.Open(stasklog_f, CFile::modeCreate|CFile::modeWrite) == FALSE)
+			return;
 	of.SeekToEnd();
-	stask += _T("\n");
-	of.Write(stask, stask.GetLength());
+	of.WriteString(stask);
+	of.WriteString(_T("\n"));
 	of.Close();
 }
 
@@ -771,9 +773,10 @@ int CCovtMainDlg::AsyncConvertDir(int param)
 	CreateDirectory(strTmpRoot, NULL);
 	ListZips();
 	CheckLastTaskBroken(strf_log);
+	CTime dts = CTime::GetCurrentTime();
 	SetCurProgPos(0, _T("正在转换..."));
 	SetProgWndLimit(m_strSrcPacks.GetSize(), 0);
-	CUIntArray m_aRsut;
+	CArray<int, int> m_aRsut;
 	m_aRsut.SetSize(m_strSrcPacks.GetSize());
 	for (int i = 0; i < m_strSrcPacks.GetSize(); i++)
 	{
@@ -783,23 +786,57 @@ int CCovtMainDlg::AsyncConvertDir(int param)
 		int p = sf.ReverseFind(_T('.'));
 		if (p)  sf.Delete(p, sf.GetLength() - p);
 		m_strTmpDir = strTmpRoot + sf;
+		DelTree(m_strTmpDir);
+		CreateDirectory(m_strTmpDir, NULL);
+		::SetCurrentDirectory(m_strTmpDir);
+
 		m_aRsut[i] = ConvertBook(m_strSrcPacks[i]);
+		Logs(_T("\r\n    清理临时文件..."));
 		if (m_aRsut[i] >= 0 )
 		{
 			MarkTaskDone(strf_log, m_strSrcPacks[i]);
-			Logs(_T("完成: %s\r\n"), GetErrorString(m_aRsut[i]));
 		}
-	}
-	CFile of;
-	CString slogtxt = strTmpRoot + _T("转换.log");
-	if (of.Open(_T("slogtxt"), CFile::modeCreate | CFile::modeWrite))
-	{
-		for (int i = 0; i < m_strSrcPacks.GetSize(); i++)
-		{
-		}
+		Logs(_T("\r\n完成: %s"), GetErrorString(m_aRsut[i]));
 
+		::SetCurrentDirectory(g_pSet->strCurPath);
+		DelTree(m_strTmpDir);
+		Logs(_T("\r\n"));
 	}
+	
 	DeleteFile(strf_log);
+	
+	CString slogtxt = strTmpRoot + _T("转换.log");
+	CString sol;
+	AddLog(_T("\r\n-------------------------------\r\n\r\n"));
+
+	CTime dte = CTime::GetCurrentTime();
+	CTimeSpan ts = dte - dts;
+	DWORD dsec = ts.GetTotalSeconds();
+	sol.Format(_T("结束时间：%s, 总耗时：%d分钟%d秒"), dte.Format(TIME_FMT), dsec / 60, dsec % 60);
+
+	sol  += _T("\r\n    源文件夹：") + m_strSrcDir;
+	sol += _T("\r\n    目标文件夹：") + m_strDstDir + _T("\r\n    --------------\r\n");
+	for (int i = 0; i < m_aRsut.GetSize() ; i++)
+	{
+		if (m_aRsut[i] < 0)
+		{
+			CString str;
+			str.Format(_T("    \"%s\" 转换错误: %s\r\n"), 
+				m_strSrcPacks[i], GetErrorString(m_aRsut[i]));
+			sol += str;
+		}
+	}
+	AddLog(sol);
+	sol.Remove('\r');
+	CStdioFile of;
+	if (of.Open(slogtxt, CFile::modeCreate | CFile::modeWrite))
+	{
+		of.WriteString(sol);
+		of.Close();
+	}
+	AddLog(_T("\r\nLog保存-->"));
+	AddLog(slogtxt);
+	AddLog(_T("\r\n-------------------------------\r\n"));
 	return 0;
 }
 
@@ -837,9 +874,7 @@ int CCovtMainDlg::AddTaskToDb(CString &szip)
 int CCovtMainDlg::ConvertBook(CString &sbook)
 {
 	CStringArray sfiles;
-	DelTree(m_strTmpDir);
-	CreateDirectory(m_strTmpDir, NULL);
-	::SetCurrentDirectory(m_strTmpDir);
+
 	Logs(_T("    解包..."));
 	if (UnzipLimitFile(sbook, &sfiles, (10 MByte), _T("flv")) == FALSE)
 		return CVT_ERR_HUGE_FLV;
@@ -883,10 +918,6 @@ int CCovtMainDlg::ConvertBook(CString &sbook)
 		CloseZip(m_hz);
 		DeleteFile(strZip);
 	}
-	Logs(_T("\r\n    清理临时文件..."));
-	::SetCurrentDirectory(g_pSet->strCurPath);
-	DelTree(m_strTmpDir);
-	Logs(_T("\r\n"));
 	return ret;
 }
 
