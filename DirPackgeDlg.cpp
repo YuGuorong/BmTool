@@ -38,6 +38,8 @@ protected:
 	//{{AFX_MSG(CAboutDlg)
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
+public:
+	afx_msg void OnBnClickedOk();
 };
 
 CAboutDlg::CAboutDlg() : CExDialog(CAboutDlg::IDD)
@@ -76,6 +78,7 @@ BEGIN_MESSAGE_MAP(CAboutDlg, CExDialog)
 	//{{AFX_MSG_MAP(CAboutDlg)
 	// No message handlers
 	//}}AFX_MSG_MAP
+	ON_BN_CLICKED(IDOK, &CAboutDlg::OnBnClickedOk)
 END_MESSAGE_MAP()
 
 void ShowAboutDlg()
@@ -210,8 +213,7 @@ BOOL CDirPackgeDlg::OnInitDialog()
 	CREATE_SUB_WND(m_pSubDlgs[SETTING_TAB], CSettingDlg, &m_frame);
 	MyTracex("SETTING_TAB created!\n");
 
-
-	ShowWindow(SW_SHOWMAXIMIZED); 
+	ShowWindow(SW_SHOWMAXIMIZED);
 	SwitchDlg(LOGIN_TAB);
 
 	m_Proj->m_pMetaWnd = m_pSubDlgs[BM_TAB];
@@ -776,3 +778,9 @@ void EndProgWnd()
 	}
 }
 
+
+
+void CAboutDlg::OnBnClickedOk()
+{
+	// TODO:  在此添加控件通知处理程序代码
+}

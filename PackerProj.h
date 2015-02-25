@@ -238,3 +238,4 @@ protected:
 
 
 CPackerProj * GetPackProj();
+INT ListZips(LPCTSTR szDir, CStringArray &sZips);

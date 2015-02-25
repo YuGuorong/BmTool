@@ -31,6 +31,7 @@ protected:
 	CPackerProj  * m_proj;
 	INT			m_nBookResIdCol;
 	CString   m_sTimeLast;
+	CGdipButton * m_cFolderBtns[2];
 
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV Ö§³Ö

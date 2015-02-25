@@ -47,6 +47,8 @@ enum
 	CVT_OK = 0
 };
 
+int AddTaskToDb(CString &szip);
+
 class CCovtMainDlg : public CExDialog
 {
 	DECLARE_DYNAMIC(CCovtMainDlg)
@@ -62,8 +64,11 @@ public:
 	CStringA m_sXmlData;  //for combine element data
 	HTREEITEM m_hDirCur;
 	CTreeCtrl * m_pProjDir;
+	CLCheckBox m_EnEncrypt;
+	BOOL   m_bEnEncrypt;
 
-	SQL_DB_BOOK  m_db_items;
+	CGdipButton	*m_cFolderBtns[2];
+	
 	CStringA m_szUuid;
 
 	multimap<CStringA, CStringA> m_mapMetaVal;  //all xml value here
@@ -83,7 +88,6 @@ public:
 	int AddCover(CStringA &sxml, CStringA &sfile, CStringArray &sPackageFiles);
 	int Addfile(CStringA &sxml, CStringArray &sPackageFiles);
 	int AddMetaInfo(CStringA &sxml);
-	int AddTaskToDb(CString &szip);
 
 	CString m_slog;
 	void SetCurProgPos(int cp, LPCTSTR  sinf);
@@ -96,7 +100,6 @@ public:
 	void CCovtMainDlg::SaveDirs(CStringA &sxml);
 	
 	CStringArray m_strSrcPacks;
-	INT ListZips();
 	int ConvertBook(CString &sbook);
 	int ParseXmlField(CString &sbook);
 	int ParseXmlMeta(CStringArray &sPackageFiles);

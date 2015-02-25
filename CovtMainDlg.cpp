@@ -23,7 +23,27 @@ static void XMLCALL endXmlRoot(void *userData, const char *name);
 
 
 
+INT ListZips(LPCTSTR szDir, CStringArray &sZips)
+{
+	TCHAR scdir[MAX_PATH];
+	GetCurrentDirectory(MAX_PATH, scdir);
+	SetCurrentDirectory(szDir);
+	CFileFind finder;
+	BOOL bWorking = finder.FindFile(_T("*.zip"));
 
+	sZips.RemoveAll();
+	CString ssrc = szDir;
+	ssrc += _T("\\");
+
+	while (bWorking)
+	{
+		bWorking = finder.FindNextFile();
+		CString str = ssrc + finder.GetFileName();
+		sZips.Add(str);
+	}
+	SetCurrentDirectory(scdir);
+	return 0;
+}
 
 int FindFile(LPCTSTR sp, CStringArray &ret)
 {
@@ -145,7 +165,7 @@ static void XMLCALL endXmlRoot(void *userData, const char *name)
 {
 	CCovtMainDlg * pdlg = (CCovtMainDlg*)userData;
 	if (pdlg->m_sXmlData.IsEmpty() || pdlg->m_sXmlData.GetLength() < 1)
-		pdlg->m_mapMetaVal.insert(make_pair(name, _T("")));
+		pdlg->m_mapMetaVal.insert(make_pair(name, ("")));
 	else
 	{
 		pdlg->m_sXmlData.Trim();
@@ -293,7 +313,7 @@ int CCovtMainDlg::Addfile(CStringA &sxml, CStringArray &files)
 				}
 			}
 #if 1
-			if (( m_nClassType == 2 || m_nClassType == 1 ) && (!sext.IsEmpty()) && 
+			if ( m_bEnEncrypt && (m_nClassType == 2 || m_nClassType == 1) && (!sext.IsEmpty()) &&
 				( sext.CompareNoCase(_T("pdf")) == 0 || sext.CompareNoCase(_T("epub")) == 0  ) )
 			{
 				CStringA asin, asEnc;
@@ -600,6 +620,10 @@ CCovtMainDlg::CCovtMainDlg(CWnd* pParent /*=NULL*/)
 	m_pProjDir = NULL;
 	m_pfnDone = m_pfnAsynRun = NULL;
 	m_hDirCur = NULL;
+	for (int i = 0; i<sizeof(m_cFolderBtns) / sizeof(CGdipButton*); i++)
+	{
+		m_cFolderBtns[i] = NULL;
+	}
 }
 
 CCovtMainDlg::~CCovtMainDlg()
@@ -654,21 +678,32 @@ BOOL CCovtMainDlg::OnInitDialog()
 	m_pProjDir->SubclassDlgItem(IDC_TREE_DIR, this);
 	m_strSrcDir = g_pSet->m_strSrcDir;
 	m_strDstDir = g_pSet->m_strDstDir;
-	UpdateData(0);
+	UpdateData(0); 
+
+
+	const INT btnid[] = { IDC_BTN_SRC_DIR, IDC_BTN_DST_DIR };
+	for (int i = 0; i<sizeof(btnid) / sizeof(int); i++)
+	{
+		m_cFolderBtns[i] = new CGdipButton;
+		m_cFolderBtns[i]->SubclassDlgItem(btnid[i], this);
+		m_cFolderBtns[i]->LoadStdImage(IDB_PNG_FOLDER_16, _T("PNG"));
+	}
+
+	CString stip(_T("浏览选择转换源文件夹"));
+	m_cFolderBtns[0]->SetToolTipText(stip);
+	stip = (_T("浏览选择转换目标文件夹"));
+	m_cFolderBtns[1]->SetToolTipText(stip);
+
+
+	m_EnEncrypt.SubclassDlgItem(IDC_CHK_ENCRPT, this);
+	m_EnEncrypt.SetCheck(TRUE);
 	
 	NewProcessWnd(100, 0);
+	CEdit * pedit = (CEdit *)GetDlgItem(IDC_EDIT_SRC_DIR);
+	pedit->SetCueBanner(_T("转换源文件夹"));
 
-	char * pbuf = new char[255 * 8];
-	int ip = 0, is = 255, im = 64;
-	m_db_items.BookId = (char *)&pbuf[ip];
-	m_db_items.BookName = (char *)&pbuf[ip += 64];
-	m_db_items.BookPath = (char *)&pbuf[ip += 256];
-	m_db_items.tmCreate = (char *)&pbuf[ip += 256];
-	m_db_items.tmModify = (char *)&pbuf[ip += 32];
-	m_db_items.tmUpload = (char *)&pbuf[ip += 32];
-	m_db_items.BookState = (char *)&pbuf[ip += 32];
-	m_db_items.author = (char *)&pbuf[ip += 32];
-	m_db_items.description = (char *)&pbuf[ip += 64];
+	pedit = (CEdit *)GetDlgItem(IDC_EDIT_DST_DIR);
+	pedit->SetCueBanner(_T("转换到目标文件夹"));
 
 	m_pbtns[0]->SetWindowText(_T("转    换"));
 	m_oInf.ShowWindow(SW_HIDE);
@@ -688,33 +723,20 @@ void CCovtMainDlg::OnDestroy()
 	if (m_pProjDir) delete m_pProjDir;
 	m_pProjDir = NULL;
 
-	if (m_db_items.BookId)
-		delete m_db_items.BookId;
-	FreeProcessWnd();
-}
-
-INT CCovtMainDlg::ListZips()
-{
-	TCHAR scdir[MAX_PATH];
-	GetCurrentDirectory(MAX_PATH, scdir);
-	SetCurrentDirectory(m_strSrcDir);
-	CFileFind finder;
-	BOOL bWorking = finder.FindFile(_T("*.zip"));
-	
-	m_strSrcPacks.RemoveAll();
-	CString ssrc = m_strSrcDir + _T("\\");
-	while ( bWorking )
+	for (int i = 0; i<sizeof(m_cFolderBtns) / sizeof(CGdipButton*); i++)
 	{
-		bWorking = finder.FindNextFile();
-		CString str = ssrc + finder.GetFileName();
-		m_strSrcPacks.Add(str);
+		if (m_cFolderBtns[i])
+			delete m_cFolderBtns[i] ;
+		m_cFolderBtns[i] = NULL;
 	}
-	SetCurrentDirectory(scdir);
-	return 0;
+
+
+	FreeProcessWnd();
 }
 
 LPCTSTR err_text[] = {
 	{ _T("Error huge flv file(>10MB) ") },
+	{ _T("Error huge swf file(>10MB) ") },
 	{ _T("Error no xml ") },
 	{ _T("Error parse xml") },
 	{ _T("Error open xml") },
@@ -771,7 +793,7 @@ int CCovtMainDlg::AsyncConvertDir(int param)
 	CString strTmpRoot = g_pSet->strCurPath + _T("_tmp\\");
 	CString strf_log = strTmpRoot + _T(".task_list.log");
 	CreateDirectory(strTmpRoot, NULL);
-	ListZips();
+	ListZips(m_strSrcDir,  m_strSrcPacks);
 	CheckLastTaskBroken(strf_log);
 	CTime dts = CTime::GetCurrentTime();
 	SetCurProgPos(0, _T("正在转换..."));
@@ -805,7 +827,7 @@ int CCovtMainDlg::AsyncConvertDir(int param)
 	
 	DeleteFile(strf_log);
 	
-	CString slogtxt = strTmpRoot + _T("转换.log");
+	CString slogtxt = m_strSrcDir + _T("\\转换结果.txt");
 	CString sol;
 	AddLog(_T("\r\n-------------------------------\r\n\r\n"));
 
@@ -840,12 +862,24 @@ int CCovtMainDlg::AsyncConvertDir(int param)
 	return 0;
 }
 
-int CCovtMainDlg::AddTaskToDb(CString &szip)
+int AddTaskToDb(CString &szip)
 {
 	char sql[64 * 1024];
 	CTime tm(CTime::GetCurrentTime());
 	CString strtm = tm.Format(TIME_FMT);
 	CString suid = CUtil::GenGuidString();
+	SQL_DB_BOOK  m_db_items;
+	char pbuf [255 * 8];
+	int ip = 0, is = 255, im = 64;
+	m_db_items.BookId = (char *)&pbuf[ip];
+	m_db_items.BookName = (char *)&pbuf[ip += 64];
+	m_db_items.BookPath = (char *)&pbuf[ip += 256];
+	m_db_items.tmCreate = (char *)&pbuf[ip += 256];
+	m_db_items.tmModify = (char *)&pbuf[ip += 32];
+	m_db_items.tmUpload = (char *)&pbuf[ip += 32];
+	m_db_items.BookState = (char *)&pbuf[ip += 32];
+	m_db_items.author = (char *)&pbuf[ip += 32];
+	m_db_items.description = (char *)&pbuf[ip += 64];
 
 
 	Unc2Utf(g_pSet->m_strUserName, m_db_items.author, -1, 255);
@@ -910,7 +944,7 @@ int CCovtMainDlg::ConvertBook(CString &sbook)
 		ZipAdd(m_hz, sfxml, sfxml.GetBuffer(), 0, ZIP_FILENAME);
 		sfxml.ReleaseBuffer();
 		CloseZip(m_hz);
-		AddTaskToDb(strZip);
+		//AddTaskToDb(strZip);
 		m_hz = NULL;
 	}
 	if (m_hz != NULL)
@@ -930,6 +964,7 @@ void CCovtMainDlg::OnBnClickedBtnOk()
 		m_pfnAsynRun = &CCovtMainDlg::AsyncConvertDir;
 		m_pfnDone = &CCovtMainDlg::OnConvertDone;
 		UpdateData();
+		m_bEnEncrypt = m_EnEncrypt.GetCheck();
 		g_pSet->m_strSrcDir = this->m_strSrcDir;
 		g_pSet->m_strDstDir = m_strDstDir;
 		g_pSet->Save();
@@ -1000,26 +1035,19 @@ void CCovtMainDlg::OnShowWindow(BOOL bShow, UINT nStatus)
 
 void CCovtMainDlg::OnBnClickedBtnSrcDir()
 {
-	CFolderPickerDialog fd(NULL, 0, this, 0);
-	fd.m_ofn.lpstrTitle = _T("选择源文件夹");
-	int ret = fd.DoModal();
-	if (ret == IDOK)
+	if (PickupFolder(m_strSrcDir, this, _T("选择源文件夹"), m_strSrcDir))
 	{
-		m_strSrcDir = fd.GetFolderPath();
 		UpdateData(FALSE);
 	}
+	
 }
 
 
 void CCovtMainDlg::OnBnClickedBtnDstDir()
 {
 	// TODO:  在此添加控件通知处理程序代码
-	CFolderPickerDialog fd(NULL , 0, this, 0);
-	fd.m_ofn.lpstrTitle = _T("选择源文件夹");
-	int ret = fd.DoModal();
-	if (ret == IDOK)
+	if (PickupFolder(m_strDstDir, this, _T("选择目标文件夹"), m_strDstDir))
 	{
-		m_strDstDir = fd.GetFolderPath();
 		UpdateData(FALSE);
 	}
 }

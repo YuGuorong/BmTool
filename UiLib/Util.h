@@ -84,6 +84,8 @@ typedef enum
 }; //Program start commands
 extern int BaseAppInit();
 extern void BaseAppExit();
+BOOL IsOsVistaExt();
+BOOL PickupFolder(CString &strDir, CWnd * pown, LPCTSTR szTitle = NULL, LPCTSTR szDispDir= NULL);
 
 class CSetting
 {

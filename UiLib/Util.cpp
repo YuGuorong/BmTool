@@ -788,6 +788,24 @@ BOOL UnzipLimitFile(CString &sin, CStringArray * pFiles, int max_size, LPCTSTR s
 }
 
 
+BOOL IsOsVistaExt()
+{
+	OSVERSIONINFO osinfo;
+	osinfo.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+
+	GetVersionEx(&osinfo);
+
+	DWORD dwPlatformId = osinfo.dwPlatformId;
+	DWORD dwMajorVersion = osinfo.dwMajorVersion;
+	//Vista & Windows Server 2008         : 6.0
+	//Windows 7 & Windows Server 2008 R2  : 6.1
+	//Windows 8 & Windows Server 2012     : 6.2
+	//Windows 8.1 & Windows Server 2012 R2: 6.3
+	return ((dwPlatformId == 2) &&
+		(dwMajorVersion >= 6));
+}
+
+
 BOOL DelTree(LPCTSTR lpszPath)
 {
 	CString sd = lpszPath;
@@ -808,6 +826,47 @@ BOOL DelTree(LPCTSTR lpszPath)
 	if (nOK)
 		nOK = GetLastError();
 	return nOK == 0;
+}
+
+BOOL PickupFolder(CString &strDir, CWnd * pown, LPCTSTR szTitle, LPCTSTR szDispDir)
+{
+	if (IsOsVistaExt())
+	{
+		CFolderPickerDialog fd(NULL, 0, pown, 0);
+		fd.m_ofn.lpstrTitle = (szTitle == NULL) ? _T("选择文件夹") : szTitle;
+		int ret = fd.DoModal();
+		if (ret == IDOK)
+		{
+			strDir = fd.GetFolderPath();
+			return TRUE;
+		}
+	}
+	else
+	{
+		TCHAR   szDir[MAX_PATH];
+		BROWSEINFO   bi;
+		ITEMIDLIST   *pidl;
+		szDir[0] = 0;
+		if (szDispDir)
+			_tcscpy_s(szDir, MAX_PATH, szDispDir);
+
+		bi.hwndOwner = pown->m_hWnd;
+		bi.pidlRoot = NULL;
+		bi.pszDisplayName = szDir;
+		bi.lpszTitle = (szTitle == NULL) ? _T("选择文件夹") : szTitle;
+		bi.ulFlags = BIF_RETURNONLYFSDIRS;
+		bi.lpfn = NULL;
+		bi.lParam = 0;
+		bi.iImage = 0;
+
+		pidl = SHBrowseForFolder(&bi);
+		if (pidl && SHGetPathFromIDList(pidl, szDir))
+		{
+			strDir = szDir;
+			return TRUE;
+		}
+	}
+	return FALSE;	
 }
 
 void ParseCommandLine(CCommandLineInfo& rCmdInfo)

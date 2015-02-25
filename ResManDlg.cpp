@@ -9,7 +9,7 @@
 #pragma comment(lib,"Shlwapi.lib")
 
 // CResManDlg 对话框
-static const INT btnids[] = { IDC_BTN_LOCAL, IDC_BTN_RESUPLOAD, IDC_BTN_ADD,
+static const INT btnids[] = {  IDC_BTN_RESUPLOAD, 
 IDC_BTN_REMOVE, IDC_BTN_SELECT, IDC_BTN_UPLOAD, IDC_BTN_RETURN };
 
 IMPLEMENT_DYNAMIC(CResManDlg, CExDialog)
@@ -36,6 +36,10 @@ CResManDlg::CResManDlg(CWnd* pParent /*=NULL*/)
 	m_pbtns[0] = NULL;
 	m_proj = NULL;
 	m_CurResType = TYPE_LOCAL_RES;
+	for (int i = 0; i<sizeof(m_cFolderBtns) / sizeof(CGdipButton*); i++)
+	{
+		m_cFolderBtns[i] = NULL;
+	}
 }
 
 CResManDlg::~CResManDlg()
@@ -97,6 +101,12 @@ void CResManDlg::OnDestroy()
 	{
 		delete m_pbtns[i];
 	}
+	for (int i = 0; i<sizeof(m_cFolderBtns) / sizeof(CGdipButton*); i++)
+	{
+		if (m_cFolderBtns[i])
+			delete m_cFolderBtns[i];
+		m_cFolderBtns[i] = NULL;
+	}
 }
 
 BOOL CResManDlg::OnInitDialog()
@@ -132,10 +142,26 @@ BOOL CResManDlg::OnInitDialog()
 		m_listTask.InsertColumn(i, szBookColumns[i], LVCFMT_CENTER);
 		m_listTask.SetColumnWidth(i, book_colum_w[i]);
 	}
+	
+	const INT btnid[] = { IDC_BTN_LOCAL, IDC_BTN_ADD  };
+	const INT pngid[] = { IDB_FOLDER_ADD, IDB_PNG_FOLDER_16 };
+	for (int i = 0; i<sizeof(btnid) / sizeof(int); i++)
+	{
+		m_cFolderBtns[i] = new CGdipButton;
+		m_cFolderBtns[i]->SubclassDlgItem(btnid[i], this);
+		m_cFolderBtns[i]->LoadStdImage(pngid[i], _T("PNG"));
+	}
 
+	CString stip(_T("添加文件夹书籍到上传列表"));
+	m_cFolderBtns[0]->SetToolTipText(stip);
+	stip = (_T("浏览选择文件夹"));
+	m_cFolderBtns[1]->SetToolTipText(stip);
 	LoadBooks(TRUE);
 	SetTimer(ID_TMR_SCAN_TASK, 5000, NULL);
 	
+	CEdit * pedit = (CEdit *)GetDlgItem(IDC_EDIT1);
+	pedit->SetCueBanner(_T("添加文件夹到上传列表") );
+
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// 异常:  OCX 属性页应返回 FALSE
 }
@@ -155,6 +181,10 @@ static int cb_Show_Record(void * param, int argc, char ** argv, char ** aszColNa
 	{
 		plist->SetItemText(row, IDX_COL_BOOK_SIZE, strsize);  //BookSize; /*4*/
 		QUtf2Unc(argv[8], str); plist->SetItemText(row, IDX_COL_ST_UPLOAD, str);//BookState; /* 8*/
+		if (str.Compare(_T("未上传")) == 0)
+		{
+			plist->SetCheck(row, TRUE);
+		}
 	}
 	else
 	{
@@ -362,10 +392,30 @@ void CResManDlg::OnBnClickedBtnUpload()
 	}
 }
 
+
+INT ListZips(LPCTSTR szDir, CStringArray &sZips);
+int AddTaskToDb(CString &szip);
+
+
 void CResManDlg::OnBnClickedBtnLocal()
 {
-	//LoadBookResList(); 
+	CString strDir;
+	GetDlgItem(IDC_EDIT1)->GetWindowText(strDir);
+	CStringArray strFiles;
+	ListZips(strDir, strFiles);
+	for (int i = 0; i < strFiles.GetCount(); i++)
+	{
+		AddTaskToDb(strFiles[i]);
+	}
+
+	if (strFiles.GetCount())
+	{
+		LoadBooks(FALSE);
+		GetDlgItem(IDC_EDIT1)->SetWindowText(_T(""));
+	}
 }
+
+
 
 void CResManDlg::OnBnClickedBtnResupload()
 {
@@ -397,7 +447,11 @@ void CResManDlg::OnBnClickedBtnSelect()
 
 void CResManDlg::OnBnClickedBtnAdd()
 {
-	// TODO:  在此添加控件通知处理程序代码
+	CString strSrcDir;
+	if (PickupFolder(strSrcDir, this, _T("选择上传源文件夹")))
+	{
+		GetDlgItem(IDC_EDIT1)->SetWindowText(strSrcDir);
+	}
 }
 
 

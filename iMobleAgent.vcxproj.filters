@@ -109,6 +109,15 @@
     <None Include="res\DirPackgex.ico">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="res\skin\folder_24.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\skin\folder_16.png">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\skin\folder_add.png">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">

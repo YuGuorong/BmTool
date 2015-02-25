@@ -22,7 +22,7 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
     <UseOfMfc>Dynamic</UseOfMfc>
-    <PlatformToolset>v100</PlatformToolset>
+    <PlatformToolset>v120_xp</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -119,6 +119,9 @@
     <None Include="res\skin\exit.png" />
     <None Include="res\skin\explorres.png" />
     <None Include="res\skin\exptprj.png" />
+    <None Include="res\skin\folder_16.png" />
+    <None Include="res\skin\folder_24.png" />
+    <None Include="res\skin\folder_add.png" />
     <None Include="res\skin\login.png" />
     <None Include="res\skin\newprj.png" />
     <None Include="res\skin\openprj.png" />
