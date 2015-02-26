@@ -25,7 +25,7 @@ public:
 	INT GetItemValue(LPCTSTR ItemCaption, CString &strValue);
 	INT SetItemValue(LPCTSTR ItemCaption, LPCTSTR strValue, BOOL bSetSubCombox=TRUE);
 	CMetaDataItem * NewMetaItem(int style, LPCTSTR szKey, LPCTSTR strDefV);
-	void CreateTitle(PCWnd * pWnd , LPCTSTR szKey, CRect &r);
+	void CreateTitle(PCWnd * pWnd , LPCTSTR szKey, CRect &r, BOOL bUniq = FALSE);
 	void CreateItem( CMetaDataItem * pItem, LPCTSTR strV, CRect &r);
 	void LoadMetaImage( CMetaDataItem * pItem, LPCTSTR strV, CRect r);
 	INT  LoadMetaData(LPCTSTR szMetaFile);

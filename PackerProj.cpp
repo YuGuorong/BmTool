@@ -526,8 +526,9 @@ void CPackerProj::SaveMeta(CString &sxml)
 		{
 			pit->pWnd[1]->GetWindowText(strval);
 		}
+		strval.TrimLeft();
 		if (strval.GetLength() < 1)
-			strval = _T(" ");
+			strval = _T("1");
 		CString strpos = _T("!&");
 		strpos += pit->strKey;
 		strpos.TrimRight();

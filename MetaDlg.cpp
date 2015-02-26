@@ -464,7 +464,7 @@ CMetaDataItem * CMetaDlg::NewMetaItem(int style, LPCTSTR szKey, LPCTSTR strDefV)
 //	pbmp->SetBitmap(pItem->pimg->operator HBITMAP());
 //}
 
-void CMetaDlg::CreateTitle(PCWnd * pWnd , LPCTSTR szKey, CRect &rs)
+void CMetaDlg::CreateTitle(PCWnd * pWnd, LPCTSTR szKey, CRect &rs, BOOL bUniq )
 {
 	CRect r(rs);
 	r.right = r.left + (1 + m_nMaxCapLen) * META_CAPTION_FOUNT_SIZE;
@@ -474,7 +474,10 @@ void CMetaDlg::CreateTitle(PCWnd * pWnd , LPCTSTR szKey, CRect &rs)
 	str +=_T(" ");
     ((CStatic*)pWnd[0])->Create(str,WS_CHILD|WS_VISIBLE|SS_RIGHT|WS_BORDER|SS_CENTERIMAGE, r, this, IDC_STATIC);
 	pWnd[0]->SetFont(&m_ftCaption);
-	((CLink *)pWnd[0])->SetTxtColor(RGB(22, 130, 198));
+	if (bUniq )
+		((CLink *)pWnd[0])->SetTxtColor(RGB(240, 64, 68));
+	else
+		((CLink *)pWnd[0])->SetTxtColor(RGB(22, 130, 198));
 	rs.OffsetRect(r.Width(),0);
 }
 
@@ -493,7 +496,7 @@ void CMetaDlg::CreateItem( CMetaDataItem * pItem, LPCTSTR strV, CRect &rs  )
 		r.MoveToXY(r.left + (m_nMaxCapLen + 1) * META_CAPTION_FOUNT_SIZE + r.Width() + 1, 4);
 		rs.MoveToXY(r.TopLeft());
 	}
-	CreateTitle(pItem->pWnd, pItem->strKey, r);	
+	CreateTitle(pItem->pWnd, pItem->strKey, r, pItem->bUniq);	
 	if( pItem->style & META_COMBOBOX )
 	{
 		pItem->pWnd[2] =(CWnd *)new CStatic;

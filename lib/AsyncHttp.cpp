@@ -767,7 +767,7 @@ INT CHttpPost::SendFile(LPCTSTR slclfname, void * param)
 	{
 		m_nBodyLen = of.GetLength();
 		m_pBuff = (BYTE *)malloc(m_nBodyLen);
-		m_pBody = m_pBody;
+		m_pBody = m_pBuff;
 		of.Read(m_pBody, m_nBodyLen);
 		of.Close();
 		CString strtype = CUtil::GetFileType(slclfname);
