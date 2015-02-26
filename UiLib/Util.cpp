@@ -747,46 +747,6 @@ void UnzipFile(CString &sin, CStringArray * pFiles)
 	//::SetCurrentDirectory(scdir);
 }
 
-BOOL UnzipLimitFile(CString &sin, CStringArray * pFiles, int max_size, LPCTSTR sname)
-{
-	TCHAR * sbuf = sin.GetBuffer();
-	HZIP hz = OpenZip(sbuf, 0, ZIP_FILENAME);
-	sin.ReleaseBuffer();
-	if (hz == NULL)
-	{
-		return FALSE;
-	}
-	ZIPENTRYW ze; GetZipItem(hz, -1, &ze);
-	int numitems = ze.index;
-	CString sext;
-	for (int i = 0; i < numitems; i++)
-	{
-		GetZipItem(hz, i, &ze);
-		if (ze.unc_size >= max_size)
-		{
-			CString s(ze.name);
-			if (sname== NULL || (CUtil::GetFileExt(s, sext) && sext.CollateNoCase(sname) == 0) )
-			{
-				CloseZip(hz);
-				return FALSE;
-			}
-		}
-	}
-
-	for (int i = 0; i < numitems; i++)
-	{
-		GetZipItem(hz, i, &ze);
-		if (UnzipItem(hz, i, ze.name, 0, ZIP_FILENAME) != ZR_OK)
-		{
-				CloseZip(hz);
-				return FALSE;
-		}
-		if (pFiles) pFiles->Add(ze.name);
-	}
-	CloseZip(hz);
-	return TRUE;
-}
-
 
 BOOL IsOsVistaExt()
 {

@@ -6,6 +6,7 @@
 #include "CovtMainDlg.h"
 #include "afxdialogex.h"
 #include "XZip\XZip.h"
+#include "XZip\XUnzip.h"
 #include "PackerProj.h"
 #include "expat\expat.h"
 #include <list>
@@ -60,6 +61,46 @@ int FindFile(LPCTSTR sp, CStringArray &ret)
 	return ret.GetSize();
 }
 
+
+INT UnzipLimitFile(CString &sin, CStringArray * pFiles, int max_size, LPCTSTR sname)
+{
+	TCHAR * sbuf = sin.GetBuffer();
+	HZIP hz = OpenZip(sbuf, 0, ZIP_FILENAME);
+	sin.ReleaseBuffer();
+	if (hz == NULL)
+	{
+		return CVT_ERR_OPEN_PACKAGE;
+	}
+	ZIPENTRYW ze; GetZipItem(hz, -1, &ze);
+	int numitems = ze.index;
+	CString sext;
+	for (int i = 0; i < numitems; i++)
+	{
+		GetZipItem(hz, i, &ze);
+		if (ze.unc_size >= max_size)
+		{
+			CString s(ze.name);
+			if (sname== NULL || (CUtil::GetFileExt(s, sext) && sext.CollateNoCase(sname) == 0) )
+			{
+				CloseZip(hz);
+				return CVT_ERR_HUGE_FLV;
+			}
+		}
+	}
+
+	for (int i = 0; i < numitems; i++)
+	{
+		GetZipItem(hz, i, &ze);
+		if (UnzipItem(hz, i, ze.name, 0, ZIP_FILENAME) != ZR_OK)
+		{
+			CloseZip(hz);
+			return CVT_ERR_UNZIP;
+		}
+		if (pFiles) pFiles->Add(ze.name);
+	}
+	CloseZip(hz);
+	return TRUE;
+}
 
 
 static void XMLCALL ParseXmlDir(void *userData, const char *name, const char **atts)
@@ -268,7 +309,6 @@ int CCovtMainDlg::Addfile(CStringA &sxml, CStringArray &files)
 	CStringA asxml_files;
 	CStringArray syulan;
 	FindFile(_T("yulan*.Pdf"), syulan);
-	CString sprevw ;
 	
 	for (int i = 0; i < files.GetCount(); i++)
 	{
@@ -282,7 +322,7 @@ int CCovtMainDlg::Addfile(CStringA &sxml, CStringArray &files)
 		if (p >= 0)
 		{
 			//already create preview? pdf ?
-			if (sprevw.GetLength()<2 && (!sext.IsEmpty() && sext.CompareNoCase(_T("pdf")) == 0))
+			if (m_strPrevw.GetLength()<2 && (!sext.IsEmpty() && sext.CompareNoCase(_T("pdf")) == 0))
 			{ //convert yulan_*.pdf , other wise covert first pdf
 				if (syulan.GetCount() ==0  || syulan[0].Compare(sfi) == 0)
 				{
@@ -303,7 +343,7 @@ int CCovtMainDlg::Addfile(CStringA &sxml, CStringArray &files)
 					ZipAdd(m_hz, CFG_PREVIEW_FILE, spath.GetBuffer(spath.GetLength()), 0, ZIP_FILENAME);
 					Logs(_T("done"));
 					spath.ReleaseBuffer();
-					sprevw = CFG_PREVIEW_FILE;
+					m_strPrevw = CFG_PREVIEW_FILE;
 					if (syulan.GetCount())
 					{
 						continue;
@@ -313,14 +353,19 @@ int CCovtMainDlg::Addfile(CStringA &sxml, CStringArray &files)
 				}
 			}
 #if 1
-			if ( m_bEnEncrypt && (m_nClassType == 2 || m_nClassType == 1) && (!sext.IsEmpty()) &&
+			if ( m_bEnEncrypt && m_nClassType == 1 && (!sext.IsEmpty()) &&
 				( sext.CompareNoCase(_T("pdf")) == 0 || sext.CompareNoCase(_T("epub")) == 0  ) )
 			{
 				CStringA asin, asEnc;
 				QW2A(sfi, asin);
 				sfi += _T(".s.tmp");
 				asEnc = asin + (".s.tmp");
-				Encrypt((LPCTSTR)(LPCSTR)asin, (LPCTSTR)(LPCSTR)asEnc, 0, 0);
+				int enc_ret = Encrypt((LPCTSTR)(LPCSTR)asin, (LPCTSTR)(LPCSTR)asEnc, 0, 0);
+				if( enc_ret <= 0 )
+				{
+					Logs(_T("\r\n    \"%s\"加密失败[>0], %d... "), sfi, enc_ret);
+					return CVT_ERR_ENC_FAIL_0 - enc_ret;
+				}
 			}
 #endif
 		}
@@ -335,8 +380,10 @@ int CCovtMainDlg::Addfile(CStringA &sxml, CStringArray &files)
 		Logs(_T("done"));
 		sfi.ReleaseBuffer();
 	}
-	if (!sprevw.IsEmpty())
-		asxml_files.Replace("!&preview", qUnc2Utf(sprevw));
+	if (!m_strPrevw.IsEmpty())
+		asxml_files.Replace("!&preview", qUnc2Utf(m_strPrevw));
+	else
+		asxml_files.Replace("!&preview", "");
 	sxml.Replace("!&files", asxml_files);
 	return 0;
 }
@@ -441,10 +488,17 @@ int CCovtMainDlg::ParseXmlMeta(CStringArray &sfiles)
 			INT p2 = px - it->second;
 			it->second.Delete(p2, it->second.GetLength() - p2);
 		}
-		else  if (it->first.Compare("learning_resource_type") == 0)
+		else  if (it->first.Compare("metadataclass") == 0)
 		{
-			it->second.Delete(2, it->second.GetLength()-2);
-			m_nClassType = atoi( it->second);
+			const int nclstbl[] = {1,8,2,6,5,3,7,4}; 
+			int icls = atoi(it->second);
+			if( icls <= 0 || icls >= sizeof(nclstbl)/sizeof(int)+1 )
+			{
+				Logs(_T("\r\n--->不可解析的\"metadataclass\": %s [1-8]!!\r\n"), it->second);
+				return CVT_ERR_SECTION_METACLASS;
+			}
+			m_nClassType = nclstbl[icls -1];
+			it->second.Format("%02d",m_nClassType);
 		}
 		else if (it->first.Compare("audience") == 0)
 		{
@@ -490,8 +544,9 @@ int CCovtMainDlg::ParseXmlMeta(CStringArray &sfiles)
 			}
 			else
 			{
+				asterm = "0";
 				Logs(_T("\r\n--->不可解析的\"volume\": %s [全册|上册|下册]!!\r\n"), svol);
-				return CVT_ERR_SECTION_VOLUME;
+				//return CVT_ERR_SECTION_VOLUME;
 			}
 		}
 		else if (it->first.Compare("price") == 0) //replace "!&bookprice" and "!&price" both
@@ -696,7 +751,7 @@ BOOL CCovtMainDlg::OnInitDialog()
 
 
 	m_EnEncrypt.SubclassDlgItem(IDC_CHK_ENCRPT, this);
-	m_EnEncrypt.SetCheck(TRUE);
+	m_EnEncrypt.SetCheck(FALSE);
 	
 	NewProcessWnd(100, 0);
 	CEdit * pedit = (CEdit *)GetDlgItem(IDC_EDIT_SRC_DIR);
@@ -734,18 +789,7 @@ void CCovtMainDlg::OnDestroy()
 	FreeProcessWnd();
 }
 
-LPCTSTR err_text[] = {
-	{ _T("Error huge flv file(>10MB) ") },
-	{ _T("Error huge swf file(>10MB) ") },
-	{ _T("Error no xml ") },
-	{ _T("Error parse xml") },
-	{ _T("Error open xml") },
-	{ _T("Error open_template") },
-	{ _T("Error create _meta_file") },
-	{ _T("Error Section volume") },
-	{ _T("Error Section grade") },
-	{ _T("Error Section author") },
-};
+LPCTSTR err_text[] = { CVT_ERR_STRINGS };
 
 LPCTSTR GetErrorString(int v)
 {
@@ -908,24 +952,27 @@ int AddTaskToDb(CString &szip)
 int CCovtMainDlg::ConvertBook(CString &sbook)
 {
 	CStringArray sfiles;
+	m_strPrevw.Empty();
 
 	Logs(_T("    解包..."));
-	if (UnzipLimitFile(sbook, &sfiles, (10 MByte), _T("flv")) == FALSE)
-		return CVT_ERR_HUGE_FLV;
+	int ret = CVT_ERR_UNZIP;
+	if ( (ret =UnzipLimitFile(sbook, &sfiles, (10 MByte), _T("flv"))) < 0 )
+		return ret;
 	
-	CStringArray sfind;
-	if (FindFile(_T("*.xml"), sfind) == 0)
+	CStringArray sxmls, sflvs;
+	if (FindFile(_T("*.xml"), sxmls) == 0)
 		return CVT_ERR_NO_XML;
 
 	CString sfxml = CFG_ORIG_PREF;
-	MoveFile(sfind[0], sfxml);
-	FindSpecFile(sfiles, sfind[0], true);
+	MoveFile(sxmls[0], sfxml);
+	FindSpecFile(sfiles, sxmls[0], true);
 
-	if (FindFile(_T("*.flv"), sfind))
+	if (FindFile(_T("*.flv"), sflvs))
 	{
-		MoveFile(sfind[0], CFG_PREVW_FLV);
-		FindSpecFile(sfiles, sfind[0], true);
-		sfiles.Add(CFG_PREVW_FLV);
+		MoveFile(sflvs[0], CFG_PREVW_FLV);
+		FindSpecFile(sfiles, sflvs[0], true);
+		m_strPrevw = CFG_PREVW_FLV;
+		//sfiles.Add(CFG_PREVW_FLV);
 	}
 
 	CString strZip = m_strDstDir + _T("\\") + CUtil::GetFileName(sbook);
@@ -935,12 +982,19 @@ int CCovtMainDlg::ConvertBook(CString &sbook)
 	m_mapMultiVal.clear();
 	m_mapMetaVal.clear();
 
-	int ret = S_OK;
+	ret = S_OK;
 	Logs(_T("done\r\n    解析XML..."));
 	ret = ParseXmlField(sfxml);
 	Logs(_T("done\r\n    解析元数据..."));
 	if (ret ==S_OK && ( (ret =ParseXmlMeta(sfiles)) >= 0) )
 	{
+		if(sflvs.GetCount()!=0)
+		{
+			Logs(_T("\r\n    打包preview.flv..."));
+			CString sprev = CFG_PREVW_FLV;
+			ZipAdd(m_hz, sprev, sprev.GetBuffer(), 0, ZIP_FILENAME);
+			sprev.ReleaseBuffer();		
+		}
 		ZipAdd(m_hz, sfxml, sfxml.GetBuffer(), 0, ZIP_FILENAME);
 		sfxml.ReleaseBuffer();
 		CloseZip(m_hz);

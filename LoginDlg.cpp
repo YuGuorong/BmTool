@@ -10,7 +10,7 @@
 
 
 #ifdef DEBUG
-#define DEBUG_LOGIN 
+//#define DEBUG_LOGIN 
 #endif
 // CLoginDlg dialog
 
@@ -64,7 +64,7 @@ BOOL CLoginDlg::OnInitDialog()
 	m_pbtns = new CSkinBtn();
 	m_pbtns->SubclassDlgItem(IDC_BTN_LOGIN, this);
 	m_pbtns->SetImage(IDB_BITMAP_SLIVE_BTN, 102, 26);
-#ifdef DEBUG_LOGIN 
+#ifdef DEBUG 
 	GetDlgItem(IDC_EDIT_PWD)->SetWindowText(_T("admin"));
 #endif
 	// TODO:  Add extra initialization here

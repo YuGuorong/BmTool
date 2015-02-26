@@ -17,7 +17,7 @@
             !&dirs
         </bookCatalog>
         <targetUser id="" value="!&audience"/>
-        <resourceKind id="!&learning_resource_type" value=""/>
+        <resourceKind id="!&metadataclass" value=""/>
     <!--END: 北京资源网专用-->
               
 

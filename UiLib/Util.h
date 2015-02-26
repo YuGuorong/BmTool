@@ -48,7 +48,6 @@ public:
 
 BOOL DelTree(LPCTSTR lpszPath);
 void UnzipFile(CString &sin, CStringArray * sFiles = NULL); //sdir is output parameter, indicate what folder exact to
-BOOL UnzipLimitFile(CString &sin, CStringArray * pFiles, int max_size, LPCTSTR sext = NULL);
 DWORD GetFileSize(LPCTSTR sfile);
 int RunCmd(LPCTSTR scmd, CString &sresult, LPCTSTR sdir =NULL, BOOL bshow =FALSE);
 #define  AString   CStringA
