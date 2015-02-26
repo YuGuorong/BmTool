@@ -707,7 +707,8 @@ INT CAsyncHttp::GetBody( )
 		m_pSocket->Recv(m_pBody, len);
 		m_nBodyLen = len;
 	}
-	m_pBuff[m_nBodyLen] = 0;
+	if ( m_pBuff )
+		m_pBuff[m_nBodyLen] = 0;
 	m_pBody = m_pBuff;
 	return m_nBodyLen;
 }

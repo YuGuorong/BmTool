@@ -66,8 +66,9 @@ BOOL CLoginDlg::OnInitDialog()
 	m_pbtns = new CSkinBtn();
 	m_pbtns->SubclassDlgItem(IDC_BTN_LOGIN, this);
 	m_pbtns->SetImage(IDB_BITMAP_SLIVE_BTN, 102, 26);
+#ifdef DEBUG
 	GetDlgItem(IDC_EDIT_PWD)->SetWindowText(_T("admin"));
-	// TODO:  Add extra initialization here
+#endif	// TODO:  Add extra initialization here
 	m_pHttp = NULL;
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE   _T("192.168.1.61")

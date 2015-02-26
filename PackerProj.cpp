@@ -526,6 +526,8 @@ void CPackerProj::SaveMeta(CString &sxml)
 		{
 			pit->pWnd[1]->GetWindowText(strval);
 		}
+		if (strval.GetLength() < 1)
+			strval = _T(" ");
 		CString strpos = _T("!&");
 		strpos += pit->strKey;
 		strpos.TrimRight();
@@ -809,7 +811,7 @@ int CPackerProj::Save()
 				sXml.Replace(_T("!&srcCreateTime"), m_strTmCreateSrc);
 				sXml.Replace(_T("!&SrcModifyTime"), m_strTmModifySrc);
 				sXml.Replace(_T("!&digestMethod"), _T("MD5"));
-				sXml.Replace(_T("!&digest"), _T(""));
+				sXml.Replace(_T("!&digest"), _T(" "));
 				sXml.Replace(_T("!&version"), _T("1"));
 
 				SaveMeta(sXml); //m_pMetaWnd->SendMessage(WM_VIEW_PROJ, SAVE_PROJ, (WPARAM)(&sXml));//save meta
