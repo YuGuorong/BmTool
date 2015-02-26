@@ -103,7 +103,7 @@ INT GetJsonString(CString &sjson, LPCTSTR skey, CString &sval)
 }
 
 #ifdef DEBUG
-#define DEBUG_LOGIN 
+//#define DEBUG_LOGIN 
 #endif
 //192.168.1.61  fixopen.xicp.net
 LRESULT CLoginDlg::OnHttpFinishMsg(WPARAM wParam, LPARAM lParam)
@@ -117,10 +117,11 @@ LRESULT CLoginDlg::OnHttpFinishMsg(WPARAM wParam, LPARAM lParam)
 			proj->m_strSession = _T("12ea2d36e9b638e88887b0081deabeaec11d7bad");
 			proj->m_strLogId = _T("33542438663913472");
 #else	
-		int len = pHttp->GetHttpHeader(pHttp->m_szRespHeader);
+		if( pHttp->m_szRespHeader.IsEmpty())
+			pHttp->GetHttpHeader(pHttp->m_szRespHeader);
 		if (pHttp->m_szRespHeader.Find(" 200 OK") >= 0)
 		{
-			pHttp->GetBody();
+			//pHttp->GetBody();
 			CString strResp; QUtf2Unc((LPCSTR)(pHttp->m_pBody), strResp);
 			CPackerProj * proj = ::GetPackProj();
 			proj->m_logState = 1;

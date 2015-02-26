@@ -627,7 +627,7 @@ void CPackerProj::GenPreview(void * hhz)
 {
 	HZIP hz = (HZIP)hhz;
 	CString spath = m_szPathRes + _T("\\")CFG_PREVIEW_FILE;
-	CString sparm = _T("-p 1-20 ");
+	CString sparm = _T("-p 1-20 \"");
 	if (m_type == VIEW_EPUB)
 	{
 		CString epub_tool_path = g_pSet->strCurPath + _T("\\")CFG_EPUB2PDF_TOOL_DIR;
@@ -648,14 +648,14 @@ void CPackerProj::GenPreview(void * hhz)
 		::CUtil::RunProc(sexe, sparm_epubpdf, epub_tool_path);
 		CopyFile(stpdf, srespdf, FALSE);
 		DeleteFile(stpdf);
-		sparm += srespdf;
+		sparm += srespdf + _T("\"");
 	}
 	else
 	{
-		sparm += m_szTargetPath;
+		sparm += m_szTargetPath + _T("\"");
 	}
 	CString sexe = g_pSet->strCurPath + _T("\\")CFG_PDF2SWF_EXE;
-	sparm += _T(" -o ") + spath;
+	sparm += _T(" -o \"") + spath + _T("\"");
 	::CUtil::RunProc(sexe, sparm, m_szPathRes);
 
 	ZipAdd(hz, CFG_PREVIEW_FILE, spath.GetBuffer(spath.GetLength()), 0, ZIP_FILENAME);
@@ -812,7 +812,7 @@ int CPackerProj::Save()
 				sXml.Replace(_T("!&srcCreateTime"), m_strTmCreateSrc);
 				sXml.Replace(_T("!&SrcModifyTime"), m_strTmModifySrc);
 				sXml.Replace(_T("!&digestMethod"), _T("MD5"));
-				sXml.Replace(_T("!&digest"), _T(" "));
+				sXml.Replace(_T("!&digest"), _T("1"));
 				sXml.Replace(_T("!&version"), _T("1"));
 
 				SaveMeta(sXml); //m_pMetaWnd->SendMessage(WM_VIEW_PROJ, SAVE_PROJ, (WPARAM)(&sXml));//save meta

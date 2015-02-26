@@ -1,3 +1,28 @@
+POST /books/streamUpload.whtml HTTP/1.1
+Host: 192.168.1.61:8091
+Accept: */*
+User-Agent: Mozilla/4.0
+Accept-Language: zh-cn
+Accept-Encoding: gzip, deflate
+Content-Type: application/zip
+Cookie: sessionId=2507cf4d7803e270c86867b99f210e695d81d316;tooken=11111
+Content-Type: application/octet-stream
+Content-Length: 40824
+
+
+
+POST /books/streamUpload.whtml HTTP/1.1
+Host: 192.168.1.61:8091
+Accept: */*
+User-Agent: Mozilla/4.0
+Accept-Language: zh-cn
+Accept-Encoding: gzip, deflate
+Content-Type: application/zip
+Cookie: sessionId=;tooken=11111
+Content-Type: application/octet-stream
+Content-Length: 40824
+
+
 +	CAsyncHttp	this	0x0044d2d0 {m_strLocalFile=L"C:\\Users\\guoryu\\Documents\\奥鹏书籍\\PROJ\\测试大数据2.zip.zip" }	CAsyncHttp *
 +	CDealSocket	this	0x0044e6b0 {m_hSocket=576 m_RecvTotLen=-842150451 m_CurRecvBytes=-842150451 ...}	CDealSocket *
 

@@ -398,7 +398,8 @@ void * CAsyncHttp::run(void * param)
 				bret = SendData();		
 				if (bret > 0)
 				{
-					bret = OnHttpSend();
+					int  il = OnHttpSend();
+					bret = (il < 0) ? -500 : il;
 				}
 			}
 		}
@@ -677,11 +678,12 @@ INT CAsyncHttp::GetBody( )
 	if (m_szRespHeader.IsEmpty())
 		GetHttpHeader(m_szRespHeader);
 	INT len = GetContentLen(m_szRespHeader);
-	if (m_pBuff != NULL) { free(m_pBuff); m_pBuff = NULL; }
+	
 	m_nTotolLen = len;
 	m_nBodyLen = 0;
 	if (len <= 0)
 	{
+		if (m_pBuff != NULL) { free(m_pBuff); m_pBuff = NULL; }
 		if (m_szRespHeader.Find("Transfer-Encoding: chunked") >= 0)
 		{
 			while (1)
@@ -703,12 +705,15 @@ INT CAsyncHttp::GetBody( )
 	}
 	else
 	{
-		m_pBuff = (BYTE*)malloc(len + 1);
+		if (m_pBuff == NULL|| m_nBodyLen < len + 1)
+		{
+			if (m_pBuff != NULL) { free(m_pBuff); m_pBuff = NULL; }
+			m_pBuff = (BYTE*)malloc(len + 1);
+		}
 		m_pSocket->Recv(m_pBody, len);
 		m_nBodyLen = len;
 	}
-	if ( m_pBuff )
-		m_pBuff[m_nBodyLen] = 0;
+	if (m_pBuff ) m_pBuff[m_nBodyLen] = 0;
 	m_pBody = m_pBuff;
 	return m_nBodyLen;
 }
@@ -805,6 +810,12 @@ INT CHttpPost::SendFile(const void * ptr, int len, LPCTSTR sztype)
 
 INT CHttpPost::OnHttpHeaderSend()
 {
+	/*int len = GetHttpHeader(m_szRespHeader);
+	if (len > 0)
+	{
+		if (m_szRespHeader.Find(" 200 OK") >= 0)
+			return 1;
+	}*/
 	return 1;
 }
 

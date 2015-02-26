@@ -452,7 +452,7 @@ LRESULT CResManDlg::OnHttpFinishMsg(WPARAM wParam, LPARAM lParam)
 	{
 		if (m_listTask.GetItemData(i) == (DWORD_PTR)pHttp)
 		{
-			LPCTSTR strRet = (stat > 0) ? _T("上传成功") : _T("上传失败");
+			LPCTSTR strRet = _T("上传成功");// (stat > 0 || stat <= -500) ? _T("上传成功") : _T("上传失败");
 			CString strid = m_listTask.GetItemText(i, 0);
 
 			m_proj->SetBookState(strid, strRet);

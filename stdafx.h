@@ -89,7 +89,7 @@ void SwitchBackMainDlg();
 #define CFG_MAX_TASK_LIMIT   5
 
 
-#define STR_VERSION     _T("1.0.2.0")
+#define STR_VERSION     _T("1.0.2.1")
 
 #if VENDOR_NAME == VENDOR_OPENCE
 #define IDS_VERNDOR_NAME  IDSTR_VENDOR_OPENCN
