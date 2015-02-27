@@ -223,7 +223,36 @@ BOOL CDirPackgeDlg::OnInitDialog()
 	SetWindowStatus(NONE_PROJ | LOCKED);
 	MyTracex("Init done!\n");
 	SetWindowText(CFG_OPENCN_FOLDER);
+
+	m_ohttp.SetSize(1);
+	m_ohttp[0] = NULL;
 	return TRUE;  // return TRUE  unless you set the focus to a control
+}
+
+void CDirPackgeDlg::QueryClassType()
+{
+	if (m_ohttp.GetCount()<= 0 || m_ohttp[0]) return;
+	CPackerProj * proj = ::GetPackProj();
+	//::CreateDirectory(str, NULL);
+	
+	proj->m_strSession.TrimRight();
+	m_sQueryCmd.Format(("{\"tooken\":\"11111\",\"sessionId\":\"%S\"}"), proj->m_strSession);
+	CHttpPost * pTask = new CHttpPost(g_pSet->m_strServerIP, _T("/api/subjects"),this, g_pSet->m_nPort);
+
+	pTask->SendFile((LPCSTR)m_sQueryCmd, m_sQueryCmd.GetLength(),_T("text/html;charset=utf-8"));
+	m_ohttp[0] = (pTask);
+}
+
+void CDirPackgeDlg::OnHttpObjProc(int idHttpObj, int stat)
+{
+	if (stat >= 0 && m_ohttp.GetCount() > idHttpObj && m_ohttp[idHttpObj])
+	{
+		CHttpPost * ptask = (CHttpPost *)m_ohttp[idHttpObj];
+		if (ptask->m_pBody)
+		{
+		}
+	}
+
 }
 
 void CDirPackgeDlg::OnSysCommand(UINT nID, LPARAM lParam)
@@ -344,6 +373,7 @@ void CDirPackgeDlg::LockMainWnd(BOOL block)
 			m_Proj->m_strLoginUser, strLogTm);
 		((CLoginStateDlg*)m_plogDlgs[1])->SetLoginStatuText(strinfo);
 		m_plogDlgs[1]->GetDlgItem(ID_BTN_OK)->EnableWindow(TRUE);
+		QueryClassType();
 	}
 	m_pSubDlgs[LOGIN_TAB] = m_plogDlgs[m_LogDlgIdx];
 	SwitchDlg(tab);
@@ -474,6 +504,8 @@ void CDirPackgeDlg::OnDestroy()
 
 	if (m_Proj) FreePtr(m_Proj);
 	CeExDialog::OnDestroy();
+
+	m_ohttp.RemoveAll();
 
 	// TODO: Add your message handler code here
 }
