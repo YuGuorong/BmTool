@@ -139,6 +139,7 @@ protected:
 	CLCheckBox m_ProxyBox;
 	int CheckLastTaskBroken(CString & stasklog_f);
 	int m_nClassType;
+	void CleanXmlUnknown(CStringA &strxml);
 
 	DECLARE_MESSAGE_MAP()
 public:

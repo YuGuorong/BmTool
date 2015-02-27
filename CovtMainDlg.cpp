@@ -456,6 +456,25 @@ int CCovtMainDlg::AddMetaInfo(CStringA &sxml)
 }
 
 
+
+void CCovtMainDlg::CleanXmlUnknown(CStringA &strxml)
+{
+	int bf;
+	while ((bf = strxml.Find("!&")) >= 0)
+	{
+		LPCSTR p0 = (LPCSTR)strxml + bf;
+		LPCSTR ptr = p0 + 2;
+		while (*ptr && isalpha(*ptr) != 0)
+			ptr++;
+		CStringA s;
+		int count = ptr - p0;
+		s = strxml.Mid(bf+2, count-2);
+		Logs(_T("\r\n-->warning: \"%s\" is missing!"), qUtf2Unc(s));
+		strxml.Delete(bf, count);
+		strxml.Insert(bf, "0");
+	}
+}
+
 int CCovtMainDlg::ParseXmlMeta(CStringArray &sfiles)
 {
 	CFile of;
@@ -597,6 +616,7 @@ int CCovtMainDlg::ParseXmlMeta(CStringArray &sfiles)
 	SaveDirs(sdir);
 	stemplate.Replace(("!&dirs"), sdir);
 	AddMetaInfo(stemplate);
+	CleanXmlUnknown(stemplate);
 
 	CString sf_xml = CFG_META_FILE;
 	if (of.Open(CFG_META_FILE, CFile::modeCreate | CFile::modeWrite) == FALSE) return CVT_ERR_CREATE_META_FILE;
