@@ -563,13 +563,15 @@ INT CAsyncHttp::GetChunckSize()
 		if (ret > 0)
 		{
 			iread++;
-			if (sbuf[iread - 1] == '\n' && iread > 2)
+			if (iread > 2 && sbuf[iread - 1] == '\n' && sbuf[iread - 2] == '\r' )
 			{
-				if ( sbuf[iread - 2] == '\r')
-				{
-					ret = atox(sbuf);
-					return ret;
-				}
+				sbuf[iread] = 0;
+				char * ptr = sbuf;
+				while (*ptr && !isalnum(*ptr))
+					ptr++;
+				if (*ptr)
+					ret = atox(ptr);
+				return ret;
 			}
 		}
 		else if (ret == 0)

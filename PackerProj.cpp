@@ -28,12 +28,12 @@ LPCTSTR  CDigest::GetModeString()
 	return g_szMode[(int)m_mode];
 }
 
-void CDigest::CalDigest(LPVOID ptr, int len, DIGEST_MODE mode )
+void CDigest::CalDigest(const void * ptr, int len, DIGEST_MODE mode )
 {
 	if (mode == MODE_MD5)
 	{
 		MD5 md;
-		md.update((char *)ptr, len);
+		md.update((const char *)ptr, len);
 		md.finalize();
 		std::string str = md.hexdigest();
 		QUtf2Unc(str.c_str(), m_sDigest);
@@ -529,7 +529,7 @@ void CPackerProj::SaveMeta(CString &sxml)
 			pit->pWnd[1]->GetWindowText(strval);
 		}
 		strval.TrimLeft();
-		if (strval.GetLength() < 1)
+		if (strval.GetLength() < 1 && (!pit->style & META_COMBOBOX))
 			strval = _T("1");
 		CString strpos = _T("!&");
 		strpos += pit->strKey;

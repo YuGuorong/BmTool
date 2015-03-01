@@ -34,6 +34,7 @@ public:
 	INT  LoadExtMetaValue(CMetaDataItem * pit, CString &strKey );
 	INT LoadCoverImage();
 	INT  SetMetaValues();
+	void SetDefComboxVal();
 // Dialog Data
 	enum { IDD = IDD_META_DLG };
 	CFont m_ftCaption;
@@ -41,7 +42,7 @@ public:
 	int   m_nMaxCapLen;
 	int   m_nMaxHight;
 protected:
-	std::map<CString, CMetaExtend *> m_MetaExtMap; 
+
 
 	
 	CMetaDataItem * GetCtrlItem(int nid);

@@ -8,6 +8,7 @@
 #include "afxdialogex.h"
 #include "LoginStateDlg.h"
 #include "AsyncHttp.h"
+#include "json/json.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -287,10 +288,24 @@ void CDirPackgeDlg::QueryClassType()
 	//::CreateDirectory(str, NULL);
 
 	proj->m_strSession.TrimRight();
-	m_sQueryCmd.Format(("{\"tooken\":\"11111\",\"sessionId\":\"%S\"}"), proj->m_strSession);
-	CHttpPost * pTask = new CHttpPost(g_pSet->m_strServerIP, _T("/api/subjects"), this, g_pSet->m_nPort);
+	TCHAR hKeepAlive[] = _T("Connection: keep-alive\r\n");
+	TCHAR headerLanguage[] = _T("Accept-Language: zh-CN,zh;q=0.8\r\n");
+	TCHAR headerEncoding[] = _T("Accept-Encoding: gzip, deflate, sdch\r\n");
+	TCHAR headerContentType[] = _T("Referer: http://115.182.41.175/backstage/professional/professionalManagement.html\r\n"); //text/xml
+	
+	CString strSession;
+	strSession.Format(_T("Cookie: sessionId=%s; uid=%s; token=11111\r\n"), proj->m_strSession, proj->m_strLogId);
+	LPCTSTR   cookies[5];
+	int hdrs = 0;
+	cookies[hdrs++] = hKeepAlive;
+	cookies[hdrs++] = headerLanguage;
+	cookies[hdrs++] = headerEncoding;
+	cookies[hdrs++] = headerContentType;
+	cookies[hdrs++] = strSession;
 
-	pTask->SendFile((LPCSTR)m_sQueryCmd, m_sQueryCmd.GetLength(), _T("textml;charset=utf-8"));
+	CGetHttp * pTask = new CGetHttp(g_pSet->m_strServerIP, _T("/api/subjects"), this, g_pSet->m_nPort, cookies, hdrs);
+
+	pTask->GetFile();
 	m_ohttp[0] = (pTask);
 }
 
@@ -298,9 +313,60 @@ void CDirPackgeDlg::OnHttpObjProc(int idHttpObj, int stat)
 {
 	if (stat >= 0 && m_ohttp.GetCount() > idHttpObj && m_ohttp[idHttpObj])
 	{
-		CHttpPost * ptask = (CHttpPost *)m_ohttp[idHttpObj];
-		if (ptask->m_pBody)
+		CHttpPost * pHttp = (CHttpPost *)m_ohttp[idHttpObj];
+		if (pHttp->m_pBody)
 		{
+			CString serr;
+			CString stxt ;
+			try{
+				Json::Reader reader;
+				Json::Value root;
+				const char * pjs = (const char *)pHttp->m_pBody;
+				if (reader.parse(pjs, root))
+				{
+					Json::Value sa_1 = root["data"];
+					for (int i = 0; i < sa_1.size(); i++)
+					{
+						Json::Value scap = sa_1[i];
+						CString str = qUtf2Unc(scap["caption"].asCString());
+						stxt += str  ;
+
+						Json::Value sa_2 = scap["childs"];
+						for (int j = 0; j < sa_2.size(); j++)
+						{
+							CString str = qUtf2Unc(sa_2[j]["caption"].asCString());
+							stxt += _T("\t") + str + _T("\t\r\n");
+						}
+					}
+				}
+				CStringA s;
+				QW2A(stxt, s);
+				CDigest din;
+				din.CalDigest((LPCSTR)s, s.GetLength());
+
+				CPackerProj * proj = ::GetPackProj();
+				if (proj->m_MetaExtMap.size() <= 0) return;
+				if (proj->m_MetaExtMap.begin()->second->md5_MetaDetail.m_sDigest.Compare(din.m_sDigest) != 0)
+				{
+					CString spath = g_pSet->strCurPath + proj->m_MetaExtMap.begin()->first;
+					CFile of;
+					if (of.Open(spath, CFile::modeCreate | CFile::modeWrite))
+					{
+						of.Write(s, s.GetLength());
+						of.Close();
+					}
+					if (MessageBox(_T("系统数据库有更新， 请重新登录"), _T("系统更新"), MB_OK) == IDOK)
+					{
+						ReStart();
+						ExitProcess(-1);
+					}					
+				}
+			}
+			catch (...)
+			{
+				serr = _T("服务器返回内容不能解析");
+				stat = -1;
+			}
 		}
 	}
 }

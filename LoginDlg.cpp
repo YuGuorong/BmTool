@@ -7,7 +7,7 @@
 #include "afxdialogex.h"
 #include "AsyncHttp.h"
 #include "PackerProj.h"
-
+#include "json/json.h"
 
 // CLoginDlg dialog
 

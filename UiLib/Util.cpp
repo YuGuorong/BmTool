@@ -457,6 +457,36 @@ CString CUtil::FormatMessageFor(HRESULT hr)
 	return strMsg;
 }
 
+void ReStart(BOOL bNormal)
+{
+	PROCESS_INFORMATION   info;
+	STARTUPINFO    startup;
+	TCHAR     szPath[MAX_PATH];
+	TCHAR*szCmdLine;
+
+	GetModuleFileName(AfxGetApp()->m_hInstance, szPath, sizeof(szPath));
+	szCmdLine = GetCommandLine();
+	GetStartupInfo(&startup);
+	BOOL   bSucc = CreateProcess(szPath, szCmdLine, NULL, NULL,
+		FALSE, NORMAL_PRIORITY_CLASS, NULL, NULL, &startup, &info);
+	if (bNormal && bSucc)
+	{
+		CWnd *pWnd = AfxGetMainWnd();
+		if (pWnd != NULL)
+		{
+			pWnd->PostMessage(WM_CLOSE, 0, 0);
+		}
+		else
+		{
+			ExitProcess(-1);
+		}
+	}
+	else
+	{
+		ExitProcess(-1);
+	}
+}
+
 void Utf2Unc(const char  * bstr, WCHAR  * wstr, int lens, int lenw)
 {
     ::MultiByteToWideChar(CP_UTF8,0,bstr,lens, wstr, lenw);

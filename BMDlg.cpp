@@ -274,9 +274,10 @@ LRESULT CBMDlg::OnViewProjMsg(WPARAM wParam, LPARAM lParam)
 			GetMetaWnd()->SetItemValue(_T("电子书籍类别"), m_proj->m_type == VIEW_PDF ?  _T("Pdf") : _T("Epub"));
 			str.Format(_T("%d"), m_proj->m_nTargetFLen);
 			GetMetaWnd()->SetItemValue(_T("电子书籍文件大小"), str);
-			GetMetaWnd()->SetItemValue(_T("学科门类"), _T("工学"));
-			GetMetaWnd()->SetItemValue(_T("专业类"), _T("计算机科学与技术"));
-			GetMetaWnd()->SetItemValue(_T("专业名称"), _T("计算机软件与理论"));
+			GetMetaWnd()->SetDefComboxVal();
+			//GetMetaWnd()->SetItemValue(_T("学科门类"), _T("工学"));
+			//GetMetaWnd()->SetItemValue(_T("专业类"), _T("计算机科学与技术"));
+			//GetMetaWnd()->SetItemValue(_T("专业名称"), _T("计算机软件与理论"));
 			GetMetaWnd()->SetItemValue(_T("教材分类"), _T("公共基础课"));
 			str.Format(_T("%d"), m_proj->m_nBookPageCount);
 			GetMetaWnd()->SetItemValue(_T("页数"), str);

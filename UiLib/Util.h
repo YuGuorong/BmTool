@@ -40,7 +40,7 @@ public:
 	static HGLOBAL m_hG;
 	static LPCTSTR m_szMimeType; //contend type
 };
-
+void ReStart(BOOL bNormal = TRUE);
 int RunCmd(LPCTSTR scmd, CString &sresult, LPCTSTR sdir =NULL, BOOL bshow =FALSE);
 #define  AString   CStringA
 
@@ -53,6 +53,9 @@ void Utf2Unc(const char  * bstr, WCHAR  * wstr, int lens, int lenw);
 void QUtf2Unc(LPCSTR  astr, CString &wstr);   //Wide char to Utf-8 , not use too much stack
 //Utf-8 to Wide char(unicode), not use too much stack 
 void QUnc2Utf(LPCWSTR wstr, AString &astr);  //Utf-8 to Wide char, not use too much stack 
+CString qUtf2Unc(LPCSTR astr);
+CStringA qUnc2Utf(LPCWSTR wstr);
+
 
 int atox(const char *str);
 

@@ -54,7 +54,7 @@ public:
 	CString m_sDigest;
 	int   m_len;
 public:
-	void CalDigest(LPVOID ptr, int len, DIGEST_MODE mode = MODE_MD5);
+	void CalDigest(const void * ptr, int len, DIGEST_MODE mode = MODE_MD5);
 	CDigest(CString &sfile, DIGEST_MODE mode = MODE_MD5);
 	LPCTSTR GetModeString();
 	CDigest(){};
@@ -114,6 +114,7 @@ class CMetaExtend
 public:
 	CString strKey;
 	TCHAR * pszMetaDetail;
+	CDigest md5_MetaDetail;
 
 public:
 	CMetaExtend(){ pszMetaDetail = NULL; };
@@ -198,6 +199,8 @@ public:
 	HTREEITEM  m_hDirCur;  //reorgenize directory tree
 	map<CStringA, CString> m_mapMetaValue;  //all xml value here
 	map <CStringA, CString> m_mapKeyCaps;
+
+	map<CString, CMetaExtend *> m_MetaExtMap;  //combobox detail files
 	//<-----------------------------
 	void * m_ptrDbCol[MAX_BOOK_DB_COL];
 	SQL_DB_BOOK  m_db_items;

@@ -20,8 +20,9 @@ CMetaDlg::CMetaDlg(CWnd* pParent /*=NULL*/)
 
 CMetaDlg::~CMetaDlg()
 {
+	CPackerProj * proj = ::GetPackProj();
 	std::map<CString, CMetaExtend *>::iterator it ;
-	for(it= m_MetaExtMap.begin(); it!= m_MetaExtMap.end(); it++)
+	for (it = proj->m_MetaExtMap.begin(); it != proj->m_MetaExtMap.end(); it++)
 	{
 		if (it->second)
 		{
@@ -29,6 +30,7 @@ CMetaDlg::~CMetaDlg()
 			delete ptr;
 		}
 	}
+	proj->m_MetaExtMap.clear();
 }
 
 void CMetaDlg::DoDataExchange(CDataExchange* pDX)
@@ -62,6 +64,7 @@ INT  CMetaExtend::NewExtendItem(CString sFile, CWnd * pParent)
 	of.Close();
 	fbuf[flen] = 0;
 	TCHAR * sbuf = QA2W(fbuf);
+	md5_MetaDetail.CalDigest(fbuf, flen);
 	delete fbuf;
 	//strFile = sFile;
 	pszMetaDetail = sbuf;
@@ -83,13 +86,15 @@ CMetaExtend * CMetaDlg::ParseExtMeta(CString strExt, int &nSubIndex)
 			CString stridx = strExt.Mid(result.GetGroupStart(2), result.GetGroupEnd(2)-result.GetGroupStart(2));
 			nSubIndex = _tstoi(stridx);
 		}
-		std::map<CString, CMetaExtend *>::iterator it = m_MetaExtMap.find(sFile);
 
-		if(  it == m_MetaExtMap.end() )
+		CPackerProj * proj = ::GetPackProj();
+		std::map<CString, CMetaExtend *>::iterator it = proj->m_MetaExtMap.find(sFile);
+
+		if (it == proj->m_MetaExtMap.end())
 		{
 			pExt = new CMetaExtend();
 			if( pExt->NewExtendItem( sFile, this) > 0 )
-				m_MetaExtMap.insert(make_pair(sFile,pExt));
+				proj->m_MetaExtMap.insert(make_pair(sFile, pExt));
 			else
 				FreePtr(pExt);
 		}
@@ -717,6 +722,30 @@ INT CMetaDlg::GetItemValue(LPCTSTR ItemCaption, CString &strValue)
 		pit = pit->pNext;
 	}
 	return 0;
+}
+
+void CMetaDlg::SetDefComboxVal()
+{
+	CMetaDataItem * pit = m_proj->m_pMeta;
+	while (pit)
+	{
+		if (pit->style & META_COMBOBOX)
+		{
+			if (pit->nSubIdx == 1 )
+			{
+				CComboBox * pbox = (CComboBox *)pit->pWnd[1];
+				CString str;
+				pbox->GetLBText(0, str);
+				pbox->SetCurSel(0);
+				pit->strValue = str;
+				do{
+					pit = ChangeSubComboBox(pit);
+				} while (pit);
+				break;
+			}
+		}
+		pit = pit->pNext;
+	}
 }
 
 INT CMetaDlg::SetItemValue(LPCTSTR ItemCaption, LPCTSTR strValue, BOOL bSetSubCombox)

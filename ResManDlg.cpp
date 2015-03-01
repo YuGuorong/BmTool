@@ -239,7 +239,7 @@ void * CResManDlg::UploadBook(LPCTSTR book)
 	TCHAR headerContentType[] = _T("Content-Type: application/zip\r\n");//text/xml
 	CString strSession;
 	strSession.Format(_T("Cookie: sessionId=%s;tooken=11111\r\n"), proj->m_strSession);
-	LPCTSTR * cookies = new LPCTSTR[4];
+	LPCTSTR cookies[4];
 	int hdrs = 0;
 	cookies[hdrs++] = headerLanguage;
 	cookies[hdrs++] = headerEncoding;
@@ -254,7 +254,7 @@ void * CResManDlg::UploadBook(LPCTSTR book)
 	
 	pTask->SendFile(book);
 	SetTimer(ID_TMR_SCAN_TASK, 500, NULL);
-	delete cookies;
+	
 	return pTask;
 }
 
