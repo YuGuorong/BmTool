@@ -93,8 +93,6 @@ CPackerProj * GetPackProj()
 }
 // CDirPackgeDlg dialog
 
-CWnd * CreateHttpManageWnd(CWnd * pParent);
-
 
 CDirPackgeDlg::CDirPackgeDlg(CWnd* pParent /*=NULL*/)
 	: CeExDialog(CDirPackgeDlg::IDD, pParent,EX_STRETCH_BK|EX_FILL_BK)
@@ -109,7 +107,6 @@ CDirPackgeDlg::CDirPackgeDlg(CWnd* pParent /*=NULL*/)
 		m_pSubDlgs[i] = NULL;
 	for (int i = 0; i < MAX_BTN_ITEM; i++)
 		m_cTabBtns[i] = NULL;
-	m_pHttpWnd = NULL;
 }
 
 void CDirPackgeDlg::DoDataExchange(CDataExchange* pDX)
@@ -169,7 +166,6 @@ BOOL CDirPackgeDlg::OnInitDialog()
 		}
 	}
 	m_frame.SubclassDlgItem(IDC_FRAME, this);
-	m_pHttpWnd = CreateHttpManageWnd(this);
 	// Set the icon for this dialog.  The framework does this automatically
 	//  when the application's main window is not a dialog
 	SetIcon(m_hIcon, TRUE);			// Set big icon
@@ -227,20 +223,6 @@ BOOL CDirPackgeDlg::OnInitDialog()
 	m_ohttp.SetSize(1);
 	m_ohttp[0] = NULL;
 	return TRUE;  // return TRUE  unless you set the focus to a control
-}
-
-void CDirPackgeDlg::QueryClassType()
-{
-	if (m_ohttp.GetCount()<= 0 || m_ohttp[0]) return;
-	CPackerProj * proj = ::GetPackProj();
-	//::CreateDirectory(str, NULL);
-	
-	proj->m_strSession.TrimRight();
-	m_sQueryCmd.Format(("{\"tooken\":\"11111\",\"sessionId\":\"%S\"}"), proj->m_strSession);
-	CHttpPost * pTask = new CHttpPost(g_pSet->m_strServerIP, _T("/api/subjects"),this, g_pSet->m_nPort);
-
-	pTask->SendFile((LPCSTR)m_sQueryCmd, m_sQueryCmd.GetLength(),_T("text/html;charset=utf-8"));
-	m_ohttp[0] = (pTask);
 }
 
 void CDirPackgeDlg::OnHttpObjProc(int idHttpObj, int stat)
@@ -373,7 +355,6 @@ void CDirPackgeDlg::LockMainWnd(BOOL block)
 			m_Proj->m_strLoginUser, strLogTm);
 		((CLoginStateDlg*)m_plogDlgs[1])->SetLoginStatuText(strinfo);
 		m_plogDlgs[1]->GetDlgItem(ID_BTN_OK)->EnableWindow(TRUE);
-		QueryClassType();
 	}
 	m_pSubDlgs[LOGIN_TAB] = m_plogDlgs[m_LogDlgIdx];
 	SwitchDlg(tab);
@@ -499,8 +480,6 @@ void CDirPackgeDlg::OnDestroy()
 	FreePtr(m_plogDlgs[0]);
 	FreePtr(m_plogDlgs[1]);
 	m_pSubDlgs[LOGIN_TAB] = NULL;
-
-	if (m_pHttpWnd) FreePtr(m_pHttpWnd);
 
 	if (m_Proj) FreePtr(m_Proj);
 	CeExDialog::OnDestroy();

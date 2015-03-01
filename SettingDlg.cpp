@@ -53,7 +53,7 @@ BOOL CSettingDlg::OnInitDialog()
 
 	GetDlgItem(IDC_EDIT_SERVER_IP)->SetWindowText(g_pSet->m_strServerIP);
 
-	int txtids[] = { IDC_ST_PROXY_IP, IDC_ST_PROXY_PORT, IDC_ST_PROXY_USER, IDC_ST_PROXY_PWD };
+	int txtids[] = { IDC_TXT_VERSION, IDC_ST_PROXY_IP, IDC_ST_PROXY_PORT, IDC_ST_PROXY_USER, IDC_ST_PROXY_PWD };
 	SubTextItems(txtids, sizeof(txtids) / sizeof(int), NULL, NULL);
 	
 	m_ProxyBox.SubclassDlgItem(IDC_CHK_PROXY, this);
@@ -65,6 +65,10 @@ BOOL CSettingDlg::OnInitDialog()
 	m_nPort = g_pSet->m_nPort;
 	m_nProxyPort = g_pSet->m_nProxyPort;
 	this->UpdateData(false);
+
+	CString sinfo;
+	sinfo.Format(_T("°æ±¾£º%s"), STR_VERSION);
+	GetDlgItem(IDC_TXT_VERSION)->SetWindowText(sinfo);
 
 	for (int i = 0; i < sizeof(btnids) / sizeof(int); i++)
 	{

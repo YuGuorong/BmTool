@@ -123,6 +123,7 @@ public:
 	void SetProgInfo(LPCSTR strInfo);
 	void AddLog(LPCTSTR slog);
 	void Logs(LPCTSTR fmt, ...);
+	void LogToFile(int result, LPCTSTR spckFile);
 
 	void CCovtMainDlg::SaveDirToXml(HTREEITEM hit, CStringA &sxml, int sublevel);
 	void CCovtMainDlg::SaveDirs(CStringA &sxml);

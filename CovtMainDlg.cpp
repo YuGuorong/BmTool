@@ -852,10 +852,34 @@ void MarkTaskDone(CString &stasklog_f, CString &stask)
 	of.Close();
 }
 
+void CCovtMainDlg::LogToFile(int result, LPCTSTR spckFile)
+{
+	CString sflog = m_strSrcDir;
+	sflog += result<0 ? _T("\\error.log") : _T("\\ok.log");
+	CTime tm = CTime::GetCurrentTime();
+	CString stmlog = tm.Format(TIME_FMT);
+	CStdioFile of;
+	if (!of.Open(sflog, CFile::modeReadWrite))
+		if (!of.Open(sflog, CFile::modeCreate | CFile::modeWrite))
+			return;
+	of.SeekToEnd();
+	CString str;
+	CStringA sa;
+	if (result < 0)
+		str.Format(_T("[%s] \"%s\" 转换失败，错误: %s。\n"), stmlog, spckFile, GetErrorString(result));
+	else
+		str.Format(_T("[%s] \"%s\" 转换成功。\n"), stmlog, spckFile);
+	QW2A(str, sa);
+	of.Write(sa, sa.GetLength());
+	of.Close();
+}
+
 int CCovtMainDlg::AsyncConvertDir(int param)
 {
 	CString strTmpRoot = g_pSet->strCurPath + _T("_tmp\\");
 	CString strf_log = strTmpRoot + _T(".task_list.log");
+
+
 	CreateDirectory(strTmpRoot, NULL);
 	ListZips(m_strSrcDir,  m_strSrcPacks);
 	CheckLastTaskBroken(strf_log);
@@ -883,7 +907,7 @@ int CCovtMainDlg::AsyncConvertDir(int param)
 			MarkTaskDone(strf_log, m_strSrcPacks[i]);
 		}
 		Logs(_T("\r\n完成: %s"), GetErrorString(m_aRsut[i]));
-
+		LogToFile(m_aRsut[i], m_strSrcPacks[i]);
 		::SetCurrentDirectory(g_pSet->strCurPath);
 		DelTree(m_strTmpDir);
 		Logs(_T("\r\n"));
@@ -891,7 +915,7 @@ int CCovtMainDlg::AsyncConvertDir(int param)
 	
 	DeleteFile(strf_log);
 	
-	CString slogtxt = m_strSrcDir + _T("\\转换结果.txt");
+
 	CString sol;
 	AddLog(_T("\r\n-------------------------------\r\n\r\n"));
 
@@ -907,21 +931,11 @@ int CCovtMainDlg::AsyncConvertDir(int param)
 		if (m_aRsut[i] < 0)
 		{
 			CString str;
-			str.Format(_T("    \"%s\" 转换错误: %s\r\n"), 
-				m_strSrcPacks[i], GetErrorString(m_aRsut[i]));
+			str.Format(_T("    \"%s\" 转换错误: %s\r\n"), m_strSrcPacks[i], GetErrorString(m_aRsut[i]));
 			sol += str;
 		}
 	}
 	AddLog(sol);
-	sol.Remove('\r');
-	CStdioFile of;
-	if (of.Open(slogtxt, CFile::modeCreate | CFile::modeWrite))
-	{
-		of.WriteString(sol);
-		of.Close();
-	}
-	AddLog(_T("\r\nLog保存-->"));
-	AddLog(slogtxt);
 	AddLog(_T("\r\n-------------------------------\r\n"));
 	return 0;
 }
