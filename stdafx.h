@@ -86,7 +86,7 @@ void SwitchBackMainDlg();
 #define CFG_EPUB2PDF_INF_FILE _T("epub2pdf.properties")
 #define CFG_EPUB2PDF_EXE     _T("epub2pdf.bat")
 #define CFG_RES_FOLDER       _T("res")
-#define CFG_MAX_TASK_LIMIT   5
+#define CFG_MAX_TASK_LIMIT   1
 
 
 #define STR_VERSION     _T("1.0.2.1")
