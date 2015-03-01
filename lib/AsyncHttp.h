@@ -138,21 +138,5 @@ public:
 };
 
 
-
-class CHttpResMan : public CWnd
-{
-	DECLARE_DYNAMIC(CHttpResMan)
-
-public:
-	CHttpResMan();
-	virtual ~CHttpResMan();
-protected:
-	DECLARE_MESSAGE_MAP()
-public:
-	afx_msg LRESULT OnHttpFinishMsg(WPARAM wParam, LPARAM lParam);
-};
-
-
-
 // CAsyncHttp
 

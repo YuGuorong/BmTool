@@ -7,6 +7,7 @@
 #include "DirPackgeDlg.h"
 #include "afxdialogex.h"
 #include "LoginStateDlg.h"
+#include "AsyncHttp.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -90,9 +91,6 @@ CPackerProj * GetPackProj()
 }
 // CDirPackgeDlg dialog
 
-CWnd * CreateHttpManageWnd(CWnd * pParent);
-
-
 CDirPackgeDlg::CDirPackgeDlg(CWnd* pParent /*=NULL*/)
 	: CeExDialog(CDirPackgeDlg::IDD, pParent,EX_STRETCH_BK|EX_FILL_BK)
 {
@@ -107,7 +105,7 @@ CDirPackgeDlg::CDirPackgeDlg(CWnd* pParent /*=NULL*/)
 		m_pSubDlgs[i] = NULL;
 		m_cTabBtns[i] = NULL;
 	}
-	m_pHttpWnd = NULL;
+	m_ohttp.SetSize(1);
 }
 
 void CDirPackgeDlg::DoDataExchange(CDataExchange* pDX)
@@ -167,7 +165,6 @@ BOOL CDirPackgeDlg::OnInitDialog()
 		}
 	}
 	m_frame.SubclassDlgItem(IDC_FRAME, this);
-	m_pHttpWnd = CreateHttpManageWnd(this);
 	// Set the icon for this dialog.  The framework does this automatically
 	//  when the application's main window is not a dialog
 	SetIcon(m_hIcon, TRUE);			// Set big icon
@@ -281,6 +278,33 @@ void CDirPackgeDlg::OnBnClickedBtnExit()
 	this->EndDialog(IDOK);
 }
 
+
+
+void CDirPackgeDlg::QueryClassType()
+{
+	if (m_ohttp.GetCount() <= 0 || m_ohttp[0]) return;
+	CPackerProj * proj = ::GetPackProj();
+	//::CreateDirectory(str, NULL);
+
+	proj->m_strSession.TrimRight();
+	m_sQueryCmd.Format(("{\"tooken\":\"11111\",\"sessionId\":\"%S\"}"), proj->m_strSession);
+	CHttpPost * pTask = new CHttpPost(g_pSet->m_strServerIP, _T("/api/subjects"), this, g_pSet->m_nPort);
+
+	pTask->SendFile((LPCSTR)m_sQueryCmd, m_sQueryCmd.GetLength(), _T("textml;charset=utf-8"));
+	m_ohttp[0] = (pTask);
+}
+
+void CDirPackgeDlg::OnHttpObjProc(int idHttpObj, int stat)
+{
+	if (stat >= 0 && m_ohttp.GetCount() > idHttpObj && m_ohttp[idHttpObj])
+	{
+		CHttpPost * ptask = (CHttpPost *)m_ohttp[idHttpObj];
+		if (ptask->m_pBody)
+		{
+		}
+	}
+}
+
 void CDirPackgeDlg::SwitchDlg(CExDialog * pnew)
 {
 	if (m_pCurDlg == pnew) return;
@@ -343,6 +367,7 @@ void CDirPackgeDlg::LockMainWnd(BOOL block)
 		m_LogDlgIdx = 1;
 		CString strinfo;
 		CString strLogTm = m_Proj->m_tmLogin.Format(TIME_FMT);
+		QueryClassType();
 		strinfo.Format(_T(" %s 登录成功！（登录时间：%s)"), \
 			m_Proj->m_strLoginUser, strLogTm);
 		((CLoginStateDlg*)m_plogDlgs[1])->SetLoginStatuText(strinfo);
@@ -472,12 +497,11 @@ void CDirPackgeDlg::OnDestroy()
 	m_plogDlgs[1 - m_LogDlgIdx]->DestroyWindow();
 	delete m_plogDlgs[1 - m_LogDlgIdx];
 
-	if (m_pHttpWnd) FreePtr(m_pHttpWnd);
-
 	if (m_Proj) FreePtr(m_Proj);
 	CeExDialog::OnDestroy();
 
-	// TODO: Add your message handler code here
+	if (m_ohttp[0]) FreePtr(m_ohttp[0]);
+	m_ohttp.RemoveAll();
 }
 
 void InvalidateMainRect()

@@ -254,6 +254,7 @@ void * CResManDlg::UploadBook(LPCTSTR book)
 	
 	pTask->SendFile(book);
 	SetTimer(ID_TMR_SCAN_TASK, 500, NULL);
+	delete cookies;
 	return pTask;
 }
 

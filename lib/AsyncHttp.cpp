@@ -5,7 +5,7 @@
 #include "AsyncHttp.h"
 #include "Util.h"
 #include <process.h>
-CHttpResMan * g_pHttpResMan = NULL;
+
 //>>>>>>>>====================>thread class============================>
 unsigned int __stdcall threadFunction(void * object)
 {
@@ -322,7 +322,7 @@ CAsyncHttp::CAsyncHttp() :Thread()
 	m_pBody = NULL;
 	m_nBodyLen = 0;
 	onFinish = NULL;
-	m_pMsgWnd = g_pHttpResMan;
+	m_pMsgWnd = NULL;
 	m_pBuff = NULL;
 }
 
@@ -342,7 +342,7 @@ CAsyncHttp::CAsyncHttp(LPCTSTR szIP, LPCTSTR szUrl, CWnd * pmsgWnd, int port )
 	m_pBuff = NULL;
 	m_hFile = NULL;
 	m_hFileMap = NULL;
-	m_pMsgWnd = pmsgWnd == NULL ?  g_pHttpResMan : pmsgWnd ;
+	m_pMsgWnd = pmsgWnd ;
 }
 
 CAsyncHttp::~CAsyncHttp()
@@ -713,7 +713,7 @@ INT CAsyncHttp::GetBody( )
 		m_pSocket->Recv(m_pBody, len);
 		m_nBodyLen = len;
 	}
-	if (m_pBuff ) m_pBuff[m_nBodyLen] = 0;
+	if (m_pBuff) m_pBuff[m_nBodyLen] = 0;
 	m_pBody = m_pBuff;
 	return m_nBodyLen;
 }
@@ -767,14 +767,28 @@ CHttpPost::CHttpPost(LPCTSTR szIP, LPCTSTR szUrl, CWnd * pmsgWnd, int port, LPCT
 INT CHttpPost::SendFile(LPCTSTR slclfname, void * param)
 {
 	m_strLocalFile = slclfname;
-	CFile of;
-	if (of.Open(slclfname, CFile::modeRead | CFile::shareDenyNone))
+
+	m_hFile = CreateFile(slclfname, GENERIC_READ, FILE_SHARE_READ,
+		NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (m_hFile == INVALID_HANDLE_VALUE)		return -1;
+
 	{
-		m_nBodyLen = of.GetLength();
-		m_pBuff = (BYTE *)malloc(m_nBodyLen);
-		m_pBody = m_pBuff;
-		of.Read(m_pBody, m_nBodyLen);
-		of.Close();
+		m_nBodyLen = GetFileSize(m_hFile, NULL);
+		m_hFileMap = CreateFileMapping(m_hFile, NULL, PAGE_READONLY, 0, m_nBodyLen, NULL);
+		if (m_hFileMap == NULL)
+		{
+			CloseHandle(m_hFile);
+			return -2;
+		}
+		m_pBuff = NULL; //(BYTE *)malloc(m_nBodyLen);
+		m_pBody = (BYTE *)MapViewOfFile(m_hFileMap, FILE_MAP_READ, 0, 0, m_nBodyLen);// (BYTE*)malloc(len + 1);
+		if (m_pBody == NULL)
+		{
+			CloseHandle(m_hFile);
+			return -3;
+		}
+		//of.Read(m_pBody, m_nBodyLen);
+		//of.Close();
 		CString strtype = CUtil::GetFileType(slclfname);
 		CStringA stype; QUnc2Utf(strtype, stype);
 		CStringA sheadr;
@@ -810,19 +824,15 @@ INT CHttpPost::SendFile(const void * ptr, int len, LPCTSTR sztype)
 
 INT CHttpPost::OnHttpHeaderSend()
 {
-	/*int len = GetHttpHeader(m_szRespHeader);
-	if (len > 0)
-	{
-		if (m_szRespHeader.Find(" 200 OK") >= 0)
-			return 1;
-	}*/
 	return 1;
 }
 
 INT CHttpPost::OnHttpSend()
 {
-	int len = GetHttpHeader(m_szRespHeader);
-	if (len > 0)
+	int len = 0;
+	if (m_szRespHeader.IsEmpty() ) 
+		GetHttpHeader(m_szRespHeader);
+	if (!m_szRespHeader.IsEmpty())
 	{
 		if (m_szRespHeader.Find(" 200 OK") >= 0)
 		{
@@ -831,7 +841,7 @@ INT CHttpPost::OnHttpSend()
 		else
 			return -5;
 	}
-	return len>0;
+	return len;
 }
 
 
@@ -906,41 +916,3 @@ INT CGetHttp::OnHttpSend()
 	return len>0;
 }
 
-
-//<====================CHttpPost class<============================<<<<<<<<<
-
-
-// CHttpResMan
-
-IMPLEMENT_DYNAMIC(CHttpResMan, CWnd)
-
-CHttpResMan::CHttpResMan()
-{
-}
-
-CHttpResMan::~CHttpResMan()
-{
-}
-
-
-BEGIN_MESSAGE_MAP(CHttpResMan, CWnd)
-	ON_MESSAGE(WM_HTTP_DONE, &CHttpResMan::OnHttpFinishMsg)		//自定义事件
-END_MESSAGE_MAP()
-
-
-LRESULT CHttpResMan::OnHttpFinishMsg(WPARAM wParam, LPARAM lParam)
-{
-	CAsyncHttp * pHttp = (CAsyncHttp*)wParam;
-	delete pHttp;
-	return 0;
-}
-
-CWnd * CreateHttpManageWnd(CWnd * pParent)
-{
-	CHttpResMan * phttpMan = new CHttpResMan();
-	phttpMan->Create(NULL, _T(""), WS_CHILD, CRect(0, 0, 0, 0), pParent, IDC_STATIC, NULL);
-	g_pHttpResMan = phttpMan;
-	return phttpMan;
-}
-
-// CHttpResMan 消息处理程序

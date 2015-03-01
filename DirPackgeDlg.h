@@ -59,10 +59,12 @@ public:
 
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV support
+	virtual void OnHttpObjProc(int idHttpObj, int stat);
+	CStringA m_sQueryCmd;
+	void QueryClassType();
 	CExDialog * m_pSubDlgs[MAX_TAB_ITEM];
 	CExDialog * m_plogDlgs[2];
 	INT  m_LogDlgIdx;
-	CWnd * m_pHttpWnd;
 
 // Implementation
 protected:

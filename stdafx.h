@@ -50,7 +50,10 @@ void MyTracex(const char * fmt, ...);
 #endif
 #endif
 
-//#include <vld.h> 
+#ifdef DEBUG
+   //#include <vld.h> 
+#endif
+
 // VC6
 #if defined(_MSC_VER) && _MSC_VER == 1200
 

@@ -11,11 +11,14 @@
 CDigest::CDigest(CString &sfile, DIGEST_MODE mode )
 {
 	CFile of;
+	m_len = 0;
 	if (of.Open(sfile, CFile::modeRead | CFile::shareDenyNone))
 	{
 		UINT32 flen = (UINT32)of.GetLength();
+		m_len = flen;
 		CHAR * ptr = new CHAR[flen];
 		CalDigest(ptr, flen, mode);
+		delete ptr;
 	}
 }
 
@@ -298,7 +301,6 @@ BOOL CPackerProj::SetBookState(LPCTSTR sbookid, LPCTSTR sState)
 	CString str; str.Format(_T("UPDATE books SET BookState = \'%s\' WHERE BookId=\'%s\' "), sState, sbookid);
 	AString sql;
 	QUnc2Utf(str, sql);
-	char *pErrMsg;
 	execSQL(sql);
 	return TRUE;
 }
@@ -413,7 +415,7 @@ INT CPackerProj::CreateProj(LPCTSTR szTarget)
 			CFile of;
 			if (of.Open(m_szTargetPath, CFile::modeRead | CFile::shareDenyNone))
 			{
-				m_nTargetFLen = of.GetLength();
+				m_nTargetFLen = (UINT32)of.GetLength();
 				CFileStatus ofs;
 				if (of.GetStatus(ofs))
 				{
@@ -667,7 +669,7 @@ UINT32 GetFileSize(LPCTSTR sf)
 	CFileStatus status;
 	if (CFile::GetStatus(sf, status))
 	{
-		return status.m_size;
+		return (UINT32)status.m_size;
 	}
 	return 0;
 }
@@ -683,7 +685,7 @@ UINT32 CPackerProj::PreCountZipSize()
 	CResMan * pRes = m_pRes;
 	while(pRes)
 	{
-		tlen += pRes->m_fsize;
+		tlen += (UINT32)pRes->m_fsize;
 		pRes = pRes->pNext;
 	}
 	return tlen;
@@ -721,7 +723,6 @@ BOOL CPackerProj::ZipRes(LPCTSTR szZipFile)
 		BOOL ret = TRUE;
 
 		void * ptr = NULL;
-		int flen;
 		try {
 			strZip.ReleaseBuffer();
 			CString spath = this->m_szTargetPath;
@@ -753,7 +754,7 @@ BOOL CPackerProj::ZipRes(LPCTSTR szZipFile)
 			if (!OffsetPorgPos(0, sinfo)) throw _T("用户中止");
 			while (pRes)
 			{
-				if (!OffsetPorgPos(pRes->m_fsize) ) throw _T("用户中止");
+				if (!OffsetPorgPos((UINT32)pRes->m_fsize) ) throw _T("用户中止");
 				EncZip(hz, pRes->m_sPath, pRes->m_sfileName, TRUE);
 				if (ret != ZR_OK)		throw _T("压缩资源文件失败！");
 				pRes = pRes->pNext;
@@ -913,7 +914,7 @@ int CPackerProj::Open(LPCTSTR szProj)
 			CFile of;
 			if (of.Open(m_szTargetPath, CFile::modeRead|CFile::shareDenyNone))
 			{
-				m_nTargetFLen = of.GetLength();
+				m_nTargetFLen = (UINT32)of.GetLength();
 				CFileStatus ofs;
 				if (of.GetStatus(ofs))
 				{
@@ -1003,7 +1004,6 @@ static void DecMainSection(CPackerProj * proj, const char ** atts)
 
 static void XMLCALL ParseXmlRoot(void *userData, const char *name, const char **atts)
 {
-	int i;
 	CPackerProj * proj = (CPackerProj*)userData;
 	if (strcmp(name, "directory") == 0)
 	{
