@@ -690,7 +690,7 @@ UINT32 CPackerProj::PreCountZipSize()
 	}
 	return tlen;
 }
-//#define MEM_ENC
+
 BOOL CPackerProj::EncZip(HANDLE hzip, LPCTSTR szIn, LPCTSTR szZipName, BOOL bEnc)
 {
 	HZIP hz = (HZIP)hzip;

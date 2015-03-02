@@ -179,43 +179,46 @@ INT CMetaDlg::ParseMetaItem(CString &strRawMeta )
 INT  CMetaDlg::LoadExtMetaValue(CMetaDataItem * pit, CString &szKeyIn )
 {
 	int count = 0;
-	CString str, strVal;
+	CString str, strVal=_T("");
 	TCHAR * praw = pit->pExt->pszMetaDetail;
 	BOOL keyMatched = FALSE;
-	while( AfxExtractSubString(str, praw, count++, _T('\n')) ) //split to line
-	{		
-		str.Remove(_T('\r'));
-		int nItem = pit->nSubIdx-1;
-		if( nItem > 0 && !szKeyIn.IsEmpty() )
+	//if (!szKeyIn.IsEmpty())
+	{
+		while (AfxExtractSubString(str, praw, count++, _T('\n'))) //split to line
 		{
-			int nkey = nItem <1 ?  0 : nItem-1;
-			CString strKey;
-			if( AfxExtractSubString(strKey, str, nkey, _T('\t') ))
+			str.Remove(_T('\r'));
+			int nItem = pit->nSubIdx - 1;
+			if (nItem > 0 && !szKeyIn.IsEmpty())
 			{
-				if( !strKey.IsEmpty()  ) 
+				int nkey = nItem < 1 ? 0 : nItem - 1;
+				CString strKey;
+				if (AfxExtractSubString(strKey, str, nkey, _T('\t')))
 				{
-					if(strKey.Compare(szKeyIn) != 0 )
+					if (!strKey.IsEmpty())
 					{
-						if( keyMatched ) 
-							break;
-						else 
-							continue;		
+						if (strKey.Compare(szKeyIn) != 0)
+						{
+							if (keyMatched)
+								break;
+							else
+								continue;
+						}
 					}
+					else if (!keyMatched) continue;
+					keyMatched = true;
 				}
-				else if( !keyMatched ) continue;
-				keyMatched = true;
 			}
-		}
-		
-		CString strSub;
-		if( AfxExtractSubString(strSub, str, nItem, _T('\t') ) )
-		{
-			if( !strSub.IsEmpty() )
+
+			CString strSub;
+			if (AfxExtractSubString(strSub, str, nItem, _T('\t')))
 			{
-				strSub.Replace(_T('£¬'), _T('\\'));
-				strSub.Replace(_T('¡¢'),_T('\\'));
-				if(!strVal.IsEmpty()) strVal += _T("\\");
-				strVal += strSub;
+				if (!strSub.IsEmpty())
+				{
+					strSub.Replace(_T('£¬'), _T('\\'));
+					strSub.Replace(_T('¡¢'), _T('\\'));
+					if (!strVal.IsEmpty()) strVal += _T("\\");
+					strVal += strSub;
+				}
 			}
 		}
 	}
@@ -658,7 +661,10 @@ CMetaDataItem * CMetaDlg::ChangeSubComboBox(CMetaDataItem * pit)
 	{
 		CString str ;
 		GetDlgItem(pit->nCtrlID)->GetWindowText(str);
-		this->LoadExtMetaValue(psub, str);
+		if (str.IsEmpty())
+			psub->strDefVal.Empty();
+		else 
+			LoadExtMetaValue(psub, str);
 		CComboBox* pbox = (CComboBox*)GetDlgItem(psub->nCtrlID);
 		pbox->ResetContent();
 		int count = 0;

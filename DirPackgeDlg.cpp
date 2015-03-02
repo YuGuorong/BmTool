@@ -335,7 +335,19 @@ void CDirPackgeDlg::OnHttpObjProc(int idHttpObj, int stat)
 						for (int j = 0; j < sa_2.size(); j++)
 						{
 							CString str = qUtf2Unc(sa_2[j]["caption"].asCString());
-							stxt += _T("\t") + str + _T("\t\r\n");
+							stxt += _T("\t") + str ;
+
+							Json::Value sa_3 = sa_2[j]["childs"];
+							for (int k = 0; k < sa_3.size(); k++)
+							{
+								CString str3 = qUtf2Unc(sa_3[k]["caption"].asCString());
+								if (k)
+									stxt += _T(',');
+								else
+									stxt += _T('\t');
+								stxt += str3;
+							}
+							stxt += _T("\r\n");
 						}
 					}
 				}
