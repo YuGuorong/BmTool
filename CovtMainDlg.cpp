@@ -363,7 +363,8 @@ int CCovtMainDlg::Addfile(CStringA &sxml, CStringArray &files)
 #ifdef OPEN_ENC
 				CString sen_in = sfi;
 				sfi += _T(".s.tmp");
-				int enc_ret= enc_file(sen_in, sfi);
+				Logs(_T("\r\n    ¼ÓÃÜÎÄ¼þ£º\"%s\"... "), sfi);
+				int enc_ret = enc_file(sen_in, sfi);
 #else
 				CStringA asin, asEnc;
 				QW2A(sfi, asin);
