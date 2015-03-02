@@ -566,7 +566,7 @@ BOOL CResManDlg::ScanTask()
 		{
 			int row = fit->second;
 			CAsyncHttp * phttp = (CAsyncHttp *)m_listTask.GetItemData(i);
-			if (phttp != NULL)
+			if (phttp != NULL && phttp->m_pSocket && phttp->m_pSocket->m_SendTotLen>100)
 			{
 				int per = (phttp->m_pSocket->m_curTxBytes )/ (phttp->m_pSocket->m_SendTotLen/100);
 				CString sprog;
