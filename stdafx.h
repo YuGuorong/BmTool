@@ -89,6 +89,11 @@ void SwitchBackMainDlg();
 #define CFG_MAX_TASK_LIMIT   1
 
 
+#define OPEN_ENC
+#define MEM_ENC
+#define DEC_MEM
+
+
 #define STR_VERSION     _T("1.0.2.1")
 
 #if VENDOR_NAME == VENDOR_OPENCE

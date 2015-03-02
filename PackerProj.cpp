@@ -4,7 +4,7 @@
 #include "libs.h"
 #include "resource.h"
 #include "expat\expat.h"
-#include "ServerModal.h"
+//#include "ServerModal.h"
 
 #pragma comment(lib, ".\\lib\\expat\\libexpat.lib" ) 
 

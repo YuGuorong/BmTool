@@ -10,6 +10,9 @@
 #include "PackerProj.h"
 #include "expat\expat.h"
 #include <list>
+//#include "ServerModal.h"
+#include "libs.h"
+
 
 #define CFG_XML_TEMPLATE_FILE _T(".meta_template.xml")
 
@@ -296,7 +299,8 @@ int CCovtMainDlg::AddCover(CStringA &sxmlCover, CStringA &asfile, CStringArray &
 	//add file to package rename to __cover.???
 	return 0;
 }
-#include "ServerModal.h"
+
+
 int CCovtMainDlg::Addfile(CStringA &sxml, CStringArray &files)
 {
 	/*  !&files
@@ -356,11 +360,17 @@ int CCovtMainDlg::Addfile(CStringA &sxml, CStringArray &files)
 			if ( m_bEnEncrypt && m_nClassType == 1 && (!sext.IsEmpty()) &&
 				( sext.CompareNoCase(_T("pdf")) == 0 || sext.CompareNoCase(_T("epub")) == 0  ) )
 			{
+#ifdef OPEN_ENC
+				CString sen_in = sfi;
+				sfi += _T(".s.tmp");
+				int enc_ret= enc_file(sen_in, sfi);
+#else
 				CStringA asin, asEnc;
 				QW2A(sfi, asin);
 				sfi += _T(".s.tmp");
 				asEnc = asin + (".s.tmp");
 				int enc_ret = Encrypt((LPCTSTR)(LPCSTR)asin, (LPCTSTR)(LPCSTR)asEnc, 0, 0);
+#endif
 				if( enc_ret <= 0 )
 				{
 					Logs(_T("\r\n    \"%s\"¼ÓÃÜÊ§°Ü[>0], %d... "), sfi, enc_ret);
