@@ -76,15 +76,20 @@ CMetaExtend * CMetaDlg::ParseExtMeta(CString strExt, int &nSubIndex)
 {
 	CMetaExtend * pExt = NULL;
 	CString sFile;  
-	CRegexpT <WCHAR> regexp(_T("\\\"([^\\\"]*)\\\"\\s*(\\d+)"));//("course.h" 1) match group1, name ,group2 number 
+	CRegexpT <WCHAR> regexp(_T("\\\"([^\\\"]*)\\\"\\s*(\\d+)\\s*(\\d+)"));//("course.h" 1) match group1, name ,group2 number 
 	MatchResult result = regexp.Match(strExt);
 	if( result.MaxGroupNumber() >= 1 )
 	{
 		sFile = strExt.Mid(result.GetGroupStart(1), result.GetGroupEnd(1)-result.GetGroupStart(1));
-		if( result.MaxGroupNumber() == 2 )
+		if( result.MaxGroupNumber() >= 2 )
 		{
 			CString stridx = strExt.Mid(result.GetGroupStart(2), result.GetGroupEnd(2)-result.GetGroupStart(2));
 			nSubIndex = _tstoi(stridx);
+		}
+		if (result.MaxGroupNumber() >= 3)
+		{
+			CString stridx = strExt.Mid(result.GetGroupStart(3), result.GetGroupEnd(3) - result.GetGroupStart(3));
+			nSubIndex += _tstoi(stridx)*0x10000;
 		}
 
 		CPackerProj * proj = ::GetPackProj();
@@ -187,7 +192,7 @@ INT  CMetaDlg::LoadExtMetaValue(CMetaDataItem * pit, CString &szKeyIn )
 		while (AfxExtractSubString(str, praw, count++, _T('\n'))) //split to line
 		{
 			str.Remove(_T('\r'));
-			int nItem = pit->nSubIdx - 1;
+			int nItem = (pit->nSubIdx & 0xFFFF) - 1;
 			if (nItem > 0 && !szKeyIn.IsEmpty())
 			{
 				int nkey = nItem < 1 ? 0 : nItem - 1;
@@ -672,7 +677,7 @@ CMetaDataItem * CMetaDlg::ChangeSubComboBox(CMetaDataItem * pit)
 		{
 			pbox->AddString(str);
 		}
-		pbox->SetCurSel(0);
+		pbox->SetCurSel(0);		
 	}
 	return psub;
 }
@@ -737,17 +742,18 @@ void CMetaDlg::SetDefComboxVal()
 	{
 		if (pit->style & META_COMBOBOX)
 		{
-			if (pit->nSubIdx == 1 )
+			if ( (pit->nSubIdx&0xFFFF) == 1 )
 			{
 				CComboBox * pbox = (CComboBox *)pit->pWnd[1];
 				CString str;
 				pbox->GetLBText(0, str);
 				pbox->SetCurSel(0);
 				pit->strValue = str;
-				do{
-					pit = ChangeSubComboBox(pit);
-				} while (pit);
-				break;
+				CMetaDataItem * psub = pit;
+				while (psub){
+					psub = ChangeSubComboBox(psub);
+				}  
+				//break;
 			}
 		}
 		pit = pit->pNext;

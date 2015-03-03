@@ -136,6 +136,7 @@ public:
 	CMetaDataItem * pNext;
 	CMetaExtend   * pExt; //Next Group item
 	INT      nSubIdx;
+	int      nGroupId;
 public:
 	CMetaDataItem()
 	{
