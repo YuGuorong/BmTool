@@ -138,7 +138,7 @@ protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 	void EnableProxy(BOOL benProxy);
 	CLCheckBox m_ProxyBox;
-	int CheckLastTaskBroken(CString & stasklog_f);
+	int CheckLastTaskBroken();
 	int m_nClassType;
 	void CleanXmlUnknown(CStringA &strxml);
 

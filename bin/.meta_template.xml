@@ -23,8 +23,7 @@
 
     <!--适用年级,可存在多个年级-->
         <grade>
-            !&grades
-        </grade>
+!&grades         </grade>
         
     <!-- 如果学科是树形结构，可以多级嵌套-->
         <subject>

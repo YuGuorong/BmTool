@@ -12,7 +12,7 @@
 #include <list>
 //#include "ServerModal.h"
 #include "libs.h"
-
+static const LPCTSTR stRetLogFName[] = {_T("\\ok.log"), _T("\\error.log")  };
 
 #define CFG_XML_TEMPLATE_FILE _T(".meta_template.xml")
 
@@ -585,25 +585,34 @@ int CCovtMainDlg::ParseXmlMeta(CStringArray &sfiles)
 		}
 		else if (it->first.Compare("grade_level") == 0)
 		{
-			CStringA scap;
-			CStringA stmp = "<item id = \"\" value = \"!&grade_level\" caption=\"!&grade_caption\" term=\"!&term\"/>";
-			int ngrade = 0; 
-			ngrade = atoi(it->second);
-			if (ngrade <= 0 || ngrade > 13)
+			const char grade_tmplt[] = "\t\t\t<item id = \"\" value = \"!&grade_level\" caption=\"!&grade_caption\" term=\"!&term\"/>\r\n";
+			if ( it->second.IsEmpty()) continue;
+			char * pval = it->second.GetBuffer(it->second.GetLength());
+			while (pval)
 			{
-				Logs(_T("\r\n--->不可解析的\"grade_level\": %d [1-13]!!\r\n"), ngrade);
-				return CVT_ERR_SECTION_GRADE;
+				CStringA stmp = grade_tmplt;
+				int ngrade = atoi(pval);
+				
+				if (ngrade <= 0 || ngrade > 13)
+				{
+					Logs(_T("\r\n--->不可解析的\"grade_level\": %d [1-13]!!\r\n"), ngrade);
+					it->second.ReleaseBuffer();
+					return CVT_ERR_SECTION_GRADE;
+				}
+				LPCWSTR sgrades_tmp[] = { { _T("学前") }, { _T("一年级") }, { _T("二年级") }, { _T("三年级") }, { _T("四年级") },
+				{ _T("五年级") }, { _T("六年级") }, { _T("初一") }, { _T("初二") },
+				{ _T("初三") }, { _T("高一") }, { _T("高二") }, { _T("高三") } };
+				ngrade--;
+				CStringA sv;sv.Format("%02d", ngrade);
+				stmp.Replace("!&grade_level", sv);
+				CStringA sc = qUnc2Utf(sgrades_tmp[ngrade]);
+				stmp.Replace("!&grade_caption", sc);
+
+				grades += stmp;
+				pval = strchr(pval, ';');
+				if (pval) pval++;
 			}
-			LPCWSTR sgrades_tmp[] = {	{_T( "学前" )}, {_T( "一年级" )}, {_T( "二年级" )}, {_T( "三年级" )}, {_T( "四年级" )},
-										{_T( "五年级" )}, {_T( "六年级" )}, {_T( "初一" )}, {_T( "初二" )},
-										{_T( "初三" )},{_T( "高一" )}, {_T( "高二" )}, {_T( "高三" )} };
-			ngrade--;
-			it->second.Format("%02d", ngrade);
-			stmp.Replace("!&grade_level", it->second);
-			CStringA sc = qUnc2Utf(sgrades_tmp[ngrade]);
-			stmp.Replace("!&grade_caption", sc); 
-			
-			grades += stmp;
+			it->second.ReleaseBuffer();
 			continue;
 		}
 		
@@ -830,23 +839,37 @@ LPCTSTR GetErrorString(int v)
 	else return _T("未知错误！");
 }
 
-int CCovtMainDlg::CheckLastTaskBroken(CString & stasklog_f )
+int CCovtMainDlg::CheckLastTaskBroken( )
 {
 	CString str;
 	CStdioFile   of;
-	if (of.Open(stasklog_f, CFile::modeRead | CFile::shareDenyNone) == FALSE) return 0;
-	while (of.ReadString(str))
+	for (int f = 0; f < sizeof(stRetLogFName) / sizeof(LPCTSTR); f++)
 	{
-		if (str.IsEmpty()) continue;
-		for (int i = 0; i < m_strSrcPacks.GetCount(); i++)
+		CString strF = m_strSrcDir + stRetLogFName[f];
+		if (of.Open(strF, CFile::modeRead | CFile::shareDenyNone) == FALSE) continue;
+		while (of.ReadString(str))
 		{
-			if (str.Compare(m_strSrcPacks[i]) == 0)
+			if (str.IsEmpty()) continue;
+
+			int p = str.Find(_T("] \""));
+			if (p < 0) continue;
+			str.Delete(0, p + 3);
+			p = str.Find(_T('\"'));
+			if (p < 0) continue;
+			str.Delete(p, str.GetLength());
+
+			for (int i = 0; i < m_strSrcPacks.GetCount(); i++)
 			{
-				m_strSrcPacks.RemoveAt(i);
-				break;
+				if (str.Compare(m_strSrcPacks[i]) == 0)
+				{
+					Logs(_T("    略过:\"%s\" 已转换。\r\n"), str);
+					m_strSrcPacks.RemoveAt(i);
+					break;
+				}
 			}
+			str.Empty();
 		}
-		str.Empty();
+		of.Close();
 	}
 	return 1;
 }
@@ -866,7 +889,7 @@ void MarkTaskDone(CString &stasklog_f, CString &stask)
 void CCovtMainDlg::LogToFile(int result, LPCTSTR spckFile)
 {
 	CString sflog = m_strSrcDir;
-	sflog += result<0 ? _T("\\error.log") : _T("\\ok.log");
+	sflog += result<0 ? stRetLogFName[1] : stRetLogFName[0];
 	CTime tm = CTime::GetCurrentTime();
 	CString stmlog = tm.Format(TIME_FMT);
 	CStdioFile of;
@@ -888,12 +911,11 @@ void CCovtMainDlg::LogToFile(int result, LPCTSTR spckFile)
 int CCovtMainDlg::AsyncConvertDir(int param)
 {
 	CString strTmpRoot = g_pSet->strCurPath + _T("_tmp\\");
-	CString strf_log = strTmpRoot + _T(".task_list.log");
-
+	AddLog(_T("开始转换：\r\n"));
 
 	CreateDirectory(strTmpRoot, NULL);
 	ListZips(m_strSrcDir,  m_strSrcPacks);
-	CheckLastTaskBroken(strf_log);
+	CheckLastTaskBroken();
 	CTime dts = CTime::GetCurrentTime();
 	SetCurProgPos(0, _T("正在转换..."));
 	SetProgWndLimit(m_strSrcPacks.GetSize(), 0);
@@ -913,18 +935,13 @@ int CCovtMainDlg::AsyncConvertDir(int param)
 
 		m_aRsut[i] = ConvertBook(m_strSrcPacks[i]);
 		Logs(_T("\r\n    清理临时文件..."));
-		if (m_aRsut[i] >= 0 )
-		{
-			MarkTaskDone(strf_log, m_strSrcPacks[i]);
-		}
+
 		Logs(_T("\r\n完成: %s"), GetErrorString(m_aRsut[i]));
 		LogToFile(m_aRsut[i], m_strSrcPacks[i]);
 		::SetCurrentDirectory(g_pSet->strCurPath);
 		DelTree(m_strTmpDir);
 		Logs(_T("\r\n"));
 	}
-	
-	DeleteFile(strf_log);
 	
 
 	CString sol;
@@ -1067,14 +1084,14 @@ void CCovtMainDlg::OnBnClickedBtnOk()
 		g_pSet->m_strSrcDir = this->m_strSrcDir;
 		g_pSet->m_strDstDir = m_strDstDir;
 		g_pSet->Save();
+		m_slog.Empty();
+		m_oLog.SetWindowText(_T(""));
+		m_oLog.ShowWindow(SW_SHOW);
 		if (m_pDeleGate == NULL)
 			m_pDeleGate = new CDelegate(this);
 		m_pDeleGate->start(this);
 		m_pbtns[0]->SetWindowText(_T("中止转换"));
-		m_slog.Empty();
-		m_oLog.SetWindowText(_T(""));
-		m_oLog.ShowWindow(SW_SHOW);
-		AddLog(_T("开始转换：\r\n"));
+		
 		ProcMsg();
 	}
 	else
