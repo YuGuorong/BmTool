@@ -40,7 +40,7 @@ public:
 	static HICON GetFileIcon(LPCTSTR sfilename);
 	static HICON GetFileIcon(CFileDialog &fdlg);
 	static CString GenGuidString();
-	static BOOL GetFileSize(LPCTSTR  sfile, DWORD &flen);
+	static BOOL GetFileSize(LPCTSTR  sfile, DWORD &flen, DWORD * pflenh = NULL);
 	static CString CUtil::FormatMessageFor(HRESULT hr);
 	static HGLOBAL m_hG;
 	static LPCTSTR m_szMimeType; //contend type

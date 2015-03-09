@@ -34,6 +34,7 @@ enum
 {
 	CVT_ERR_BASE = -500,
 	CVT_ERR_UNZIP,
+	CVT_ERR_HUGE_ZIP,
 	CVT_ERR_OPEN_PACKAGE,
 	CVT_ERR_HUGE_FLV,
 	CVT_ERR_HUGE_SWF,
@@ -57,6 +58,7 @@ enum
 #define CVT_ERR_STRINGS  			\
 		{ _T("Error unzip package") },  \
 		{ _T("Error open zip package") },  \
+		{ _T("Error huge zip package") },  \
 		{ _T("Error huge flv file(>10MB) ") },  \
 		{ _T("Error huge swf file(>10MB) ") },  \
 		{ _T("Error no xml ") },				\

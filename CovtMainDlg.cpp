@@ -258,6 +258,8 @@ CString SplidFileName(CString &sf, CString &sext)
 	return str;
 }
 
+
+
 int CCovtMainDlg::AddCover(CStringA &sxmlCover, CStringA &asfile, CStringArray &sfiles)
 {/* !&cover*/	
 	CString strF;
@@ -587,7 +589,7 @@ int CCovtMainDlg::ParseXmlMeta(CStringArray &sfiles)
 		{
 			const char grade_tmplt[] = "\t\t\t<item id = \"\" value = \"!&grade_level\" caption=\"!&grade_caption\" term=\"!&term\"/>\r\n";
 			if ( it->second.IsEmpty()) continue;
-			char * pval = it->second.GetBuffer(it->second.GetLength());
+			char * pval = it->second.GetBuffer(it->second.GetLength()+8);
 			while (pval)
 			{
 				CStringA stmp = grade_tmplt;
@@ -599,6 +601,7 @@ int CCovtMainDlg::ParseXmlMeta(CStringArray &sfiles)
 					it->second.ReleaseBuffer();
 					return CVT_ERR_SECTION_GRADE;
 				}
+				if (ngrade == 11) strcat(pval, ";12;13");
 				LPCWSTR sgrades_tmp[] = { { _T("学前") }, { _T("一年级") }, { _T("二年级") }, { _T("三年级") }, { _T("四年级") },
 				{ _T("五年级") }, { _T("六年级") }, { _T("初一") }, { _T("初二") },
 				{ _T("初三") }, { _T("高一") }, { _T("高二") }, { _T("高三") } };
@@ -665,7 +668,7 @@ int CCovtMainDlg::ParseXmlField(CString &sbook)
 		int len = of.Read(buf, BUFSIZ);
 		done = len < sizeof(buf);
 		if (XML_Parse(parser, buf, len, done) == XML_STATUS_ERROR) {
-			MyTracex("%s at line %""u\n",
+			Logs(_T("\r\n-->Xml Error: %S at line %u\r\n"),
 				XML_ErrorString(XML_GetErrorCode(parser)),
 				XML_GetCurrentLineNumber(parser));
 			ret = CVT_ERR_PARSE_XML;
@@ -1018,6 +1021,11 @@ int CCovtMainDlg::ConvertBook(CString &sbook)
 
 	Logs(_T("    解包..."));
 	int ret = CVT_ERR_UNZIP;
+	DWORD flen, flenh;
+	if (!CUtil::GetFileSize(sbook, flen, &flenh))
+		return ret;
+	if (flenh > 0)
+		return CVT_ERR_HUGE_ZIP;
 	if ( (ret =UnzipLimitFile(sbook, &sfiles, (10 MByte), _T("flv"))) < 0 )
 		return ret;
 	

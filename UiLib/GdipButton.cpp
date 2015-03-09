@@ -131,6 +131,7 @@ END_MESSAGE_MAP()
 //=============================================================================
 BOOL CGdipButton::LoadStdImage(UINT id, LPCTSTR pType)
 {
+	if (m_pStdImage)delete m_pStdImage;
 	m_pStdImage = new CGdiPlusBitmapResource;
 	return m_pStdImage->Load(id, pType);
 }

@@ -447,7 +447,7 @@ CString CUtil::GenGuidString()
 	return sguid;
 }
 
-BOOL CUtil::GetFileSize(LPCTSTR  sfile, DWORD &flen)
+BOOL CUtil::GetFileSize(LPCTSTR  sfile, DWORD &flen, DWORD * pflenh)
 {
 	WIN32_FIND_DATA fileInfo;
 	HANDLE hFind;
@@ -456,6 +456,7 @@ BOOL CUtil::GetFileSize(LPCTSTR  sfile, DWORD &flen)
 	if (hFind != INVALID_HANDLE_VALUE)
 	{
 		fileSize = fileInfo.nFileSizeLow;
+		if (pflenh) *pflenh = fileInfo.nFileSizeHigh;
 		FindClose(hFind);
 		flen = fileSize;
 		return TRUE;
