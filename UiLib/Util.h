@@ -28,7 +28,7 @@ public:
 	static CString GetFileName(CString &strFile);
 	static CString GetFileType(LPCTSTR szFile);
 	static DWORD GetFileSize(LPCTSTR sfile);
-	static int GetFileExt(CString &Sfile, CString &sext);
+	static int GetFileExt(const CString &Sfile, CString &sext);
 	static BOOL GetFileMemiType(LPCTSTR szExt, CString &stype);
 	static HANDLE FindProcessByName(LPCTSTR szFileName, BOOL bKill = FALSE, INT exit_code = 0);
 	static HANDLE CUtil::RunProc(LPCTSTR strcmd, LPCTSTR strparam, LPCTSTR strPath, BOOL bsync = TRUE, BOOL forcehide = TRUE);

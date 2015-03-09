@@ -186,7 +186,9 @@ BOOL CDirPackgeDlg::OnInitDialog()
 		m_cTabBtns[i]->LoadStdImage(btnids[i][1], _T("PNG"));		
 		//m_cTabBtns[i]->EnableButton(FALSE);
 	}
-	
+	//m_cTabBtns[BTN_SETTING]->LoadAltImage(IDB_PNG_EXIT, _T("PNG"));
+	//m_cTabBtns[BTN_SETTING]->EnableToggle();
+	//m_cTabBtns[BTN_SETTING]->SetCheck(TRUE);
 	CRect rbt;
 	m_cTabBtns[0]->GetWindowRect(rbt);
 	rbt.MoveToXY(0,2);
@@ -548,6 +550,7 @@ void CDirPackgeDlg::OnBnClickedBtnSetting()
 {
 	PushCurWnd();
 	SwitchDlg(SETTING_TAB);
+	//m_cTabBtns[BTN_SETTING]->
 }
 
 

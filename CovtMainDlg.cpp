@@ -266,7 +266,7 @@ int CCovtMainDlg::AddCover(CStringA &sxmlCover, CStringA &asfile, CStringArray &
 	CString strCover = CFG_COVER_FILE;
 	if (asfile.IsEmpty() || asfile.GetLength() <= 1)
 	{
-		CStringArray sfind;
+		CStringArray  sfind;
 		if (FindFile(_T("cover.*"), sfind))
 		{
 			strF = sfind[0];
@@ -275,12 +275,17 @@ int CCovtMainDlg::AddCover(CStringA &sxmlCover, CStringA &asfile, CStringArray &
 		}
 		else
 		{
+			int nctype = m_nClassType;
+			if (nctype >= m_fCovers.GetCount()) nctype = m_fCovers.GetCount() - 1;
+			if (nctype <= 0) nctype = 1;
+				
 			Logs(_T("+..."));
+			CStringArray * spf = (CStringArray *)m_fCovers[m_nClassType];
 			srand(time(NULL));
-			INT nr = rand() % 30;
-			asfile.Format("%d.jpg", nr);
+			INT nr = rand() % spf->GetCount();
 			CString ss;
-			strF.Format(_T("%d.jpg"), nr);
+			strF = spf->GetAt(nr);
+			asfile = qUnc2Utf(strF);
 			ss = g_pSet->strCurPath + _T("covers\\") + strF;
 			//CopyFile(ss, strF, FALSE);
 			strF = ss;
@@ -295,11 +300,13 @@ int CCovtMainDlg::AddCover(CStringA &sxmlCover, CStringA &asfile, CStringArray &
 	CDigest  d(strF);	
 	char * ptmp = "<item type=\"cover\" id=\"\" caption=\"cover\" size=\"%d\" hashType=\"%S\" hashValue=\"%S\" file=\"%S\"  preview=\"\"/>";
 	sxmlCover.Format(ptmp, d.m_len, d.GetModeString(), d.m_sDigest, ConvtXmlChars(strCover));
-	ZipAdd(m_hz, strCover, strF.GetBuffer(), 0, ZIP_FILENAME);
+	ZRESULT rt = ZipAdd(m_hz, strCover, strF.GetBuffer(), 0, ZIP_FILENAME);
 	strF.ReleaseBuffer();
+	if (rt != ZR_OK)
+		return CVT_ERR_ADD_COVER;
 	//ramdom assign a cover from picturs
 	//add file to package rename to __cover.???
-	return 0;
+	return CVT_OK;
 }
 
 
@@ -340,10 +347,16 @@ int CCovtMainDlg::Addfile(CStringA &sxml, CStringArray &files)
 				
 					CString sexe = g_pSet->strCurPath + CFG_PDF2SWF_EXE;
 					sparm += _T("\" -o \"") + spath +_T("\"");
-					::CUtil::RunProc(sexe, sparm, m_strTmpDir);
+					HANDLE hproc = ::CUtil::RunProc(sexe, sparm, m_strTmpDir);
+					DWORD ret;
+					BOOL bOK = GetExitCodeProcess(hproc, &ret);
 					Logs(_T("\r\n    打包:\"preview\"..."));
 
-					if (CUtil::GetFileSize(spath) > 10 MByte)
+
+					if (ret != 0 || (ret = CUtil::GetFileSize(spath)) <= 0 )
+						return CVT_ERR_HUGE_SWF;
+
+					if (ret > 10 MByte)
 						return CVT_ERR_HUGE_SWF;
 
 					ZipAdd(m_hz, CFG_PREVIEW_FILE, spath.GetBuffer(spath.GetLength()), 0, ZIP_FILENAME);
@@ -505,8 +518,7 @@ int CCovtMainDlg::ParseXmlMeta(CStringArray &sfiles)
 		CString s; QUtf2Unc(it->second, s);	MyTracex("%s :", it->first );	TRACE(_T("%s\n"), s);
 		if (it->first.Compare("coverage") == 0)
 		{
-			Logs(_T(" 封面..."));
-			AddCover(scover, it->second, sfiles);			
+			scover = it->second;
 			continue;
 		}
 		else if (it->first.Compare("contributor") == 0)
@@ -622,10 +634,12 @@ int CCovtMainDlg::ParseXmlMeta(CStringArray &sfiles)
 		CStringA skey = ("!&") + it->first;
 		stemplate.Replace((LPCSTR)skey, ConvtXmlChars(it->second));
 	}
-	if (scover.IsEmpty())
+	
 	{
-		CStringA snull;
-		AddCover(scover, snull, sfiles);
+		CStringA scvr = scover;
+		Logs(_T(" 封面..."));
+
+		AddCover(scover, scvr, sfiles);
 	}
 	grades.Replace("!&term", asterm);
 	stemplate.Replace("!&cover",scover);
@@ -756,6 +770,44 @@ END_MESSAGE_MAP()
 // CCovtMainDlg message handlers
 static const INT btnids[] = { IDC_BTN_OK, IDC_BTN_CANCLE };
 
+#define CFG_COVER_FOLDER  _T("covers")
+
+INT FindCovers(CPtrArray & pCvrs)
+{
+	TCHAR scdir[MAX_PATH];
+	GetCurrentDirectory(MAX_PATH, scdir);
+	CString spath = g_pSet->strCurPath + CFG_COVER_FOLDER;
+	SetCurrentDirectory(spath);
+	
+	int i = 0;
+	for (i = 0; i < 10; i++)
+	{
+		CString str;
+		str.Format(_T("%d*.*"), i);
+		CStringArray * sfs = new CStringArray();
+		FindFile(str, *sfs);
+		for (int k = 0; k < sfs->GetCount(); k++)
+		{
+			CString sext;			
+			CUtil::GetFileExt(sfs->GetAt(k), sext);
+			sext = sext.MakeLower();
+			if (sext.Compare(_T("jpg")) != 0 && sext.Compare(_T("png")) != 0 && sext.Compare(_T("bmp")) != 0)
+			{
+				sfs->RemoveAt(k);
+				k--;
+			}
+		}
+		if (sfs->GetCount() == 0)
+		{
+			delete sfs;
+			break;
+		}
+		pCvrs.Add(sfs);
+	}
+	
+	SetCurrentDirectory(scdir);
+	return TRUE;
+}
 
 BOOL CCovtMainDlg::OnInitDialog()
 {
@@ -805,6 +857,8 @@ BOOL CCovtMainDlg::OnInitDialog()
 
 	m_pbtns[0]->SetWindowText(_T("转    换"));
 	m_oInf.ShowWindow(SW_HIDE);
+
+	FindCovers(m_fCovers);
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
 }
@@ -828,7 +882,12 @@ void CCovtMainDlg::OnDestroy()
 		m_cFolderBtns[i] = NULL;
 	}
 
-
+	for (int i = 0; i < m_fCovers.GetCount(); i++)
+	{
+		CStringArray * ptr = (CStringArray *)m_fCovers[i];;
+		delete ptr;
+	}
+	m_fCovers.RemoveAll();
 	FreeProcessWnd();
 }
 

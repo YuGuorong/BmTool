@@ -121,7 +121,7 @@ BOOL CUtil::GetFileMemiType(LPCTSTR szExt, CString &stype)
 
 }
 
-int CUtil::GetFileExt(CString &Sfile, CString &sext)
+int CUtil::GetFileExt(const CString &Sfile, CString &sext)
 {
 	int ps = Sfile.ReverseFind('\\');
 	int pt = Sfile.ReverseFind('.');

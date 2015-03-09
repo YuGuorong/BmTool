@@ -342,6 +342,7 @@ BOOL CResManDlg::UploadItem(CString &sid, int row)
 		if (fit == m_setQueueId.end())
 			m_setQueueId.insert(m_setQueueId.end(), sid);
 	}
+	return TRUE;
 }
 
 BOOL CResManDlg::CheckTask(LPCTSTR bookid, BOOL bremove)

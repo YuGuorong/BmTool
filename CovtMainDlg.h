@@ -38,6 +38,9 @@ enum
 	CVT_ERR_OPEN_PACKAGE,
 	CVT_ERR_HUGE_FLV,
 	CVT_ERR_HUGE_SWF,
+	CVT_ERR_PDF_2_SWF,
+	CVT_ERR_ADD_COVER,
+	CVT_ERR_OVER_COVERS,
 	CVT_ERR_NO_XML,
 	CVT_ERR_PARSE_XML,
 	CVT_ERR_OPEN_XML,
@@ -61,6 +64,9 @@ enum
 		{ _T("Error huge zip package") },  \
 		{ _T("Error huge flv file(>10MB) ") },  \
 		{ _T("Error huge swf file(>10MB) ") },  \
+		{ _T("Error convert pdf to swf  ") },  \
+		{ _T("Error add a cover  ") },  \
+		{ _T("Error class type over cover number") },  \
 		{ _T("Error no xml ") },				\
 		{ _T("Error parse xml") },				\
 		{ _T("Error open xml") },				\
@@ -77,6 +83,7 @@ enum
 		{ _T("Error unkown") }			 
 
 int AddTaskToDb(CString &szip);
+#define MAX_CLASS_NUMBER  8
 
 class CCovtMainDlg : public CExDialog
 {
@@ -130,6 +137,7 @@ public:
 	void CCovtMainDlg::SaveDirToXml(HTREEITEM hit, CStringA &sxml, int sublevel);
 	void CCovtMainDlg::SaveDirs(CStringA &sxml);
 	
+	CPtrArray m_fCovers;
 	CStringArray m_strSrcPacks;
 	int ConvertBook(CString &sbook);
 	int ParseXmlField(CString &sbook);
