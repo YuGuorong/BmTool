@@ -94,7 +94,7 @@ void SwitchBackMainDlg();
 #define DEC_MEM
 
 
-#define STR_VERSION     _T("1.0.2.6")
+#define STR_VERSION     _T("1.0.2.7")
 
 #if VENDOR_NAME == VENDOR_OPENCE
 #define IDS_VERNDOR_NAME  IDSTR_VENDOR_OPENCN

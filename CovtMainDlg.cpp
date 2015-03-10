@@ -279,12 +279,13 @@ int CCovtMainDlg::AddCover(CStringA &sxmlCover, CStringA &asfile, CStringArray &
 			if (nctype >= m_fCovers.GetCount()) nctype = m_fCovers.GetCount() - 1;
 			if (nctype <= 0) nctype = 1;
 				
-			Logs(_T("+..."));
-			CStringArray * spf = (CStringArray *)m_fCovers[m_nClassType];
+			CStringArray * spf = (CStringArray *)m_fCovers[nctype];
+			if (spf == NULL || spf->GetCount() == 0) return CVT_ERR_OVER_COVERS;
 			srand(time(NULL));
 			INT nr = rand() % spf->GetCount();
 			CString ss;
 			strF = spf->GetAt(nr);
+			Logs(_T("+...%s"), strF);
 			asfile = qUnc2Utf(strF);
 			ss = g_pSet->strCurPath + _T("covers\\") + strF;
 			//CopyFile(ss, strF, FALSE);
@@ -682,9 +683,9 @@ int CCovtMainDlg::ParseXmlField(CString &sbook)
 		int len = of.Read(buf, BUFSIZ);
 		done = len < sizeof(buf);
 		if (XML_Parse(parser, buf, len, done) == XML_STATUS_ERROR) {
-			Logs(_T("\r\n-->Xml Error: %S at line %u\r\n"),
-				XML_ErrorString(XML_GetErrorCode(parser)),
-				XML_GetCurrentLineNumber(parser));
+			m_strCvtError.Format(_T("%S at line %u"),
+				XML_ErrorString(XML_GetErrorCode(parser)), XML_GetCurrentLineNumber(parser) );
+			Logs(_T("\r\n-->Xml Error: %s\r\n"), m_strCvtError);
 			ret = CVT_ERR_PARSE_XML;
 			break;
 		}
@@ -780,7 +781,9 @@ INT FindCovers(CPtrArray & pCvrs)
 	SetCurrentDirectory(spath);
 	
 	int i = 0;
-	for (i = 0; i < 10; i++)
+	CStringArray * sfs = new CStringArray();
+	pCvrs.Add(sfs);
+	for (i = 1; i < 10; i++)
 	{
 		CString str;
 		str.Format(_T("%d*.*"), i);
@@ -962,12 +965,19 @@ void CCovtMainDlg::LogToFile(int result, LPCTSTR spckFile)
 	CString str;
 	CStringA sa;
 	if (result < 0)
-		str.Format(_T("[%s] \"%s\" 转换失败，错误: %s。\n"), stmlog, spckFile, GetErrorString(result));
+		str.Format(_T("[%s] \"%s\" 转换失败，错误: %s"), stmlog, spckFile, GetErrorString(result) );
 	else
-		str.Format(_T("[%s] \"%s\" 转换成功。\n"), stmlog, spckFile);
+		str.Format(_T("[%s] \"%s\" 转换成功"), stmlog, spckFile);
+	m_strCvtError.Remove(_T('\n'));
+	m_strCvtError.Remove(_T('\r'));
+	if (!m_strCvtError.IsEmpty())
+		str += _T("(")+m_strCvtError + _T(").\n");
+	else
+		str += _T(".\n");
 	QW2A(str, sa);
 	of.Write(sa, sa.GetLength());
 	of.Close();
+	m_strCvtError.Empty();
 }
 
 int CCovtMainDlg::AsyncConvertDir(int param)
@@ -985,6 +995,8 @@ int CCovtMainDlg::AsyncConvertDir(int param)
 	m_aRsut.SetSize(m_strSrcPacks.GetSize());
 	for (int i = 0; i < m_strSrcPacks.GetSize(); i++)
 	{
+		m_strCvtError.Empty();
+
 		SetCurProgPos(i, NULL);
 		Logs(_T("转换: %s\r\n"), m_strSrcPacks[i]);
 		CString sf = CUtil::GetFileName(m_strSrcPacks[i]);

@@ -836,7 +836,8 @@ INT CHttpPost::OnHttpSend()
 	{
 		if (m_szRespHeader.Find(" 200 OK") >= 0)
 		{
-			len = GetBody();
+			GetBody();
+			len = 1;
 		}
 		else
 			return -5;

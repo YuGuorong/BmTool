@@ -43,7 +43,7 @@ LONG WINAPI MyUnhandledExceptionFilter( struct _EXCEPTION_POINTERS* ExceptionInf
 	loExceptionInfo.ExceptionPointers = ExceptionInfo;
 	loExceptionInfo.ThreadId = GetCurrentThreadId();
 	loExceptionInfo.ClientPointers = TRUE;
-	MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), lhDumpFile, MiniDumpNormal, &loExceptionInfo, NULL, NULL);
+	MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), lhDumpFile,  MiniDumpWithFullMemory, &loExceptionInfo, NULL, NULL);
 	CloseHandle(lhDumpFile);
 
 	return EXCEPTION_EXECUTE_HANDLER;

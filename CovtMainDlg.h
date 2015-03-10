@@ -136,6 +136,7 @@ public:
 
 	void CCovtMainDlg::SaveDirToXml(HTREEITEM hit, CStringA &sxml, int sublevel);
 	void CCovtMainDlg::SaveDirs(CStringA &sxml);
+	CString m_strCvtError;
 	
 	CPtrArray m_fCovers;
 	CStringArray m_strSrcPacks;

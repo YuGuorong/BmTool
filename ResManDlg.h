@@ -58,4 +58,5 @@ public:
 	afx_msg void OnBnClickedBtnReturn();
 	afx_msg LRESULT OnHttpFinishMsg(WPARAM wParam, LPARAM lParam);
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
+	afx_msg void OnBnClickedBtnTest();
 };

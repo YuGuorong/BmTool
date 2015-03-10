@@ -67,6 +67,7 @@ BEGIN_MESSAGE_MAP(CResManDlg, CExDialog)
 	ON_BN_CLICKED(IDC_BTN_RETURN, &CResManDlg::OnBnClickedBtnReturn)
 	ON_MESSAGE(WM_HTTP_DONE, &CResManDlg::OnHttpFinishMsg)		//自定义HTTP事件
 	ON_WM_TIMER()
+	ON_BN_CLICKED(IDC_BTN_TEST, &CResManDlg::OnBnClickedBtnTest)
 END_MESSAGE_MAP()
 
 
@@ -516,21 +517,12 @@ LRESULT CResManDlg::OnHttpFinishMsg(WPARAM wParam, LPARAM lParam)
 	CAsyncHttp * pHttp = (CAsyncHttp*)wParam;
 	BOOL  stat = (BOOL)lParam;
 	int taskidx = 0;
-	if (stat > 0)
-	{
-		int len = pHttp->GetHttpHeader(pHttp->m_szRespHeader);
-		if (pHttp->m_szRespHeader.Find(" 200 OK") >= 0)
-		{
-			stat = TRUE;
-		}
-		else
-			stat = FALSE;
-	}
+
 	for (int i = 0; i < m_listTask.GetItemCount(); i++)
 	{
 		if (m_listTask.GetItemData(i) == (DWORD_PTR)pHttp)
 		{
-			LPCTSTR strRet = _T("上传成功");// (stat > 0 || stat <= -500) ? _T("上传成功") : _T("上传失败");
+			LPCTSTR strRet =  (stat > 0 || stat <= -500) ? _T("上传成功") : _T("上传失败");
 			CString strid = m_listTask.GetItemText(i, 0);
 
 			m_proj->SetBookState(strid, strRet);
@@ -604,4 +596,12 @@ void CResManDlg::OnTimer(UINT_PTR nIDEvent)
 	}
 
 	CExDialog::OnTimer(nIDEvent);
+}
+
+
+void CResManDlg::OnBnClickedBtnTest()
+{
+	// TODO:  在此添加控件通知处理程序代码
+	volatile int * ptr = NULL;
+	*ptr = 100;
 }
