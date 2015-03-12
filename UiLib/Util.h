@@ -97,6 +97,7 @@ public:
 	CString m_strServerIP;
 	INT     m_nPort;
 	INT     m_bEnProxy;
+	INT     m_nLimitPrevSize;
 	CString m_strProxyIP;
 	INT     m_nProxyPort;
 	CString m_strProxyUser;

@@ -107,6 +107,7 @@ public:
 	CGdipButton	*m_cFolderBtns[2];
 	
 	CStringA m_szUuid;
+	CFont m_ftEdit;
 
 	multimap<CStringA, CStringA> m_mapMetaVal;  //all xml value here
 	multimap<CStringA, CStringA> m_mapMultiVal;  //all xml value here
@@ -166,6 +167,7 @@ public:
 	CString m_strSrcDir;
 	CString m_strDstDir;
 	CString m_strTmpDir;
+	int m_nLimitPrevSize;
 	afx_msg void OnBnClickedBtnSrcDir();
 	afx_msg void OnBnClickedBtnDstDir();
 	afx_msg void OnTimer(UINT_PTR nIDEvent);

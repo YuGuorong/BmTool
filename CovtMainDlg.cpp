@@ -353,11 +353,10 @@ int CCovtMainDlg::Addfile(CStringA &sxml, CStringArray &files)
 					BOOL bOK = GetExitCodeProcess(hproc, &ret);
 					Logs(_T("\r\n    ´ò°ü:\"preview\"..."));
 
+					if ((ret = CUtil::GetFileSize(spath)) <= 0 )
+						return CVT_ERR_PDF_2_SWF;
 
-					if (ret != 0 || (ret = CUtil::GetFileSize(spath)) <= 0 )
-						return CVT_ERR_HUGE_SWF;
-
-					if (ret > 10 MByte)
+					if (ret > m_nLimitPrevSize)
 						return CVT_ERR_HUGE_SWF;
 
 					ZipAdd(m_hz, CFG_PREVIEW_FILE, spath.GetBuffer(spath.GetLength()), 0, ZIP_FILENAME);
@@ -818,7 +817,7 @@ BOOL CCovtMainDlg::OnInitDialog()
 	CExDialog::OnInitDialog();
 
 
-	int txtids[] = { IDC_ST_PROXY_IP, IDC_ST_PROXY_PORT, IDC_ST_PROXY_USER, IDC_ST_PROXY_PWD, IDC_ST_PROXY_PWD2 };
+	int txtids[] = { IDC_ST_PROXY_IP, IDC_ST_PROXY_PORT, IDC_ST_PROXY_USER, IDC_ST_PROXY_PWD, IDC_ST_PROXY_PWD2, IDC_TEXT_LIMITE, IDC_TEXT_MB};
 	SubTextItems(txtids, sizeof(txtids) / sizeof(int), NULL, NULL);
 
 	for (int i = 0; i < sizeof(btnids) / sizeof(int); i++)
@@ -833,6 +832,24 @@ BOOL CCovtMainDlg::OnInitDialog()
 	m_strDstDir = g_pSet->m_strDstDir;
 	UpdateData(0); 
 
+	int txtBlake[] = { IDC_TEXT_LIMITE, IDC_TEXT_MB };
+	LOGFONT lf = { 0 };
+	lf.lfHeight = 12;
+	lf.lfWeight = FW_THIN;
+	_tcscpy_s(lf.lfFaceName, _T("ËÎÌå"));
+	
+	VERIFY(m_ftEdit.CreateFontIndirect(&lf));
+
+	for (int i = 0; i < sizeof(txtBlake) / sizeof(int); i++)
+	{
+		CLink * pctrl = (CLink*)GetDlgItem(txtBlake[i]);
+		pctrl->SetFontStyle(&m_ftEdit, RGB(0, 0, 0));
+	}
+
+	CString strlmt;
+	strlmt.Format(_T("%d"), g_pSet->m_nLimitPrevSize/(1 MByte));
+	CWnd * pwnd = GetDlgItem(IDC_EDIT_LIMIT_SIZE);
+	pwnd->SetWindowText(strlmt);
 
 	const INT btnid[] = { IDC_BTN_SRC_DIR, IDC_BTN_DST_DIR };
 	for (int i = 0; i<sizeof(btnid) / sizeof(int); i++)
@@ -1097,7 +1114,7 @@ int CCovtMainDlg::ConvertBook(CString &sbook)
 		return ret;
 	if (flenh > 0)
 		return CVT_ERR_HUGE_ZIP;
-	if ( (ret =UnzipLimitFile(sbook, &sfiles, (10 MByte), _T("flv"))) < 0 )
+	if ((ret = UnzipLimitFile(sbook, &sfiles, (m_nLimitPrevSize), _T("flv"))) < 0)
 		return ret;
 	
 	CStringArray sxmls, sflvs;
@@ -1162,6 +1179,10 @@ void CCovtMainDlg::OnBnClickedBtnOk()
 		m_bEnEncrypt = m_EnEncrypt.GetCheck();
 		g_pSet->m_strSrcDir = this->m_strSrcDir;
 		g_pSet->m_strDstDir = m_strDstDir;
+		GetDlgItemText(IDC_EDIT_LIMIT_SIZE, str);
+		m_nLimitPrevSize = _ttoi(str) MByte;
+		if (m_nLimitPrevSize == 0) m_nLimitPrevSize = 1 MByte;
+		g_pSet->m_nLimitPrevSize = m_nLimitPrevSize;
 		g_pSet->Save();
 		m_slog.Empty();
 		m_oLog.SetWindowText(_T(""));
