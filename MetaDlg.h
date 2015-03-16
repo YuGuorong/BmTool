@@ -44,7 +44,7 @@ public:
 protected:
 
 
-	
+	void ChangeSbineItem(CMetaDataItem * pit);
 	CMetaDataItem * GetCtrlItem(int nid);
 	CMetaDataItem * FindSubItem(CMetaDataItem * pit);
 	CMetaDataItem * ChangeSubComboBox(CMetaDataItem * pit);

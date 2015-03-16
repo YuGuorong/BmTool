@@ -275,6 +275,7 @@ INT  CMetaDlg::SetMetaValues()
 			int sel = pbox->FindString(0, pit->strValue);
 			pbox->SetCurSel(sel);
 			CMetaDataItem * psub = pit;
+			ChangeSbineItem(pit);
 			do{
 				psub = ChangeSubComboBox(psub);
 			} while (psub);
@@ -688,6 +689,7 @@ void CMetaDlg::OnSelchangeCombboxs(UINT id)
 	{
 		if( pit->style & META_COMBOBOX )
 		{
+			ChangeSbineItem(pit);
 			do{
 				pit = ChangeSubComboBox(pit);
 			}while(pit);
@@ -735,6 +737,26 @@ INT CMetaDlg::GetItemValue(LPCTSTR ItemCaption, CString &strValue)
 	return 0;
 }
 
+void CMetaDlg::ChangeSbineItem(CMetaDataItem * pit)
+{
+	CMetaDataItem * psb = m_proj->m_pMeta;
+	while (psb)
+	{
+		if (psb != pit && (psb->style & META_COMBOBOX) )
+		{
+			if (psb->nSubIdx == pit->nSubIdx)
+			{
+				CComboBox * pbox = (CComboBox *)pit->pWnd[1];
+				int nSel = pbox->GetCurSel();
+				pbox = (CComboBox *)psb->pWnd[1];
+				pbox->SetCurSel(nSel);
+				break;
+			}
+		}
+		psb = psb->pNext;
+	}
+}
+
 void CMetaDlg::SetDefComboxVal()
 {
 	CMetaDataItem * pit = m_proj->m_pMeta;
@@ -777,6 +799,7 @@ INT CMetaDlg::SetItemValue(LPCTSTR ItemCaption, LPCTSTR strValue, BOOL bSetSubCo
 				pit->strValue = strValue;
 				if (bSetSubCombox)
 				{
+					ChangeSbineItem(pit);
 					do{
 						pit = ChangeSubComboBox(pit);
 					} while (pit);

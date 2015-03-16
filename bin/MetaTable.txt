@@ -13,7 +13,7 @@ Isbn
 学科门类 （"courses.txt" 1 1）
 专业类 （"courses.txt" 2 1）
 专业名称 （"courses.txt" 3 1）
-教材分类 （"courses.txt" 1 2）
+教材分类 （"courses.txt" 1 1）
 纸介图书价格
 电子书价格
 电子书销售价格
