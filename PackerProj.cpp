@@ -321,6 +321,65 @@ BOOL CPackerProj::ClearResTable()
 
 
 #include "Link.h"
+void LoadGif(CDC * pDC)
+{
+	//装载gif文件  
+	Image* image = Image::FromFile(_T("res//test.gif"));
+
+	//获得有多少个维度，对于gif就一个维度  
+	UINT count = image->GetFrameDimensionsCount();
+	GUID *pDimensionIDs = (GUID*)new GUID[count];
+	image->GetFrameDimensionsList(pDimensionIDs, count);
+	TCHAR strGuid[39];
+	StringFromGUID2(pDimensionIDs[0], strGuid, 39);
+	UINT frameCount = image->GetFrameCount(&pDimensionIDs[0]);
+
+	delete[]pDimensionIDs;
+
+	//获得这个维度有多少个帧  
+	UINT   FrameNums = image->GetFrameCount(&pDimensionIDs[0]);
+
+
+	//获得各帧之间的时间间隔  
+	//先获得有多少个时间间隔，PropertyTagFrameDelay是GDI+中预定义的一个GIG属性ID值，表示标签帧数据的延迟时间  
+	UINT   FrameDelayNums = image->GetPropertyItemSize(PropertyTagFrameDelay);
+
+
+	PropertyItem *  lpPropertyItem = new  PropertyItem[FrameDelayNums];
+	image->GetPropertyItem(PropertyTagFrameDelay, FrameDelayNums, lpPropertyItem);
+
+
+
+	//Guid的值在显示GIF为FrameDimensionTime，显示TIF时为FrameDimensionPage  
+	int    FrameCount = 0;
+	GUID    Guid = FrameDimensionTime;
+	image->SelectActiveFrame(&Guid, FrameCount);
+	while (true)
+	{
+		Graphics   gh(pDC->GetSafeHdc());
+
+		//显示当前帧  
+		gh.DrawImage(image, 0, 0, image->GetWidth(), image->GetHeight());
+
+		//时间间隔  
+		long lPause = ((long*)lpPropertyItem->value)[FrameCount] * 10;
+		Sleep(lPause);
+
+
+		//设置当前需要显示的帧数  
+		if ((FrameCount + 1) == FrameNums)
+		{   //如果已经显示到最后一帧，那么重新开始显示  
+			FrameCount = 0;
+			image->SelectActiveFrame(&Guid, 0);
+		}
+		else
+		{
+			image->SelectActiveFrame(&Guid, ++FrameCount);
+		}
+
+	}
+}
+
 void CPackerProj::LoadMetaImage(CMetaDataItem * pItem, LPCTSTR strV, CRect r)
 {
 	r.InflateRect(-1, -1);
