@@ -105,6 +105,7 @@ public:
 	CString m_strHomePath;
 	CString m_strSrcDir;
 	CString m_strDstDir;
+	CString m_strPdf2SwfParm;
 
 public :
 	int operator=(int id){ return 0;};

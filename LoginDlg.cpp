@@ -10,7 +10,7 @@
 
 
 #ifdef DEBUG
-//#define DEBUG_LOGIN 
+#define DEBUG_LOGIN 
 #endif
 // CLoginDlg dialog
 

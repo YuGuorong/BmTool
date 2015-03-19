@@ -347,7 +347,7 @@ int CCovtMainDlg::Addfile(CStringA &sxml, CStringArray &files)
 					sparm += sfi;
 				
 					CString sexe = g_pSet->strCurPath + CFG_PDF2SWF_EXE;
-					sparm += _T("\" -o \"") + spath +_T("\"");
+					sparm += _T("\" -o \"") + spath +_T("\" ") + g_pSet->m_strPdf2SwfParm;
 					HANDLE hproc = ::CUtil::RunProc(sexe, sparm, m_strTmpDir);
 					DWORD ret;
 					BOOL bOK = GetExitCodeProcess(hproc, &ret);
@@ -817,7 +817,8 @@ BOOL CCovtMainDlg::OnInitDialog()
 	CExDialog::OnInitDialog();
 
 
-	int txtids[] = { IDC_ST_PROXY_IP, IDC_ST_PROXY_PORT, IDC_ST_PROXY_USER, IDC_ST_PROXY_PWD, IDC_ST_PROXY_PWD2, IDC_TEXT_LIMITE, IDC_TEXT_MB};
+	int txtids[] = { IDC_ST_PROXY_IP, IDC_ST_PROXY_PORT, IDC_ST_PROXY_USER, IDC_ST_PROXY_PWD, IDC_ST_PROXY_PWD2,\
+		IDC_TXT_FROMTO, IDC_TEXT_LIMITE, IDC_TEXT_MB, IDC_TEXT_PDFSWF_PARAM, IDC_ST_PROXY_PWD3 };
 	SubTextItems(txtids, sizeof(txtids) / sizeof(int), NULL, NULL);
 
 	for (int i = 0; i < sizeof(btnids) / sizeof(int); i++)
@@ -832,7 +833,8 @@ BOOL CCovtMainDlg::OnInitDialog()
 	m_strDstDir = g_pSet->m_strDstDir;
 	UpdateData(0); 
 
-	int txtBlake[] = { IDC_TEXT_LIMITE, IDC_TEXT_MB };
+	int txtBlake[] = { IDC_TEXT_LIMITE, IDC_TEXT_MB, IDC_TEXT_PDFSWF_PARAM, 
+		IDC_TXT_FROMTO, IDC_ST_PROXY_PORT, IDC_ST_PROXY_PWD2 };
 	LOGFONT lf = { 0 };
 	lf.lfHeight = 12;
 	lf.lfWeight = FW_THIN;
@@ -877,6 +879,10 @@ BOOL CCovtMainDlg::OnInitDialog()
 
 	m_pbtns[0]->SetWindowText(_T("×ª    »»"));
 	m_oInf.ShowWindow(SW_HIDE);
+
+
+	pwnd = GetDlgItem(IDC_EDIT_PDF2SWF_PARAM);
+	pwnd->SetWindowText(g_pSet->m_strPdf2SwfParm);
 
 	FindCovers(m_fCovers);
 	return TRUE;  // return TRUE unless you set the focus to a control
@@ -1183,6 +1189,7 @@ void CCovtMainDlg::OnBnClickedBtnOk()
 		m_nLimitPrevSize = _ttoi(str) MByte;
 		if (m_nLimitPrevSize == 0) m_nLimitPrevSize = 1 MByte;
 		g_pSet->m_nLimitPrevSize = m_nLimitPrevSize;
+		GetDlgItemText(IDC_EDIT_PDF2SWF_PARAM, g_pSet->m_strPdf2SwfParm);
 		g_pSet->Save();
 		m_slog.Empty();
 		m_oLog.SetWindowText(_T(""));

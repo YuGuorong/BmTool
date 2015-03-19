@@ -691,6 +691,7 @@ void CSetting::Load()
 	m_strPassword = pApp->GetProfileString(_T("AppSettings"), _T("Password"), _T(""));
 	m_strUserName = pApp->GetProfileString(_T("AppSettings"), _T("UserName"), _T("admin"));
 	m_strServerIP = pApp->GetProfileString(_T("AppSettings"), _T("ServerIp"), _T("fixopen.xicp.net"));
+	m_strPdf2SwfParm = pApp->GetProfileString(_T("AppSettings"), _T("Pdf2SwfParm"), _T(" -G -s poly2bitmap -S"));
 
 	m_bEnProxy = pApp->GetProfileInt(_T("AppSettings"), _T("ProxyEnable"), 0);
 	m_nProxyPort = pApp->GetProfileInt(_T("AppSettings"), _T("ProxyPort"), 80);
@@ -707,6 +708,7 @@ void CSetting::Load()
 void CSetting::Save()
 {
 	CWinApp* pApp = AfxGetApp();
+	pApp->WriteProfileString(_T("AppSettings"), _T("Pdf2SwfParm"), m_strPdf2SwfParm);
 	pApp->WriteProfileString(_T("AppSettings"), _T("ServerIp"), m_strServerIP);
 	pApp->WriteProfileInt(_T("AppSettings"), _T("Port"), m_nPort);
 
