@@ -764,11 +764,15 @@ BEGIN_MESSAGE_MAP(CCovtMainDlg, CExDialog)
 	ON_BN_CLICKED(IDC_BTN_SRC_DIR, &CCovtMainDlg::OnBnClickedBtnSrcDir)
 	ON_BN_CLICKED(IDC_BTN_DST_DIR, &CCovtMainDlg::OnBnClickedBtnDstDir)
 	ON_WM_TIMER()
+	ON_BN_CLICKED(IDC_BTN_CVT_ERRS, &CCovtMainDlg::OnBnClickedBtnCvtErrs)
+	ON_EN_CHANGE(IDC_EDIT_SRC_DIR, &CCovtMainDlg::OnEnChangeEditSrcDir)
 END_MESSAGE_MAP()
 
 
 // CCovtMainDlg message handlers
-static const INT btnids[] = { IDC_BTN_OK, IDC_BTN_CANCLE };
+static const INT btnids[] = { IDC_BTN_OK, IDC_BTN_CVT_ERRS };
+static const int btnbtmp[] = { IDB_BITMAP_SLIVE_BTN, IDB_BITMAP_RND_BTN};
+static const SIZE szBtn[] = { { 102, 26 }, { 91, 20 } };
 
 #define CFG_COVER_FOLDER  _T("covers")
 
@@ -818,14 +822,14 @@ BOOL CCovtMainDlg::OnInitDialog()
 
 
 	int txtids[] = { IDC_ST_PROXY_IP, IDC_ST_PROXY_PORT, IDC_ST_PROXY_USER, IDC_ST_PROXY_PWD, IDC_ST_PROXY_PWD2,\
-		IDC_TXT_FROMTO, IDC_TEXT_LIMITE, IDC_TEXT_MB, IDC_TEXT_PDFSWF_PARAM, IDC_ST_PROXY_PWD3 };
+		IDC_TXT_FROMTO, IDC_TEXT_LIMITE, IDC_TEXT_LIMITE2, IDC_TEXT_MB, IDC_TEXT_MB2, IDC_TEXT_PDFSWF_PARAM, IDC_ST_PROXY_PWD3 };
 	SubTextItems(txtids, sizeof(txtids) / sizeof(int), NULL, NULL);
 
 	for (int i = 0; i < sizeof(btnids) / sizeof(int); i++)
 	{
 		m_pbtns[i] = new CSkinBtn();
 		m_pbtns[i]->SubclassDlgItem(btnids[i], this);
-		m_pbtns[i]->SetImage(IDB_BITMAP_SLIVE_BTN, 102, 26);
+		m_pbtns[i]->SetImage(btnbtmp[i], szBtn[i].cx, szBtn[i].cy);
 	}
 	m_pProjDir = new CTreeCtrl();
 	m_pProjDir->SubclassDlgItem(IDC_TREE_DIR, this);
@@ -833,7 +837,7 @@ BOOL CCovtMainDlg::OnInitDialog()
 	m_strDstDir = g_pSet->m_strDstDir;
 	UpdateData(0); 
 
-	int txtBlake[] = { IDC_TEXT_LIMITE, IDC_TEXT_MB, IDC_TEXT_PDFSWF_PARAM, 
+	int txtBlake[] = { IDC_TEXT_LIMITE, IDC_TEXT_LIMITE2, IDC_TEXT_MB, IDC_TEXT_MB2,IDC_TEXT_PDFSWF_PARAM,
 		IDC_TXT_FROMTO, IDC_ST_PROXY_PORT, IDC_ST_PROXY_PWD2 };
 	LOGFONT lf = { 0 };
 	lf.lfHeight = 12;
@@ -851,6 +855,10 @@ BOOL CCovtMainDlg::OnInitDialog()
 	CString strlmt;
 	strlmt.Format(_T("%d"), g_pSet->m_nLimitPrevSize/(1 MByte));
 	CWnd * pwnd = GetDlgItem(IDC_EDIT_LIMIT_SIZE);
+	pwnd->SetWindowText(strlmt);
+
+	strlmt.Format(_T("%d"), g_pSet->m_nFlvLimit / (1 MByte));
+	pwnd = GetDlgItem(IDC_EDIT_FLV_LIMIT);
 	pwnd->SetWindowText(strlmt);
 
 	const INT btnid[] = { IDC_BTN_SRC_DIR, IDC_BTN_DST_DIR };
@@ -885,6 +893,7 @@ BOOL CCovtMainDlg::OnInitDialog()
 	pwnd->SetWindowText(g_pSet->m_strPdf2SwfParm);
 
 	FindCovers(m_fCovers);
+	OnEnChangeEditSrcDir();
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// EXCEPTION: OCX Property Pages should return FALSE
 }
@@ -1120,7 +1129,7 @@ int CCovtMainDlg::ConvertBook(CString &sbook)
 		return ret;
 	if (flenh > 0)
 		return CVT_ERR_HUGE_ZIP;
-	if ((ret = UnzipLimitFile(sbook, &sfiles, (m_nLimitPrevSize), _T("flv"))) < 0)
+	if ((ret = UnzipLimitFile(sbook, &sfiles, (m_nFlvLimit), _T("flv"))) < 0)
 		return ret;
 	
 	CStringArray sxmls, sflvs;
@@ -1189,6 +1198,13 @@ void CCovtMainDlg::OnBnClickedBtnOk()
 		m_nLimitPrevSize = _ttoi(str) MByte;
 		if (m_nLimitPrevSize == 0) m_nLimitPrevSize = 1 MByte;
 		g_pSet->m_nLimitPrevSize = m_nLimitPrevSize;
+
+		GetDlgItemText(IDC_EDIT_FLV_LIMIT, str);
+		m_nFlvLimit = _ttoi(str) MByte;
+		if (m_nFlvLimit == 0) m_nFlvLimit = 1 MByte;
+		g_pSet->m_nFlvLimit = m_nFlvLimit;
+
+
 		GetDlgItemText(IDC_EDIT_PDF2SWF_PARAM, g_pSet->m_strPdf2SwfParm);
 		g_pSet->Save();
 		m_slog.Empty();
@@ -1340,4 +1356,34 @@ void CCovtMainDlg::Logs(LPCTSTR fmt, ...)
 		va_end(args);
 		AddLog(buf);
 	}
+}
+
+void CCovtMainDlg::OnBnClickedBtnCvtErrs()
+{
+	CString str;
+	GetDlgItemText(IDC_EDIT_SRC_DIR, str);
+	str += stRetLogFName[1];
+	DeleteFile(str);
+	GetDlgItem(IDC_BTN_CVT_ERRS)->EnableWindow(FALSE);
+}
+
+
+void CCovtMainDlg::OnEnChangeEditSrcDir()
+{
+	// TODO:  如果该控件是 RICHEDIT 控件，它将不
+	// 发送此通知，除非重写 CExDialog::OnInitDialog()
+	// 函数并调用 CRichEditCtrl().SetEventMask()，
+	// 同时将 ENM_CHANGE 标志“或”运算到掩码中。
+
+	// TODO:  在此添加控件通知处理程序代码
+	CString str;
+	GetDlgItemText(IDC_EDIT_SRC_DIR, str);
+	str += stRetLogFName[1];
+	if (CUtil::GetFileSize(str) != 0)
+	{
+		GetDlgItem(IDC_BTN_CVT_ERRS)->EnableWindow(TRUE);
+	}
+	else
+		GetDlgItem(IDC_BTN_CVT_ERRS)->EnableWindow(FALSE);
+		
 }

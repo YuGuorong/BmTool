@@ -703,6 +703,7 @@ void CSetting::Load()
 	m_strDstDir = pApp->GetProfileString(_T("AppSettings"), _T("DestanceDir"), _T(""));
 
 	m_nLimitPrevSize = pApp->GetProfileInt(_T("AppSettings"), _T("LimitPreviewSize"), 10 MByte);
+	m_nFlvLimit = pApp->GetProfileInt(_T("AppSettings"), _T("FlvLimitSize"), 10 MByte);
 }
 
 void CSetting::Save()
@@ -722,6 +723,7 @@ void CSetting::Save()
 	pApp->WriteProfileString(_T("AppSettings"), _T("DestanceDir"), m_strDstDir);
 
 	pApp->WriteProfileInt(_T("AppSettings"), _T("LimitPreviewSize"), m_nLimitPrevSize);
+	pApp->WriteProfileInt(_T("AppSettings"), _T("FlvLimitSize"), m_nFlvLimit);
 
 }
 

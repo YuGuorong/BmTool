@@ -168,10 +168,13 @@ public:
 	CString m_strDstDir;
 	CString m_strTmpDir;
 	int m_nLimitPrevSize;
+	int m_nFlvLimit;
 	afx_msg void OnBnClickedBtnSrcDir();
 	afx_msg void OnBnClickedBtnDstDir();
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	CEdit m_oLog;
 	CProgressCtrl m_oProg;
 	CLink m_oInf;
+	afx_msg void OnBnClickedBtnCvtErrs();
+	afx_msg void OnEnChangeEditSrcDir();
 };

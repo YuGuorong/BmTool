@@ -53,6 +53,7 @@
     <OutDir>$(SolutionDir)bin\</OutDir>
     <IncludePath>$(ProjectDir)include\;C:\Program Files (x86)\Visual Leak Detector\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(ProjectDir);$(LibraryPath)</LibraryPath>
+    <TargetName>打包转换工具</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

@@ -98,6 +98,7 @@ public:
 	INT     m_nPort;
 	INT     m_bEnProxy;
 	INT     m_nLimitPrevSize;
+	INT     m_nFlvLimit;
 	CString m_strProxyIP;
 	INT     m_nProxyPort;
 	CString m_strProxyUser;
