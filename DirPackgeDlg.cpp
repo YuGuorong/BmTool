@@ -342,7 +342,7 @@ void CDirPackgeDlg::OnHttpObjProc(int idHttpObj, int stat)
 							{
 								CString str3 = qUtf2Unc(sa_3[k]["caption"].asCString());
 								if (k)
-									stxt += _T(',');
+									stxt += _T('£¬');
 								else
 									stxt += _T('\t');
 								stxt += str3;
