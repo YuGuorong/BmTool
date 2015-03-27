@@ -65,7 +65,7 @@ int FindFile(LPCTSTR sp, CStringArray &ret)
 }
 
 
-INT UnzipLimitFile(CString &sin, CStringArray * pFiles, int max_size, LPCTSTR sname)
+INT CCovtMainDlg::UnzipLimitFile(CString &sin, CStringArray * pFiles, int max_size, LPCTSTR sname)
 {
 	TCHAR * sbuf = sin.GetBuffer();
 	HZIP hz = OpenZip(sbuf, 0, ZIP_FILENAME);
@@ -97,6 +97,10 @@ INT UnzipLimitFile(CString &sin, CStringArray * pFiles, int max_size, LPCTSTR sn
 		if (UnzipItem(hz, i, ze.name, 0, ZIP_FILENAME) != ZR_OK)
 		{
 			CloseZip(hz);
+			CString str;
+			str.Format(_T("Error unzip file:%s"), ze.name);
+			m_strCvtError += str;
+			Logs(_T("\n-->%s"), str);
 			return CVT_ERR_UNZIP;
 		}
 		if (pFiles) pFiles->Add(ze.name);
@@ -1311,6 +1315,7 @@ void CCovtMainDlg::OnTimer(UINT_PTR nIDEvent)
 		//m_oLog.ShowWindow(SW_HIDE);
 		m_oInf.ShowWindow(SW_HIDE);
 		m_oProg.ShowWindow(SW_HIDE);
+		OnEnChangeEditSrcDir();
 		InvalidateMainRect();
 	}
 

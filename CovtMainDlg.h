@@ -62,8 +62,8 @@ enum
 		{ _T("Error unzip package") },  \
 		{ _T("Error open zip package") },  \
 		{ _T("Error huge zip package") },  \
-		{ _T("Error huge flv file(>10MB) ") },  \
-		{ _T("Error huge swf file(>10MB) ") },  \
+		{ _T("Error huge flv file ") },  \
+		{ _T("Error huge swf file ") },  \
 		{ _T("Error convert pdf to swf  ") },  \
 		{ _T("Error add a cover  ") },  \
 		{ _T("Error class type over cover number") },  \
@@ -153,6 +153,7 @@ protected:
 	int CheckLastTaskBroken();
 	int m_nClassType;
 	void CleanXmlUnknown(CStringA &strxml);
+	INT UnzipLimitFile(CString &sin, CStringArray * pFiles, int max_size, LPCTSTR sname);
 
 	DECLARE_MESSAGE_MAP()
 public:

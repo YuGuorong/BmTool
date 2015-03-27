@@ -3082,7 +3082,7 @@ unzFile unzOpenInternal(LUFILE *fin)
   // total number of entries in the central dir on this disk
   if (unzlocal_getShort(fin,&us.gi.number_entry)!=UNZ_OK) err=UNZ_ERRNO;
   // total number of entries in the central dir
-  uLong number_entry_CD;      // total number of entries in the central dir (same than number_entry on nospan)
+  uLong number_entry_CD =-1;      // total number of entries in the central dir (same than number_entry on nospan)
   if (unzlocal_getShort(fin,&number_entry_CD)!=UNZ_OK) err=UNZ_ERRNO;
   if ((number_entry_CD!=us.gi.number_entry) || (number_disk_with_CD!=0) || (number_disk!=0)) err=UNZ_BADZIPFILE;
   // size of the central directory
