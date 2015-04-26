@@ -691,7 +691,7 @@ void CPackerProj::GenPreview(void * hhz)
 	CString sparm = _T("-p 1-20 \"");
 	if (m_type == VIEW_EPUB)
 	{
-		CString epub_tool_path = g_pSet->strCurPath + _T("\\")CFG_EPUB2PDF_TOOL_DIR;
+		CString epub_tool_path = g_pSet->strCurPath +  CFG_EPUB2PDF_TOOL_DIR;
 		
 		//CStringA sapdf; QUnc2Gbk(m_szPathRes, sapdf);//gbk???
 		//CStringA sini = CUtil::File2Asc(epub_tool_path + CFG_EPUB2PDF_INF_FILE _T(".temp"));
@@ -702,14 +702,25 @@ void CPackerProj::GenPreview(void * hhz)
 		int np = sfname.ReverseFind(_T('.'));
 		if (np >= 0) sfname.Delete(np, sfname.GetLength() - np);
 		CString srespdf = m_szPathRes + _T("\\") + sfname + _T(".pdf");
-		CString stpdf = g_pSet->m_strHomePath + _T("\\") + sfname + _T(".pdf");
+		DWORD dfs = 0;
+		if (CUtil::GetFileSize(srespdf, dfs) && dfs)
+		{
+			sparm += srespdf + _T("\"");
+		}
+		else
+		{
+			return;
+			CString stpdf = g_pSet->m_strHomePath + _T("\\") + sfname + _T(".pdf");
 
-		CString sexe = epub_tool_path + CFG_EPUB2PDF_EXE;
-		CString sparm_epubpdf = m_szTargetPath;		
-		::CUtil::RunProc(sexe, sparm_epubpdf, epub_tool_path);
-		CopyFile(stpdf, srespdf, FALSE);
-		DeleteFile(stpdf);
-		sparm += srespdf + _T("\"");
+			CString sexe = epub_tool_path + CFG_EPUB2PDF_EXE;
+			CString sparm_epubpdf = m_szTargetPath;
+			sexe += _T(" ") + sparm_epubpdf;
+			sparm_epubpdf.Empty();
+			RunCmd(sexe, sparm_epubpdf, epub_tool_path);
+			CopyFile(stpdf, srespdf, FALSE);
+			DeleteFile(stpdf);
+			sparm += srespdf + _T("\"");
+		}
 	}
 	else
 	{

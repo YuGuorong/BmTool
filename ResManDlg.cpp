@@ -449,11 +449,19 @@ LRESULT CResManDlg::OnHttpFinishMsg(WPARAM wParam, LPARAM lParam)
 		else
 			stat = FALSE;
 	}
+	else if (stat == 0)
+	{
+		if (pHttp->m_szRespHeader.GetLength() != 0 && pHttp->m_szRespHeader.Find(" 200 OK") >= 0)
+		{
+			stat = TRUE;
+		}
+	}
+		 
 	for (int i = 0; i < m_listTask.GetItemCount(); i++)
 	{
 		if (m_listTask.GetItemData(i) == (DWORD_PTR)pHttp)
 		{
-			LPCTSTR strRet = _T("上传成功");// (stat > 0 || stat <= -500) ? _T("上传成功") : _T("上传失败");
+			LPCTSTR strRet = (stat > 0 ) ? _T("上传成功") : _T("上传失败");
 			CString strid = m_listTask.GetItemText(i, 0);
 
 			m_proj->SetBookState(strid, strRet);
